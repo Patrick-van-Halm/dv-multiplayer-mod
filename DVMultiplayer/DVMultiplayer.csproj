@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{CF3CDDF7-AEC2-4B54-AF12-F8A84E807E3D}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>DVMultiplayer</RootNamespace>
+    <AssemblyName>DVMultiplayer</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityModManager\0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="DarkRift">
+      <HintPath>lib\DarkRift.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="DarkRift.Client">
+      <HintPath>lib\DarkRift.Client.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="DarkRift.Server">
+      <HintPath>lib\DarkRift.Server.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="DV.Utils">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\DV.Utils.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="UnityEngine">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputModule">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.InputModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIElementsModule">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.UIElementsModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.UIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityModManager">
+      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityModManager\UnityModManager.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Darkrift\Client\SerializableObjectCacheSettings.cs" />
+    <Compile Include="Darkrift\Client\UnityClient.cs" />
+    <Compile Include="Darkrift\Server\UnityModManagerWriter.cs" />
+    <Compile Include="Darkrift\Server\UnityConsoleWriter.cs" />
+    <Compile Include="Darkrift\Server\UnityServer.cs" />
+    <Compile Include="Darkrift\Server\UnityServerHelper.cs" />
+    <Compile Include="Darkrift\Server\XmlUnityServer.cs" />
+    <Compile Include="DebugUI.cs" />
+    <Compile Include="DTO\Junction\Switch.cs" />
+    <Compile Include="DTO\Player\Disconnect.cs" />
+    <Compile Include="DTO\Player\Location.cs" />
+    <Compile Include="DTO\Player\NPlayer.cs" />
+    <Compile Include="DTO\Train\TrainCouplerCockChange.cs" />
+    <Compile Include="DTO\Train\TrainCouplerHoseChange.cs" />
+    <Compile Include="DTO\Train\TrainCouplingChange.cs" />
+    <Compile Include="DTO\Train\TrainCarChange.cs" />
+    <Compile Include="DTO\Train\TrainLever.cs" />
+    <Compile Include="DTO\Train\TrainDerail.cs" />
+    <Compile Include="DTO\Train\TrainLocation.cs" />
+    <Compile Include="Main.cs" />
+    <Compile Include="Networking\NetworkingUI.cs" />
+    <Compile Include="Networking\NetworkManager.cs" />
+    <Compile Include="Networking\NetworkTags.cs" />
+    <Compile Include="Patches\EnableMovementOutsidePauseMenus.cs" />
+    <Compile Include="Patches\StopGamePauseInMenus.cs" />
+    <Compile Include="Unity\Junction\NetworkJunctionSync.cs" />
+    <Compile Include="Unity\Junction\NetworkJunctionManager.cs" />
+    <Compile Include="Unity\Train\NetworkTrainPosSync.cs" />
+    <Compile Include="Unity\Player\NetworkPlayerSync.cs" />
+    <Compile Include="Unity\Player\NetworkPlayerManager.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Unity\Train\NetworkTrainCouplerSync.cs" />
+    <Compile Include="Unity\Train\NetworkTrainSync.cs" />
+    <Compile Include="Unity\Train\NetworkTrainManager.cs" />
+    <Compile Include="Utils\UGameObject.cs" />
+    <Compile Include="Utils\UUI.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Info.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\config.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
