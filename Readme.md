@@ -41,7 +41,7 @@ When connecting make sure you have the IP of the person you want to connect to. 
 | Map                     	| :x:                	|
 
 ## Contributing
-Pull requests/changes are welcome, Please open an issue first to discuss what you would like to change.
+Pull requests/changes are welcome, please open an issue first to discuss what you would like to change.
 
 Please make sure to test as appropriate.
 
