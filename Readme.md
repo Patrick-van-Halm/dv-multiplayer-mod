@@ -8,7 +8,7 @@ DV Multiplayer Mod is a modification to allow multiplayer in Derail Valley.
 
 ## Installation
 
-Download the mod from [Nexus Mods]()
+Download the mod from [Nexus Mods](https://www.nexusmods.com/derailvalley/mods/272)
 
 Install the mod with Unity Mod Manager.
 
