@@ -46,4 +46,4 @@ Pull requests/changes are welcome, please open an issue first to discuss what yo
 Please make sure to test as appropriate.
 
 ## License
-[MIT](https://opensource.org/licenses/Apache-2.0)
+[Apache 2.0](https://opensource.org/licenses/Apache-2.0)
