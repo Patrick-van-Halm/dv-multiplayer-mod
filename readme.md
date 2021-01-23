@@ -40,8 +40,6 @@ When connecting make sure you have the IP of the person you want to connect to. 
 | World Synchronization   	| :x:                	|
 | Map                     	| :x:                	|
 
-### Planned
-
 ## Contributing
 Pull requests/changes are welcome, Please open an issue first to discuss what you would like to change.
 
