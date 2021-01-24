@@ -142,6 +142,7 @@
     <Compile Include="Patches\DontLoadSaveFileIfDataIsSet.cs" />
     <Compile Include="Patches\EnableMovementOutsidePauseMenus.cs" />
     <Compile Include="Patches\StopGamePauseInMenus.cs" />
+    <Compile Include="Patches\StopGeneratingJobsAsClient.cs" />
     <Compile Include="Unity\Jobs\NetworkJobsManager.cs" />
     <Compile Include="Unity\Junction\NetworkJunctionSync.cs" />
     <Compile Include="Unity\Junction\NetworkJunctionManager.cs" />
