@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrainPlugin", "TrainPlugin\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JunctionPlugin", "JunctionPlugin\JunctionPlugin.csproj", "{CDCB2A60-DF60-4B09-944E-137A2FB84D3C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SavePlugin", "SavePlugin\SavePlugin.csproj", "{444D067E-4F69-48C8-AEF0-7B66F10EAC0D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{CDCB2A60-DF60-4B09-944E-137A2FB84D3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDCB2A60-DF60-4B09-944E-137A2FB84D3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CDCB2A60-DF60-4B09-944E-137A2FB84D3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{444D067E-4F69-48C8-AEF0-7B66F10EAC0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{444D067E-4F69-48C8-AEF0-7B66F10EAC0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{444D067E-4F69-48C8-AEF0-7B66F10EAC0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{444D067E-4F69-48C8-AEF0-7B66F10EAC0D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

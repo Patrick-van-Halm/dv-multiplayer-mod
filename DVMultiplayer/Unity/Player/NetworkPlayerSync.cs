@@ -9,9 +9,10 @@ class NetworkPlayerSync : MonoBehaviour
 {
     public TrainCar train { get; set; }
     public bool IsLocal { get; set; } = false;
+    internal ushort Id;
+    internal Vector3 currentWorldMove;
     private Vector3 prevPosition;
     private Vector3 newPosition;
-    internal ushort Id;
     private const float SYNC_THRESHOLD = 0.1f;
 
     private void Update()
@@ -26,8 +27,8 @@ class NetworkPlayerSync : MonoBehaviour
 
         if(prevPosition == null || Vector3.Distance(prevPosition, transform.position) > SYNC_THRESHOLD)
         {
+            SingletonBehaviour<NetworkPlayerManager>.Instance.UpdateLocalPositionAndRotation(transform.position - WorldMover.currentMove, prevPosition, transform.rotation);
             prevPosition = transform.position;
-            SingletonBehaviour<NetworkPlayerManager>.Instance.UpdateLocalPositionAndRotation(new Vector3(transform.position.x, transform.position.y + 1, transform.position.z), transform.rotation);
         }
     }
 

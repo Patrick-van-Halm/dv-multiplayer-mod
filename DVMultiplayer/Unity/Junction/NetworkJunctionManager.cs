@@ -27,7 +27,7 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
     }
 
-    public void OnDisconnect()
+    public void PlayerDisconnect()
     {
         foreach (VisualSwitch @switch in switches)
         {

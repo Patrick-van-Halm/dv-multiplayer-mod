@@ -40,6 +40,11 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         PlayerManager.CarChanged += OnPlayerSwitchTrainCarEvent;
     }
 
+    internal Vector3 CalculateWorldPosition(Vector3 position, Vector3 forward, float zBounds)
+    {
+        return position + forward * zBounds;
+    }
+
     public void PlayerDisconnect()
     {
         foreach (TrainCar trainCar in trainCars.Where(car => car.IsLoco))
@@ -51,19 +56,24 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void OnPlayerSwitchTrainCarEvent(TrainCar trainCar)
     {
-        if (!trainCar.GetComponent<NetworkTrainSync>())
-            trainCar.gameObject.AddComponent<NetworkTrainSync>();
+        if (trainCar)
+        {
+            if (!trainCar.GetComponent<NetworkTrainSync>())
+                trainCar.gameObject.AddComponent<NetworkTrainSync>();
 
-        if (!trainCar.GetComponent<NetworkTrainPosSync>())
-            trainCar.gameObject.AddComponent<NetworkTrainPosSync>();
+            if (!trainCar.GetComponent<NetworkTrainPosSync>())
+                trainCar.gameObject.AddComponent<NetworkTrainPosSync>();
+        }
 
-        if(SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().train)
-            SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().train.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = false;
+        NetworkPlayerSync playerSync = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync();
+        if (playerSync.train)
+            playerSync.train.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = false;
 
-        SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().train = trainCar;
+        playerSync.train = trainCar;
         SendPlayerTrainCarChange(trainCar);
 
-        trainCar.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = true;
+        if(trainCar)
+            trainCar.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = true;
     }
 
     #region Messaging

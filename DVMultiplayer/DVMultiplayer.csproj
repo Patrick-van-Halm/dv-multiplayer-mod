@@ -56,6 +56,10 @@
       <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\DV.Utils.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -122,6 +126,8 @@
     <Compile Include="DTO\Player\Disconnect.cs" />
     <Compile Include="DTO\Player\Location.cs" />
     <Compile Include="DTO\Player\NPlayer.cs" />
+    <Compile Include="DTO\Savegame\Savegame.cs" />
+    <Compile Include="DTO\Player\WorldMove.cs" />
     <Compile Include="DTO\Train\TrainCouplerCockChange.cs" />
     <Compile Include="DTO\Train\TrainCouplerHoseChange.cs" />
     <Compile Include="DTO\Train\TrainCouplingChange.cs" />
@@ -133,10 +139,13 @@
     <Compile Include="Networking\NetworkingUI.cs" />
     <Compile Include="Networking\NetworkManager.cs" />
     <Compile Include="Networking\NetworkTags.cs" />
+    <Compile Include="Patches\DontLoadSaveFileIfDataIsSet.cs" />
     <Compile Include="Patches\EnableMovementOutsidePauseMenus.cs" />
     <Compile Include="Patches\StopGamePauseInMenus.cs" />
+    <Compile Include="Unity\Jobs\NetworkJobsManager.cs" />
     <Compile Include="Unity\Junction\NetworkJunctionSync.cs" />
     <Compile Include="Unity\Junction\NetworkJunctionManager.cs" />
+    <Compile Include="Unity\Savegame\NetworkSaveGameManager.cs" />
     <Compile Include="Unity\Train\NetworkTrainPosSync.cs" />
     <Compile Include="Unity\Player\NetworkPlayerSync.cs" />
     <Compile Include="Unity\Player\NetworkPlayerManager.cs" />
@@ -151,6 +160,7 @@
     <None Include="Info.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\config.xml">

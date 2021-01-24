@@ -41,77 +41,94 @@ namespace PlayerPlugin
 
         private void ClientConnected(object sender, ClientConnectedEventArgs e)
         {
-            e.Client.MessageReceived += SpawnLocationMessage;
-            e.Client.MessageReceived += LocationUpdateMessage;
+            e.Client.MessageReceived += MessageReceived;
         }
 
-        private void LocationUpdateMessage(object sender, MessageReceivedEventArgs e)
+        private void MessageReceived(object sender, MessageReceivedEventArgs e)
         {
             using (Message message = e.GetMessage() as Message)
             {
-                if (message.Tag == (ushort)NetworkTags.PLAYER_LOCATION_UPDATE)
+                switch ((NetworkTags)message.Tag)
                 {
-                    if (players.TryGetValue(e.Client, out NPlayer player))
-                    {
-                        Location newLocation;
-                        using (DarkRiftReader reader = message.GetReader())
-                        {
-                            newLocation = reader.ReadSerializable<Location>();
-                            player.Position = newLocation.Position;
-                            player.Rotation = newLocation.Rotation;
-                        }
+                    case NetworkTags.PLAYER_LOCATION_UPDATE:
+                        LocationUpdateMessage(message, e.Client);
+                        break;
 
-                        using (DarkRiftWriter writer = DarkRiftWriter.Create())
-                        {
-                            writer.Write<Location>(newLocation);
+                    case NetworkTags.PLAYER_SPAWN:
+                        SpawnLocationMessage(message, e.Client);
+                        break;
 
-                            using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_LOCATION_UPDATE, writer))
-                                foreach (IClient client in ClientManager.GetAllClients().Where(client => client != e.Client))
-                                    client.SendMessage(outMessage, SendMode.Unreliable);
-                        }
-                    }
+                    case NetworkTags.PLAYER_WORLDMOVED:
+                        UpdateWorldMoveData(message, e.Client);
+                        break;
                 }
             }
         }
 
-        private void SpawnLocationMessage(object sender, MessageReceivedEventArgs e)
+        private void UpdateWorldMoveData(Message message, IClient sender)
         {
-            using (Message message = e.GetMessage() as Message)
+            if (players.TryGetValue(sender, out NPlayer player))
             {
-                if (message.Tag == (ushort)NetworkTags.PLAYER_SPAWN)
+                using (DarkRiftReader reader = message.GetReader())
                 {
-                    NPlayer player;
-                    using (DarkRiftReader reader = message.GetReader())
-                    {
-                        player = reader.ReadSerializable<NPlayer>();
-                    }
+                    WorldMove move = reader.ReadSerializable<WorldMove>();
+                    player.WorldMoverPos = move.WorldPosition;
+                }
 
-                    if (players.Count > 0)
-                    {
-                        using (DarkRiftWriter writer = DarkRiftWriter.Create())
-                        {
-                            writer.Write<NPlayer>(player);
+                foreach (IClient client in ClientManager.GetAllClients().Where(client => client != sender))
+                    client.SendMessage(message, SendMode.Reliable);
+            }
+        }
 
-                            using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_SPAWN, writer))
-                                foreach (IClient client in ClientManager.GetAllClients().Where(client => client != e.Client))
-                                    client.SendMessage(outMessage, SendMode.Reliable);
-                        }
+        private void LocationUpdateMessage(Message message, IClient sender)
+        {
+            if (players.TryGetValue(sender, out NPlayer player))
+            {
+                Location newLocation;
+                using (DarkRiftReader reader = message.GetReader())
+                {
+                    newLocation = reader.ReadSerializable<Location>();
+                    player.Position = newLocation.AbsPosition;
+                    player.Rotation = newLocation.NewRotation;
+                }
 
-                        foreach (NPlayer p in players.Values)
-                        {
-                            using (DarkRiftWriter writer = DarkRiftWriter.Create())
-                            {
-                                writer.Write<NPlayer>(p);
+                using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                {
+                    writer.Write<Location>(newLocation);
 
-                                using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_SPAWN, writer))
-                                    e.Client.SendMessage(outMessage, SendMode.Reliable);
-                            }
-                        }
-                    }
-
-                    players.Add(e.Client, player);
+                    using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_LOCATION_UPDATE, writer))
+                        foreach (IClient client in ClientManager.GetAllClients().Where(client => client != sender))
+                            client.SendMessage(outMessage, SendMode.Unreliable);
                 }
             }
+        }
+
+        private void SpawnLocationMessage(Message message, IClient sender)
+        {
+            NPlayer player;
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                player = reader.ReadSerializable<NPlayer>();
+            }
+
+            if (players.Count > 0)
+            {
+                foreach (IClient client in ClientManager.GetAllClients().Where(client => client != sender))
+                    client.SendMessage(message, SendMode.Reliable);
+
+                foreach (NPlayer p in players.Values)
+                {
+                    using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                    {
+                        writer.Write(p);
+
+                        using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_SPAWN, writer))
+                            sender.SendMessage(outMessage, SendMode.Reliable);
+                    }
+                }
+            }
+
+            players.Add(sender, player);
         }
     }
 }

@@ -2,6 +2,7 @@
 using DarkRift.Client.Unity;
 using DarkRift.Server.Unity;
 using DVMultiplayer.DTO.Player;
+using DVMultiplayer.DTO.Savegame;
 using DVMultiplayer.Utils;
 using System;
 using System.IO;
@@ -20,6 +21,7 @@ namespace DVMultiplayer.Networking
         private static bool isClient;
         private static string host;
         private static int port;
+        private static bool scriptsInitialized = false;
 
         public static void Initialize()
         {
@@ -32,6 +34,8 @@ namespace DVMultiplayer.Networking
                 networkManager.name = "NetworkManager";
                 server = networkManager.AddComponent<XmlUnityServer>();
                 client = networkManager.AddComponent<UnityClient>();
+
+                Object.DontDestroyOnLoad(networkManager);
 
                 server.configuration = new TextAsset(File.ReadAllText("./Mods/DVMultiplayer/Resources/config.xml"));
             }
@@ -78,7 +82,11 @@ namespace DVMultiplayer.Networking
 
             Main.DebugLog($"Disconnecting client");
             client.Close();
-            DeInitializeUnityScripts();
+            if (scriptsInitialized)
+            {
+                DeInitializeUnityScripts();
+                scriptsInitialized = false;
+            }
             isClient = false;
             SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
         }
@@ -131,27 +139,13 @@ namespace DVMultiplayer.Networking
             }
             else
             {
-                InitializeUnityScripts();
-                SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = true;
-                Vector3 pos = PlayerManager.PlayerTransform.position;
-                NetworkPlayerSync localPlayer = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync();
-                localPlayer.train = PlayerManager.Car;
-                if (localPlayer.train)
-                    localPlayer.GetComponent<NetworkTrainSync>().ListenToTrainInputEvents();
-                Main.DebugLog("[CLIENT] > PLAYER_SPAWN");
-                using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                if (!scriptsInitialized)
                 {
-                    writer.Write<NPlayer>(new NPlayer()
-                    {
-                        Id = client.ID,
-                        Position = new Vector3(pos.x, pos.y + 1, pos.z),
-                        Rotation = PlayerManager.PlayerTransform.rotation,
-                        TrainId = localPlayer.train ? localPlayer.train.ID : ""
-                    });
-
-                    using (Message message = Message.Create((ushort)NetworkTags.PLAYER_SPAWN, writer))
-                        client.SendMessage(message, SendMode.Reliable);
+                    InitializeUnityScripts();
+                    scriptsInitialized = true;
                 }
+                SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = true;
+                SingletonBehaviour<NetworkPlayerManager>.Instance.PlayerConnect();
             }
         }
 
@@ -160,18 +154,24 @@ namespace DVMultiplayer.Networking
             networkManager.AddComponent<NetworkPlayerManager>();
             networkManager.AddComponent<NetworkTrainManager>();
             networkManager.AddComponent<NetworkJunctionManager>();
+            networkManager.AddComponent<NetworkSaveGameManager>();
+            networkManager.AddComponent<NetworkJobsManager>();
 
             PlayerManager.PlayerTransform.gameObject.AddComponent<NetworkPlayerSync>().IsLocal = true;
         }
 
         private static void DeInitializeUnityScripts()
         {
-            networkManager.GetComponent<NetworkPlayerManager>().OnDisconnect();
+            networkManager.GetComponent<NetworkPlayerManager>().PlayerDisconnect();
             Object.Destroy(networkManager.GetComponent<NetworkPlayerManager>());
             networkManager.GetComponent<NetworkTrainManager>().PlayerDisconnect();
             Object.Destroy(networkManager.GetComponent<NetworkTrainManager>());
-            networkManager.GetComponent<NetworkJunctionManager>().OnDisconnect();
+            networkManager.GetComponent<NetworkJunctionManager>().PlayerDisconnect();
             Object.Destroy(networkManager.GetComponent<NetworkJunctionManager>());
+            networkManager.GetComponent<NetworkSaveGameManager>().PlayerDisconnect();
+            Object.Destroy(networkManager.GetComponent<NetworkSaveGameManager>());
+            SingletonBehaviour<NetworkJobsManager>.Instance.PlayerDisconnect();
+            Object.Destroy(networkManager.GetComponent<NetworkJobsManager>());
 
             Object.Destroy(PlayerManager.PlayerTransform.gameObject.GetComponent<NetworkPlayerSync>());
         }
