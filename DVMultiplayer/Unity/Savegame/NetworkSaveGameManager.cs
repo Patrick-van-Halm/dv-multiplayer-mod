@@ -7,6 +7,7 @@ using DVMultiplayer.Utils;
 using DVMultiplayer;
 using UnityEngine;
 using System;
+using Newtonsoft.Json.Linq;
 
 class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 {
@@ -88,6 +89,16 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
                 offlineSave = SaveGameManager.data;
                 SaveGameManager.data = SaveGameData.LoadFromString(save.SaveDataString);
                 SaveGameUpgrader.Upgrade();
+                bool carsLoadedSuccessfully = false;
+                JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
+                if (jobject3 != null)
+                {
+                    carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jobject3);
+                    if (!carsLoadedSuccessfully)
+                        Debug.LogError((object)"Cars not loaded successfully!");
+                }
+                else
+                    Debug.LogWarning((object)"Cars save not found!");
                 IsHostSaveReceived = true;
             }
         }
