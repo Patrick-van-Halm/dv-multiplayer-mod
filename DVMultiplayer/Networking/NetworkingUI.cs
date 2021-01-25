@@ -49,7 +49,7 @@ namespace DVMultiplayer.Networking
                     int port = 0;
                     bool portValid = int.TryParse(portString, out port) && port < 65535 && port > 0;
                     if (connect && portValid && !string.IsNullOrWhiteSpace(username))
-                        NetworkManager.Connect(host, port);
+                        NetworkManager.Connect(host, port, username);
                     yStart += 200;
                 }
 
