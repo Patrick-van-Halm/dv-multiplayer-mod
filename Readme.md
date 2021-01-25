@@ -34,11 +34,12 @@ As of currently there is no syncing of save files yet so to connect make sure yo
 | Decoupling              	| :heavy_check_mark: 	|
 | Junctions               	| :heavy_check_mark: 	|
 | Player positioning      	| :heavy_check_mark: 	|
+| Save game Synchronization | :heavy_check_mark: 	|
 | Diesel Synchronization  	| :x:                	|
 | Steamer Synchronization 	| :x:                	|
 | Multiple Units          	| :x:                	|
-| Jobs Synchronization    	| :x:                	|
-| World Synchronization   	| :x:                	|
+| Jobs Synchronization    	| :hourglass:          	|
+| World Synchronization   	| :hourglass:         	|
 | Map                     	| :x:                	|
 
 ## Contributing

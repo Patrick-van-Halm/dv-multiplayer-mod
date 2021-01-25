@@ -1,14 +1,19 @@
 ﻿using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
+using DV.TerrainSystem;
 using DVMultiplayer;
 using DVMultiplayer.DTO;
 using DVMultiplayer.DTO.Player;
+using DVMultiplayer.DTO.Savegame;
 using DVMultiplayer.Networking;
+using DVMultiplayer.Utils;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 {
@@ -72,7 +77,72 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         }
     }
 
-    public void OnDisconnect()
+    /// <summary>
+    /// This method is called upon the player connects.
+    /// </summary>
+    public void PlayerConnect()
+    {
+        Main.DebugLog("[CLIENT] > PLAYER_SPAWN");
+        Vector3 pos = PlayerManager.PlayerTransform.position;
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write<NPlayer>(new NPlayer()
+            {
+                Id = SingletonBehaviour<UnityClient>.Instance.ID,
+                Position = pos - WorldMover.currentMove,
+                Rotation = PlayerManager.PlayerTransform.rotation,
+            });
+
+            using (Message message = Message.Create((ushort)NetworkTags.PLAYER_SPAWN, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
+        SingletonBehaviour<WorldMover>.Instance.WorldMoved += WorldMoved;
+        SingletonBehaviour<CoroutineManager>.Instance.Run(WaitForHost());
+    }
+
+    private IEnumerator WaitForHost()
+    {
+        SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = true;
+        UUI.UnlockMouse(true);
+        TutorialController.movementAllowed = false;
+        if (!NetworkManager.IsHost())
+        {
+            // Check if host is connected if so the savegame should be available to receive
+            SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
+            yield return new WaitUntil(() => networkPlayers.ContainsKey(0));
+
+            // Get the online save game
+            SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
+            yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveReceived);
+
+            // Load the online save game
+            SingletonBehaviour<NetworkSaveGameManager>.Instance.LoadMultiplayerData();
+            yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoaded || SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed);
+
+            // Wait till world is loaded
+            yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
+
+            if (SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed)
+            {
+                Main.DebugLog("Connection failed syncing savegame");
+                NetworkManager.Disconnect();
+            }
+        }
+        else
+        {
+            SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
+        }
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
+        SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = false;
+        UUI.UnlockMouse(false);
+        TutorialController.movementAllowed = true;
+    }
+
+    /// <summary>
+    /// This method is called upon the player disconnects.
+    /// </summary>
+    public void PlayerDisconnect()
     {
         base.OnDestroy();
         foreach(GameObject player in networkPlayers.Values)
@@ -80,6 +150,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             Destroy(player);
         }
         networkPlayers.Clear();
+        SingletonBehaviour<WorldMover>.Instance.WorldMoved -= WorldMoved;
+        SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
     }
 
     private void SpawnNetworkPlayer(Message message)
@@ -87,11 +159,11 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         using (DarkRiftReader reader = message.GetReader())
         {
             Main.DebugLog($"[CLIENT] PLAYER_SPAWN received | Packet size: {reader.Length}");
-            if (reader.Length % 44 != 0 && reader.Length % 34 != 0)
-            {
-                Main.mod.Logger.Warning("Received malformed spawn packet.");
-                return;
-            }
+            //if (reader.Length % 44 != 0 && reader.Length % 34 != 0)
+            //{
+            //    Main.mod.Logger.Warning("Received malformed spawn packet.");
+            //    return;
+            //}
 
             while (reader.Position < reader.Length)
             {
@@ -99,22 +171,24 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
                 if (player.Id != SingletonBehaviour<UnityClient>.Instance.ID)
                 {
-                    GameObject playerObject = Instantiate(networkedPlayer, player.Position, player.Rotation);
+                    Vector3 pos = player.Position + WorldMover.currentMove;
+                    pos = new Vector3(pos.x, pos.y + 1, pos.z);
+                    GameObject playerObject = Instantiate(networkedPlayer, pos, player.Rotation);
                     NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
+                    playerSync.absPosition = player.Position;
                     playerSync.Id = player.Id;
-                    if (player.TrainId != "")
-                    {
-                        playerSync.train = SingletonBehaviour<NetworkTrainManager>.Instance.trainCars.FirstOrDefault(t => t.ID == player.TrainId);
-                        if (playerSync.train)
-                            playerSync.train.LoadInterior();
-                    }
                     networkPlayers.Add(player.Id, playerObject);
-                    playerObject.GetComponent<NetworkPlayerSync>().UpdateLocation(player.Position, player.Rotation);
+                    WorldMover.Instance.AddObjectToMove(playerObject.transform);
                 }
             }
         }
     }
 
+    /// <summary>
+    /// This method is called to send a position update to the server
+    /// </summary>
+    /// <param name="position">The players position</param>
+    /// <param name="rotation">The players rotation</param>
     public void UpdateLocalPositionAndRotation(Vector3 position, Quaternion rotation)
     {
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
@@ -122,8 +196,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             writer.Write<Location>(new Location()
             {
                 Id = SingletonBehaviour<UnityClient>.Instance.ID,
-                Position = position,
-                Rotation = rotation
+                AbsPosition = position,
+                NewRotation = rotation
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.PLAYER_LOCATION_UPDATE, writer))
@@ -136,11 +210,11 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         using (DarkRiftReader reader = message.GetReader())
         {
             //Main.DebugLog($"[CLIENT] PLAYER_LOCATION_UPDATE received | Packet size: {reader.Length}"); //Commented due to console spam in debug
-            if (reader.Length % 30 != 0)
-            {
-                Main.mod.Logger.Warning("Received malformed location update packet.");
-                return;
-            }
+            //if (reader.Length % 30 != 0)
+            //{
+            //    Main.mod.Logger.Warning("Received malformed location update packet.");
+            //    return;
+            //}
 
             while (reader.Position < reader.Length)
             {
@@ -149,32 +223,103 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                 GameObject playerObject = null;
                 if (location.Id != SingletonBehaviour<UnityClient>.Instance.ID && networkPlayers.TryGetValue(location.Id, out playerObject))
                 {
-                    playerObject.GetComponent<NetworkPlayerSync>().UpdateLocation(location.Position, location.Rotation);
+
+                    Vector3 pos = location.AbsPosition + WorldMover.currentMove;
+                    pos = new Vector3(pos.x, pos.y + 1, pos.z);
+                    NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
+                    playerSync.absPosition = location.AbsPosition;
+                    playerSync.UpdateLocation(pos, location.NewRotation);
                 }
             }
         }
     }
 
+    private void WorldMoved(WorldMover mover, Vector3 newPos)
+    {
+        Main.DebugLog("[CLIENT] > PLAYER_WORLDMOVED");
+        foreach(NetworkPlayerSync playerSync in GetAllNonLocalPlayerSync())
+        {
+            Vector3 pos = playerSync.absPosition + WorldMover.currentMove;
+            pos = new Vector3(pos.x, pos.y + 1, pos.z);
+            playerSync.UpdateLocation(pos);
+        }
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write<WorldMove>(new WorldMove()
+            {
+                WorldPosition = WorldMover.currentMove
+            });
+            Main.DebugLog($"[CLIENT] > PLAYER_WORLDMOVED {writer.Length}");
+
+            using (Message message = Message.Create((ushort)NetworkTags.PLAYER_WORLDMOVED, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
+    }
+
+    private void OnWorldMoved(Message message)
+    {
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            Main.DebugLog($"[CLIENT] SAVEGAME_WORLDMOVED received | Packet size: {reader.Length}");
+            //if (reader.Length % 44 != 0 && reader.Length % 34 != 0)
+            //{
+            //    Main.mod.Logger.Warning("Received malformed spawn packet.");
+            //    return;
+            //}
+
+            while (reader.Position < reader.Length)
+            {
+                WorldMove move = reader.ReadSerializable<WorldMove>();
+                if (move.PlayerId != SingletonBehaviour<UnityClient>.Instance.ID && networkPlayers.TryGetValue(move.PlayerId, out GameObject playerObject))
+                {
+                    playerObject.GetComponent<NetworkPlayerSync>().currentWorldMove = move.WorldPosition;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets any player with the specified ID
+    /// </summary>
+    /// <param name="playerId">The network ID assigned to the player</param>
+    /// <returns>GameObject of player</returns>
     internal GameObject GetPlayerById(ushort playerId)
     {
         return networkPlayers[playerId];
     }
 
+    /// <summary>
+    /// Gets the local player gameobject
+    /// </summary>
+    /// <returns>Local Player GameObject</returns>
     internal GameObject GetLocalPlayer()
     {
         return PlayerManager.PlayerTransform.gameObject;
     }
 
+    /// <summary>
+    /// Gets the NetworkPlayerSync script of the local player
+    /// </summary>
+    /// <returns>NetworkPlayerSync of local player</returns>
     internal NetworkPlayerSync GetLocalPlayerSync()
     {
         return GetLocalPlayer().GetComponent<NetworkPlayerSync>();
     }
 
+    /// <summary>
+    /// Gets the NetworkPlayerSync script of the player with the specified ID
+    /// </summary>
+    /// <param name="playerId">The network ID assigned to the player</param>
+    /// <returns>NetworkPlayerSync of player with the specified ID</returns>
     internal NetworkPlayerSync GetPlayerSyncById(ushort playerId)
     {
         return networkPlayers[playerId].GetComponent<NetworkPlayerSync>();
     }
 
+    /// <summary>
+    /// Gets the NetworkPlayerSync script of all non local players.
+    /// </summary>
+    /// <returns>Readonly list containing the NetworkPlayerSync script of all non local players</returns>
     internal IReadOnlyList<NetworkPlayerSync> GetAllNonLocalPlayerSync()
     {
         List<NetworkPlayerSync> networkPlayerSyncs = new List<NetworkPlayerSync>();
@@ -187,11 +332,20 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         return networkPlayerSyncs;
     }
 
+    /// <summary>
+    /// Gets the amount of players with the local player NOT included.
+    /// </summary>
+    /// <returns>The amount of players with the local player NOT included</returns>
     internal int GetPlayerCount()
     {
         return networkPlayers.Count;
     }
 
+    /// <summary>
+    /// Gets all the player game objects that are in/on a given traincar.
+    /// </summary>
+    /// <param name="train">The requested traincar</param>
+    /// <returns>An array containing all the players gameobjects in/on the given traincar</returns>
     internal GameObject[] GetPlayersInTrain(TrainCar train)
     {
         return networkPlayers.Values.Where(p => p.GetComponent<NetworkPlayerSync>().train?.CarGUID == train.CarGUID).ToArray();

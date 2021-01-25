@@ -1,8 +1,8 @@
 ﻿{
   "Id": "DVMultiplayer",
   "DisplayName": "Derail Valley Multiplayer",
-  "Author": "Polyoxis",
-  "Version": "1.0.1",
+  "Author": "Patrick van Halm",
+  "Version": "1.1.0",
   "AssemblyName": "DVMultiplayer.dll",
   "EntryMethod": "DVMultiplayer.Main.Load"
 }

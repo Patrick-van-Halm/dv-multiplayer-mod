@@ -9,6 +9,7 @@
     <plugin type="PlayerPlugin" load="true" />
     <plugin type="TrainPlugin" load="true" />
     <plugin type="JunctionPlugin" load="true" />
+    <plugin type="SaveGamePlugin" load="true" />
   </plugins>
 
   <data directory="Mods/DVMultiplayer/Data/"/>
@@ -27,6 +28,8 @@
   </logging>
 
   <listeners>
-    <listener name="DefaultNetworkListener" type="CompatibilityBichannelListener" address="0.0.0.0" port="4296" />
+    <listener name="DefaultNetworkListener" type="CompatibilityBichannelListener" address="0.0.0.0" port="4296">
+      <settings maxTcpBodyLength="134217728" />
+    </listener>
   </listeners>
 </configuration>

@@ -21,6 +21,16 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         base.Awake();
         IsChangeByNetwork = false;
+        SingletonBehaviour<UnityClient>.Instance.MessageReceived += OnMessageReceived;
+    }
+
+    internal Vector3 CalculateWorldPosition(Vector3 position, Vector3 forward, float zBounds)
+    {
+        return position + forward * zBounds;
+    }
+
+    public void OnFinishedLoading()
+    {
         trainCars = GameObject.FindObjectsOfType<TrainCar>();
         Main.DebugLog($"{trainCars.Length} traincars found, {trainCars.Where(car => car.IsLoco).Count()} are locomotives");
 
@@ -36,7 +46,6 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             }
         }
 
-        SingletonBehaviour<UnityClient>.Instance.MessageReceived += OnMessageReceived;
         PlayerManager.CarChanged += OnPlayerSwitchTrainCarEvent;
     }
 
@@ -44,26 +53,31 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         foreach (TrainCar trainCar in trainCars.Where(car => car.IsLoco))
         {
-            Destroy(trainCar.gameObject.GetComponent<NetworkTrainPosSync>());
-            Destroy(trainCar.gameObject.GetComponent<NetworkTrainSync>());
+            Destroy(trainCar.GetComponent<NetworkTrainPosSync>());
+            Destroy(trainCar.GetComponent<NetworkTrainSync>());
         }
     }
 
     private void OnPlayerSwitchTrainCarEvent(TrainCar trainCar)
     {
-        if (!trainCar.GetComponent<NetworkTrainSync>())
-            trainCar.gameObject.AddComponent<NetworkTrainSync>();
+        if (trainCar)
+        {
+            if (!trainCar.GetComponent<NetworkTrainSync>())
+                trainCar.gameObject.AddComponent<NetworkTrainSync>();
 
-        if (!trainCar.GetComponent<NetworkTrainPosSync>())
-            trainCar.gameObject.AddComponent<NetworkTrainPosSync>();
+            if (!trainCar.GetComponent<NetworkTrainPosSync>())
+                trainCar.gameObject.AddComponent<NetworkTrainPosSync>();
+        }
 
-        if(SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().train)
-            SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().train.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = false;
+        NetworkPlayerSync playerSync = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync();
+        if (playerSync.train)
+            playerSync.train.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = false;
 
-        SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().train = trainCar;
+        playerSync.train = trainCar;
         SendPlayerTrainCarChange(trainCar);
 
-        trainCar.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = true;
+        if(trainCar)
+            trainCar.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = true;
     }
 
     #region Messaging

@@ -62,12 +62,7 @@ class NetworkTrainPosSync : MonoBehaviour
         if(trainCar.derailed && !hostDerailed)
         {
             trainCar.derailed = false;
-            trainCar.SetTrack(RailTrack.GetClosest(trainCar.transform.position).track, CalculateWorldPosition(trainCar.transform.position, trainCar.transform.forward, trainCar.Bounds.center.z), trainCar.transform.forward);
+            trainCar.SetTrack(RailTrack.GetClosest(trainCar.transform.position).track, SingletonBehaviour<NetworkTrainManager>.Instance.CalculateWorldPosition(trainCar.transform.position, trainCar.transform.forward, trainCar.Bounds.center.z), trainCar.transform.forward);
         }
-    }
-
-    private Vector3 CalculateWorldPosition(Vector3 position, Vector3 forward, float zBounds)
-    {
-        return position + forward * zBounds;
     }
 }

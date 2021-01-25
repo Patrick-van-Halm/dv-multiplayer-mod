@@ -18,9 +18,14 @@ namespace DVMultiplayer.Networking
         {
             if (Input.GetKeyUp(KeyCode.Home))
             {
-                showUI = !showUI;
-                UUI.UnlockMouse(showUI);
+                ToggleUI();
             }
+        }
+
+        public void ToggleUI()
+        {
+            showUI = !showUI;
+            UUI.UnlockMouse(showUI);
         }
 
         public void Draw()
@@ -67,6 +72,12 @@ namespace DVMultiplayer.Networking
                             NetworkManager.StopServer();
                 }
             }
+        }
+
+        internal void HideUI()
+        {
+            showUI = false;
+            UUI.UnlockMouse(showUI);
         }
     }
 }
