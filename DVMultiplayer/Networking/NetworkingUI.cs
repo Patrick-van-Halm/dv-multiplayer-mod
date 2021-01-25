@@ -13,6 +13,7 @@ namespace DVMultiplayer.Networking
         private bool showUI = false;
         private string host = "";
         private string portString = "4296";
+        private string username = "";
 
         public void ListenToInputs()
         {
@@ -41,11 +42,13 @@ namespace DVMultiplayer.Networking
                     host = GUI.TextField(new Rect(90, 50, 300 - 120, 20), host);
                     GUI.Label(new Rect(80 - textStyle.CalcSize(new GUIContent("Port:")).x, 85, 30, 20), "Port:");
                     portString = GUI.TextField(new Rect(90, 85, 300 - 120, 20), portString);
-                    bool connect = GUI.Button(new Rect(80, 120, 300 - 120, 20), "Connect");
+                    GUI.Label(new Rect(80 - textStyle.CalcSize(new GUIContent("Port:")).x, 115, 30, 20), "Username:");
+                    username = GUI.TextField(new Rect(90, 115, 300 - 120, 20), username);
+                    bool connect = GUI.Button(new Rect(80, 140, 300 - 120, 20), "Connect");
 
                     int port = 0;
                     bool portValid = int.TryParse(portString, out port) && port < 65535 && port > 0;
-                    if (connect && portValid)
+                    if (connect && portValid && !string.IsNullOrWhiteSpace(username))
                         NetworkManager.Connect(host, port);
                     yStart += 200;
                 }
