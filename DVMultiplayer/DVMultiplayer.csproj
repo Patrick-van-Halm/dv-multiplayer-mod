@@ -52,6 +52,10 @@
       <HintPath>lib\DarkRift.Server.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="DV.TerrainSystem">
+      <HintPath>G:\dev\Derail Valley #90 Debug Client\DerailValley_Data\Managed\DV.TerrainSystem.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="DV.Utils">
       <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\DV.Utils.dll</HintPath>
       <Private>False</Private>
