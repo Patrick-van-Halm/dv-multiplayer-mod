@@ -1,10 +1,12 @@
 ﻿using DarkRift;
+using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DarkRift.Server.Unity;
 using DVMultiplayer.DTO.Player;
 using DVMultiplayer.DTO.Savegame;
 using DVMultiplayer.Utils;
 using System;
+using System.Collections;
 using System.IO;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -35,6 +37,8 @@ namespace DVMultiplayer.Networking
                 server = networkManager.AddComponent<XmlUnityServer>();
                 client = networkManager.AddComponent<UnityClient>();
 
+                client.Disconnected += OnClientDisconnected;
+
                 Object.DontDestroyOnLoad(networkManager);
 
                 server.configuration = new TextAsset(File.ReadAllText("./Mods/DVMultiplayer/Resources/config.xml"));
@@ -47,6 +51,17 @@ namespace DVMultiplayer.Networking
 
             Main.OnGameUpdate += UI.ListenToInputs;
             Main.OnGameFixedGUI += UI.Draw;
+        }
+
+        private static void OnClientDisconnected(object sender, DisconnectedEventArgs e)
+        {
+            if (scriptsInitialized)
+            {
+                DeInitializeUnityScripts();
+                scriptsInitialized = false;
+            }
+            isClient = false;
+            SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
         }
 
         public static void Deinitialize()
@@ -81,14 +96,14 @@ namespace DVMultiplayer.Networking
                 return;
 
             Main.DebugLog($"Disconnecting client");
-            client.Close();
-            if (scriptsInitialized)
+            try
             {
-                DeInitializeUnityScripts();
-                scriptsInitialized = false;
+                client.Close();
             }
-            isClient = false;
-            SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
+            catch (Exception ex)
+            {
+                Main.DebugLog($"[ERROR] {ex.Message}");
+            }
         }
 
         public static void StartServer()
@@ -117,9 +132,15 @@ namespace DVMultiplayer.Networking
                 return;
 
             Main.DebugLog("Stop hosting server");
+            SingletonBehaviour<CoroutineManager>.Instance.Run(StopHosting());
+        }
+
+        static IEnumerator StopHosting()
+        {
+            Disconnect();
+            yield return new WaitUntil(() => !isClient);
             try
             {
-                Disconnect();
                 server.Close();
                 isHost = false;
             }
