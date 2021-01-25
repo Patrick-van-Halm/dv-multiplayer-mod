@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 {
@@ -23,13 +24,56 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     protected override void Awake()
     {
         base.Awake();
-        networkedPlayer = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-        networkedPlayer.GetComponent<CapsuleCollider>().enabled = false;
-        networkedPlayer.AddComponent<NetworkPlayerSync>();
-        networkedPlayer.tag = "NPlayer";
+        networkedPlayer = GeneratePlayerObject();
+
         networkPlayers = new Dictionary<ushort, GameObject>();
 
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
+    }
+
+    private GameObject GeneratePlayerObject()
+    {
+        GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        player.GetComponent<CapsuleCollider>().enabled = false;
+
+        GameObject nametagCanvas = new GameObject("Nametag Canvas");
+        nametagCanvas.transform.parent = player.transform;
+        nametagCanvas.transform.position = new Vector3(0, 1.5f, 0);
+        nametagCanvas.AddComponent<Canvas>();
+
+        RectTransform rectTransform = nametagCanvas.GetComponent<RectTransform>();
+        rectTransform.sizeDelta = new Vector2(1920, 1080);
+        rectTransform.localScale = new Vector3(.0013f, .0004f, 0);
+
+        GameObject nametagBackground = new GameObject("Nametag BG");
+        nametagBackground.transform.parent = nametagCanvas.transform;
+        nametagBackground.transform.localPosition = new Vector3(0, 0, 0);
+
+        RawImage bg = nametagBackground.AddComponent<RawImage>();
+        bg.color = new Color(69 / 255, 69 / 255, 69 / 255, .3f);
+
+        rectTransform = nametagBackground.GetComponent<RectTransform>();
+        rectTransform.localScale = new Vector3(1f, 1f, 0);
+        rectTransform.anchorMin = new Vector2(0, 0);
+        rectTransform.anchorMax = new Vector2(1, 1);
+
+        GameObject nametag = new GameObject("Nametag");
+        nametag.transform.parent = nametagCanvas.transform;
+        nametag.transform.localPosition = new Vector3(0, 0, 0);
+
+        Text tag = nametag.AddComponent<Text>();
+        tag.font = Font.CreateDynamicFontFromOSFont("Arial", 16);
+        tag.fontSize = 200;
+        tag.alignment = TextAnchor.MiddleCenter;
+
+        rectTransform = nametag.GetComponent<RectTransform>();
+        rectTransform.localScale = new Vector3(1f, 3f, 0);
+        rectTransform.anchorMin = new Vector2(0, 0);
+        rectTransform.anchorMax = new Vector2(1, 1);
+        rectTransform.offsetMin = new Vector2(rectTransform.offsetMin.x, 350);
+        rectTransform.offsetMax = new Vector2(rectTransform.offsetMax.x, -350);
+
+        return player;
     }
 
     private void MessageReceived(object sender, MessageReceivedEventArgs e)
@@ -179,6 +223,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                     playerSync.absPosition = player.Position;
                     playerSync.Id = player.Id;
                     playerSync.Username = player.Username;
+                    playerObject.transform.Find("Nametag Canvas>Nametag").GetComponent<Text>().text = player.Username;
                     networkPlayers.Add(player.Id, playerObject);
                     WorldMover.Instance.AddObjectToMove(playerObject.transform);
                 }
