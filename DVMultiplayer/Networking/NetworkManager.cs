@@ -160,6 +160,7 @@ namespace DVMultiplayer.Networking
             }
             else
             {
+                UI.HideUI();
                 if (!scriptsInitialized)
                 {
                     InitializeUnityScripts();
