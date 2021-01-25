@@ -489,7 +489,7 @@ namespace DarkRift.Client.Unity
         private void Client_Disconnected(object sender, DisconnectedEventArgs e)
         {
             //If we're handling multithreading then pass the event to the dispatcher
-            if (invokeFromDispatcher)
+            if (invokeFromDispatcher && Dispatcher != null)
             {
                 if (!e.LocalDisconnect)
                     Main.mod.Logger.Log("[CLIENT] Disconnected from server, error: " + e.Error);
@@ -516,9 +516,6 @@ namespace DarkRift.Client.Unity
                     handler.Invoke(sender, e);
                 }
             }
-
-            Client = null;
-            Dispatcher = null;
         }
 
         /// <summary>
@@ -539,7 +536,10 @@ namespace DarkRift.Client.Unity
             Client.Disconnected -= Client_Disconnected;
 
             Client.Dispose();
-            Dispatcher.Dispose();            
+            Dispatcher.Dispose();
+
+            Client = null;
+            Dispatcher = null;
         }
     }
 }

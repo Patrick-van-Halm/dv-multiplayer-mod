@@ -7,6 +7,7 @@ using DVMultiplayer.DTO;
 using DVMultiplayer.DTO.Player;
 using DVMultiplayer.DTO.Savegame;
 using DVMultiplayer.Networking;
+using DVMultiplayer.Utils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -76,6 +77,9 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         }
     }
 
+    /// <summary>
+    /// This method is called upon the player connects.
+    /// </summary>
     public void PlayerConnect()
     {
         Main.DebugLog("[CLIENT] > PLAYER_SPAWN");
@@ -96,22 +100,28 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         SingletonBehaviour<CoroutineManager>.Instance.Run(WaitForHost());
     }
 
-    IEnumerator WaitForHost()
+    private IEnumerator WaitForHost()
     {
+        SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = true;
+        UUI.UnlockMouse(true);
+        TutorialController.movementAllowed = false;
         if (!NetworkManager.IsHost())
         {
-            SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = true;
-            TutorialController.movementAllowed = false;
+            // Check if host is connected if so the savegame should be available to receive
             SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
             yield return new WaitUntil(() => networkPlayers.ContainsKey(0));
+
+            // Get the online save game
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveReceived);
+
+            // Load the online save game
             SingletonBehaviour<NetworkSaveGameManager>.Instance.LoadMultiplayerData();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoaded || SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed);
-            SingletonBehaviour<WorldMover>.Instance.movingEnabled = false;
+
+            // Wait till world is loaded
             yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
-            SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = false;
-            TutorialController.movementAllowed = true;
+
             if (SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed)
             {
                 Main.DebugLog("Connection failed syncing savegame");
@@ -120,11 +130,18 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         }
         else
         {
-            SingletonBehaviour<WorldMover>.Instance.movingEnabled = false;
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
         }
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
+        SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = false;
+        UUI.UnlockMouse(false);
+        TutorialController.movementAllowed = true;
     }
 
+    /// <summary>
+    /// This method is called upon the player disconnects.
+    /// </summary>
     public void PlayerDisconnect()
     {
         base.OnDestroy();
@@ -167,7 +184,12 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         }
     }
 
-    public void UpdateLocalPositionAndRotation(Vector3 position, Vector3 prevPosition, Quaternion rotation)
+    /// <summary>
+    /// This method is called to send a position update to the server
+    /// </summary>
+    /// <param name="position">The players position</param>
+    /// <param name="rotation">The players rotation</param>
+    public void UpdateLocalPositionAndRotation(Vector3 position, Quaternion rotation)
     {
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
@@ -256,26 +278,48 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         }
     }
 
+    /// <summary>
+    /// Gets any player with the specified ID
+    /// </summary>
+    /// <param name="playerId">The network ID assigned to the player</param>
+    /// <returns>GameObject of player</returns>
     internal GameObject GetPlayerById(ushort playerId)
     {
         return networkPlayers[playerId];
     }
 
+    /// <summary>
+    /// Gets the local player gameobject
+    /// </summary>
+    /// <returns>Local Player GameObject</returns>
     internal GameObject GetLocalPlayer()
     {
         return PlayerManager.PlayerTransform.gameObject;
     }
 
+    /// <summary>
+    /// Gets the NetworkPlayerSync script of the local player
+    /// </summary>
+    /// <returns>NetworkPlayerSync of local player</returns>
     internal NetworkPlayerSync GetLocalPlayerSync()
     {
         return GetLocalPlayer().GetComponent<NetworkPlayerSync>();
     }
 
+    /// <summary>
+    /// Gets the NetworkPlayerSync script of the player with the specified ID
+    /// </summary>
+    /// <param name="playerId">The network ID assigned to the player</param>
+    /// <returns>NetworkPlayerSync of player with the specified ID</returns>
     internal NetworkPlayerSync GetPlayerSyncById(ushort playerId)
     {
         return networkPlayers[playerId].GetComponent<NetworkPlayerSync>();
     }
 
+    /// <summary>
+    /// Gets the NetworkPlayerSync script of all non local players.
+    /// </summary>
+    /// <returns>Readonly list containing the NetworkPlayerSync script of all non local players</returns>
     internal IReadOnlyList<NetworkPlayerSync> GetAllNonLocalPlayerSync()
     {
         List<NetworkPlayerSync> networkPlayerSyncs = new List<NetworkPlayerSync>();
@@ -288,11 +332,20 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         return networkPlayerSyncs;
     }
 
+    /// <summary>
+    /// Gets the amount of players with the local player NOT included.
+    /// </summary>
+    /// <returns>The amount of players with the local player NOT included</returns>
     internal int GetPlayerCount()
     {
         return networkPlayers.Count;
     }
 
+    /// <summary>
+    /// Gets all the player game objects that are in/on a given traincar.
+    /// </summary>
+    /// <param name="train">The requested traincar</param>
+    /// <returns>An array containing all the players gameobjects in/on the given traincar</returns>
     internal GameObject[] GetPlayersInTrain(TrainCar train)
     {
         return networkPlayers.Values.Where(p => p.GetComponent<NetworkPlayerSync>().train?.CarGUID == train.CarGUID).ToArray();

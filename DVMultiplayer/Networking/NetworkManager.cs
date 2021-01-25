@@ -25,6 +25,11 @@ namespace DVMultiplayer.Networking
         private static int port;
         private static bool scriptsInitialized = false;
 
+        /// <summary>
+        /// Initializes the NetworkManager by:
+        /// Spawning all the components needed.
+        /// Listening to events.
+        /// </summary>
         public static void Initialize()
         {
             Main.DebugLog("Initializing NetworkManager");
@@ -55,15 +60,19 @@ namespace DVMultiplayer.Networking
 
         private static void OnClientDisconnected(object sender, DisconnectedEventArgs e)
         {
+            UI.HideUI();
             if (scriptsInitialized)
             {
                 DeInitializeUnityScripts();
                 scriptsInitialized = false;
             }
             isClient = false;
-            SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
+            client.Close();
         }
 
+        /// <summary>
+        /// Deinitializing by destroying this gameobject.
+        /// </summary>
         public static void Deinitialize()
         {
             Main.DebugLog("Deinitializing NetworkManager");
@@ -74,6 +83,11 @@ namespace DVMultiplayer.Networking
             }
         }
 
+        /// <summary>
+        /// Connects to the server with a given host and port
+        /// </summary>
+        /// <param name="host">The hostname to connect to</param>
+        /// <param name="port">The port of the server</param>
         public static void Connect(string host, int port)
         {
             NetworkManager.host = host;
@@ -90,6 +104,9 @@ namespace DVMultiplayer.Networking
             client.ConnectInBackground(host, port, true, OnConnected);
         }
 
+        /// <summary>
+        /// Disconnects the client from the server.
+        /// </summary>
         public static void Disconnect()
         {
             if (!isClient)
@@ -98,14 +115,17 @@ namespace DVMultiplayer.Networking
             Main.DebugLog($"Disconnecting client");
             try
             {
-                client.Close();
+                client.Disconnect();
             }
             catch (Exception ex)
             {
-                Main.DebugLog($"[ERROR] {ex.Message}");
+                Main.DebugLog($"[ERROR] {ex.InnerException}");
             }
         }
 
+        /// <summary>
+        /// Starts up the game server and connects to it automatically
+        /// </summary>
         public static void StartServer()
         {
             if (isHost)
@@ -126,6 +146,9 @@ namespace DVMultiplayer.Networking
             }
         }
 
+        /// <summary>
+        /// Stops the hosted server and disconnects from it
+        /// </summary>
         public static void StopServer()
         {
             if (!isHost)
@@ -184,25 +207,39 @@ namespace DVMultiplayer.Networking
 
         private static void DeInitializeUnityScripts()
         {
+            Main.DebugLog($"[DISCONNECTING] NetworkPlayerManager Deinitializing");
             networkManager.GetComponent<NetworkPlayerManager>().PlayerDisconnect();
             Object.Destroy(networkManager.GetComponent<NetworkPlayerManager>());
+            Main.DebugLog($"[DISCONNECTING] NetworkTrainManager Deinitializing");
             networkManager.GetComponent<NetworkTrainManager>().PlayerDisconnect();
             Object.Destroy(networkManager.GetComponent<NetworkTrainManager>());
+            Main.DebugLog($"[DISCONNECTING] NetworkJunctionManager Deinitializing");
             networkManager.GetComponent<NetworkJunctionManager>().PlayerDisconnect();
             Object.Destroy(networkManager.GetComponent<NetworkJunctionManager>());
-            networkManager.GetComponent<NetworkSaveGameManager>().PlayerDisconnect();
-            Object.Destroy(networkManager.GetComponent<NetworkSaveGameManager>());
+            Main.DebugLog($"[DISCONNECTING] NetworkJobsManager Deinitializing");
             SingletonBehaviour<NetworkJobsManager>.Instance.PlayerDisconnect();
             Object.Destroy(networkManager.GetComponent<NetworkJobsManager>());
+            Main.DebugLog($"[DISCONNECTING] NetworkSaveGameManager Deinitializing");
+            networkManager.GetComponent<NetworkSaveGameManager>().PlayerDisconnect();
+            Object.Destroy(networkManager.GetComponent<NetworkSaveGameManager>());
 
+            Main.DebugLog($"[DISCONNECTING] NetworkPlayerSync Deinitializing");
             Object.Destroy(PlayerManager.PlayerTransform.gameObject.GetComponent<NetworkPlayerSync>());
         }
 
+        /// <summary>
+        /// Gets the value if the current local user is connected with a client.
+        /// </summary>
+        /// <returns>If the user is connected to a server as client</returns>
         public static bool IsClient()
         {
             return isClient;
         }
 
+        /// <summary>
+        /// Gets the value if the current local user is hosting a server.
+        /// </summary>
+        /// <returns>If the user is hosting a server</returns>
         public static bool IsHost()
         {
             return isHost;

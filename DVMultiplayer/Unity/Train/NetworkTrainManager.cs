@@ -21,6 +21,16 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         base.Awake();
         IsChangeByNetwork = false;
+        SingletonBehaviour<UnityClient>.Instance.MessageReceived += OnMessageReceived;
+    }
+
+    internal Vector3 CalculateWorldPosition(Vector3 position, Vector3 forward, float zBounds)
+    {
+        return position + forward * zBounds;
+    }
+
+    public void OnFinishedLoading()
+    {
         trainCars = GameObject.FindObjectsOfType<TrainCar>();
         Main.DebugLog($"{trainCars.Length} traincars found, {trainCars.Where(car => car.IsLoco).Count()} are locomotives");
 
@@ -36,21 +46,15 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             }
         }
 
-        SingletonBehaviour<UnityClient>.Instance.MessageReceived += OnMessageReceived;
         PlayerManager.CarChanged += OnPlayerSwitchTrainCarEvent;
-    }
-
-    internal Vector3 CalculateWorldPosition(Vector3 position, Vector3 forward, float zBounds)
-    {
-        return position + forward * zBounds;
     }
 
     public void PlayerDisconnect()
     {
         foreach (TrainCar trainCar in trainCars.Where(car => car.IsLoco))
         {
-            Destroy(trainCar.gameObject.GetComponent<NetworkTrainPosSync>());
-            Destroy(trainCar.gameObject.GetComponent<NetworkTrainSync>());
+            Destroy(trainCar.GetComponent<NetworkTrainPosSync>());
+            Destroy(trainCar.GetComponent<NetworkTrainSync>());
         }
     }
 

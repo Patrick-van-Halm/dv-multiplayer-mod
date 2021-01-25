@@ -28,7 +28,7 @@ class NetworkPlayerSync : MonoBehaviour
 
         if(prevPosition == null || Vector3.Distance(prevPosition, transform.position) > SYNC_THRESHOLD)
         {
-            SingletonBehaviour<NetworkPlayerManager>.Instance.UpdateLocalPositionAndRotation(transform.position - WorldMover.currentMove, prevPosition, transform.rotation);
+            SingletonBehaviour<NetworkPlayerManager>.Instance.UpdateLocalPositionAndRotation(transform.position - WorldMover.currentMove, transform.rotation);
             prevPosition = transform.position;
         }
     }

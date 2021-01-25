@@ -8,6 +8,8 @@ using DVMultiplayer;
 using UnityEngine;
 using System;
 using Newtonsoft.Json.Linq;
+using System.Collections;
+using DV.TerrainSystem;
 
 class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 {
@@ -68,8 +70,51 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 
     public void PlayerDisconnect()
     {
+        isLoadingSave = true;
         SaveGameManager.data = offlineSave;
         SaveGameUpgrader.Upgrade();
+
+        SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave());
+    }
+
+    private IEnumerator LoadOfflineSave()
+    {
+        UUI.UnlockMouse(true);
+        TutorialController.movementAllowed = false;
+        Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
+        Vector3 vector3_2 = SaveGameManager.data.GetVector3("Player_rotation").Value;
+        PlayerManager.PlayerTransform.position = vector3_1 + WorldMover.currentMove;
+        PlayerManager.PlayerTransform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(Quaternion.Euler(vector3_2) * Vector3.forward, Vector3.up).normalized);
+        bool carsLoadedSuccessfully = false;
+        JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
+        if (jobject3 != null)
+        {
+            carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jobject3);
+            if (!carsLoadedSuccessfully)
+                Debug.LogError((object)"Cars not loaded successfully!");
+        }
+        else
+            Main.DebugLog("[WARNING] Cars save not found!");
+
+        if (carsLoadedSuccessfully)
+        {
+            JobsSaveGameData saveData = SaveGameManager.data.GetObject<JobsSaveGameData>(SaveGameKeys.Jobs, JobSaveManager.serializeSettings);
+            if (saveData != null)
+            {
+                SingletonBehaviour<JobSaveManager>.Instance.LoadJobSaveGameData(saveData);
+                SaveLoadController.carsAndJobsProperlyLoaded = true;
+            }
+            else
+                Main.DebugLog("[WARNING] Jobs save not found!");
+            SingletonBehaviour<JobSaveManager>.Instance.MarkAllNonJobCarsAsUnused();
+        }
+
+        SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
+        yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
+        UUI.UnlockMouse(false);
+        TutorialController.movementAllowed = true;
+        SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
+        isLoadingSave = false;
     }
 
     private void OnSaveGameReceived(Message message)
