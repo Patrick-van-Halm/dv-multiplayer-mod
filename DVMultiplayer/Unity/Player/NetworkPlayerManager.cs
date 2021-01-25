@@ -104,13 +104,15 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             yield return new WaitUntil(() => networkPlayers.ContainsKey(0));
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveReceived);
+            SingletonBehaviour<NetworkSaveGameManager>.Instance.LoadMultiplayerData();
+            yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoaded || SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed);
             SingletonBehaviour<WorldMover>.Instance.movingEnabled = false;
-
-            Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
-            Vector3 vector3_2 = SaveGameManager.data.GetVector3("Player_rotation").Value;
-            PlayerManager.PlayerTransform.position = vector3_1 + WorldMover.currentMove;
-            PlayerManager.PlayerTransform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(Quaternion.Euler(vector3_2) * Vector3.forward, Vector3.up).normalized);
             SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = false;
+            if (SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed)
+            {
+                Main.DebugLog("Connection failed syncing savegame");
+                NetworkManager.Disconnect();
+            }
         }
         else
         {
