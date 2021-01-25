@@ -89,6 +89,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             writer.Write<NPlayer>(new NPlayer()
             {
                 Id = SingletonBehaviour<UnityClient>.Instance.ID,
+                Username = NetworkManager.username,
                 Position = pos - WorldMover.currentMove,
                 Rotation = PlayerManager.PlayerTransform.rotation,
             });
