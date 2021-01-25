@@ -89,7 +89,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             writer.Write<NPlayer>(new NPlayer()
             {
                 Id = SingletonBehaviour<UnityClient>.Instance.ID,
-                Username = NetworkManager.username,
+                Username = PlayerManager.PlayerTransform.GetComponent<NetworkPlayerSync>().Username,
                 Position = pos - WorldMover.currentMove,
                 Rotation = PlayerManager.PlayerTransform.rotation,
             });
@@ -178,6 +178,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                     NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
                     playerSync.absPosition = player.Position;
                     playerSync.Id = player.Id;
+                    playerSync.Username = player.Username;
                     networkPlayers.Add(player.Id, playerObject);
                     WorldMover.Instance.AddObjectToMove(playerObject.transform);
                 }
