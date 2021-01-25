@@ -91,7 +91,7 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
         {
             carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jobject3);
             if (!carsLoadedSuccessfully)
-                Debug.LogError((object)"Cars not loaded successfully!");
+                Main.DebugLog("[WARNING] Cars not loaded successfully!");
         }
         else
             Main.DebugLog("[WARNING] Cars save not found!");
@@ -102,7 +102,6 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
             if (saveData != null)
             {
                 SingletonBehaviour<JobSaveManager>.Instance.LoadJobSaveGameData(saveData);
-                SaveLoadController.carsAndJobsProperlyLoaded = true;
             }
             else
                 Main.DebugLog("[WARNING] Jobs save not found!");
