@@ -60,18 +60,18 @@ namespace DVMultiplayer
                 foreach(NetworkPlayerSync playerSync in SingletonBehaviour<NetworkPlayerManager>.Instance.GetAllNonLocalPlayerSync()) 
                 {
                     GUI.Label(new Rect(Screen.width - 245, ypos, 117, 20), $"Player [{playerSync.Id}] train:");
-                    if(playerSync.train)
-                        GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"{playerSync.train.ID}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
+                    if(playerSync.Train)
+                        GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"{playerSync.Train.ID}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
                     else
                         GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"None", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
                     ypos += 15;
 
-                    if (playerSync.train && playerSync.train.IsLoco)
+                    if (playerSync.Train && playerSync.Train.IsLoco)
                     {
                         GUI.Label(new Rect(Screen.width - 245, ypos, 187, 20), $"InteriorLoaded:");
-                        GUI.Label(new Rect(Screen.width - 53, ypos - 1, 47, 20), $"{playerSync.train.IsInteriorLoaded}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
+                        GUI.Label(new Rect(Screen.width - 53, ypos - 1, 47, 20), $"{playerSync.Train.IsInteriorLoaded}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
                         ypos += 15;
-                        LocoControllerBase controller = playerSync.train.GetComponent<LocoControllerBase>();
+                        LocoControllerBase controller = playerSync.Train.GetComponent<LocoControllerBase>();
                         GUI.Label(new Rect(Screen.width - 245, ypos, 187, 20), $"LocoControllerBase InputActive:");
                         GUI.Label(new Rect(Screen.width - 53, ypos - 1, 47, 20), $"{controller.inputActive}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
                         ypos += 15;

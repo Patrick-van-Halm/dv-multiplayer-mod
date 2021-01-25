@@ -349,6 +349,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     /// <returns>An array containing all the players gameobjects in/on the given traincar</returns>
     internal GameObject[] GetPlayersInTrain(TrainCar train)
     {
-        return networkPlayers.Values.Where(p => p.GetComponent<NetworkPlayerSync>().train?.CarGUID == train.CarGUID).ToArray();
+        return networkPlayers.Values.Where(p => p.GetComponent<NetworkPlayerSync>().Train?.CarGUID == train.CarGUID).ToArray();
     }
 }

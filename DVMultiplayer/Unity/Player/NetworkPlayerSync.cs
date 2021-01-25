@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +7,7 @@ using UnityEngine;
 
 class NetworkPlayerSync : MonoBehaviour
 {
-    public TrainCar train { get; set; }
+    public TrainCar Train { get; set; }
     public bool IsLocal { get; set; } = false;
     internal ushort Id;
     internal Vector3 currentWorldMove;

@@ -70,10 +70,10 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
 
         NetworkPlayerSync playerSync = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync();
-        if (playerSync.train)
-            playerSync.train.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = false;
+        if (playerSync.Train)
+            playerSync.Train.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = false;
 
-        playerSync.train = trainCar;
+        playerSync.Train = trainCar;
         SendPlayerTrainCarChange(trainCar);
 
         if(trainCar)
@@ -182,7 +182,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     internal void SendNewLeverValue(NetworkTrainSync trainSync, Levers lever, float value)
     {
-        TrainCar curTrain = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().train;
+        TrainCar curTrain = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Train;
         Main.DebugLog($"[CLIENT] > TRAIN_LEVER: TrainID: {curTrain.ID}, Lever: {lever}, value: {value}");
         if (!curTrain.IsLoco)
             return;
@@ -302,7 +302,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 Main.DebugLog($"[CLIENT] < TRAIN_SWITCH: Packet size: {reader.Length}, TrainData: {(changedCar.TrainId == "" ? "No" : "Yes")}");
                 if (changedCar.TrainId == "")
                 {
-                    targetPlayerSync.train = null;
+                    targetPlayerSync.Train = null;
                 }
                 else
                 {
@@ -310,7 +310,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     if (train)
                     {
                         Main.DebugLog($"[CLIENT] < TRAIN_SWITCH: Train found: {train}, ID: {train.ID}, GUID: {train.CarGUID}");
-                        targetPlayerSync.train = train;
+                        targetPlayerSync.Train = train;
                     }
                     else
                     {
