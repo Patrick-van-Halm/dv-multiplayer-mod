@@ -21,7 +21,7 @@ class NetworkTrainCouplerSync : MonoBehaviour
 
     private void CouplerUncoupled(object sender, UncoupleEventArgs e)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !coupler)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !coupler || !SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoaded)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendTrainsCoupledChange(e.thisCoupler, e.otherCoupler, e.viaChainInteraction, false);
@@ -29,7 +29,7 @@ class NetworkTrainCouplerSync : MonoBehaviour
 
     private void CouplerCockChanged(bool isCockOpen)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !coupler)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !coupler || !SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoaded)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendCouplerCockChanged(coupler, isCockOpen);
@@ -37,7 +37,7 @@ class NetworkTrainCouplerSync : MonoBehaviour
 
     private void CouplerHoseConChanged(bool isConnected, bool audioPlayed)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !coupler)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !coupler || !SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoaded)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendCouplerHoseConChanged(coupler, isConnected);
@@ -45,7 +45,7 @@ class NetworkTrainCouplerSync : MonoBehaviour
 
     private void CouplerCoupled(object sender, CoupleEventArgs e)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !coupler)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !coupler || !SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoaded)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendTrainsCoupledChange(e.thisCoupler, e.otherCoupler, e.viaChainInteraction, true);
