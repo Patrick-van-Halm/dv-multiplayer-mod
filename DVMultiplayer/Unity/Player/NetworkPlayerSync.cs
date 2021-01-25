@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +9,7 @@ class NetworkPlayerSync : MonoBehaviour
 {
     public TrainCar Train { get; set; }
     public bool IsLocal { get; set; } = false;
+    public string Username { get; set; }
     internal ushort Id;
     internal Vector3 currentWorldMove;
     internal Vector3 absPosition;

@@ -17,7 +17,6 @@ namespace DVMultiplayer.Networking
     {
         public static UnityClient client;
         public static XmlUnityServer server;
-        public static string username;
         private static NetworkingUI UI;
         private static GameObject networkManager;
         private static bool isHost;
