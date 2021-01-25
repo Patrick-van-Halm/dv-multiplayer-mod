@@ -11,6 +11,7 @@ class NetworkPlayerSync : MonoBehaviour
     public bool IsLocal { get; set; } = false;
     internal ushort Id;
     internal Vector3 currentWorldMove;
+    internal Vector3 absPosition;
     private Vector3 prevPosition;
     private Vector3 newPosition;
     private const float SYNC_THRESHOLD = 0.1f;
@@ -42,9 +43,10 @@ class NetworkPlayerSync : MonoBehaviour
     //    }
     //}
 
-    public void UpdateLocation(Vector3 pos, Quaternion rot)
+    public void UpdateLocation(Vector3 pos, Quaternion? rot = null)
     {
         newPosition = pos;
-        transform.rotation = rot;
+        if(rot.HasValue)
+            transform.rotation = rot.Value;
     }
 }
