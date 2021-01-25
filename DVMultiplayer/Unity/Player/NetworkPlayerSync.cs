@@ -7,8 +7,9 @@ using UnityEngine;
 
 class NetworkPlayerSync : MonoBehaviour
 {
-    public TrainCar train { get; set; }
+    public TrainCar Train { get; set; }
     public bool IsLocal { get; set; } = false;
+    public string Username { get; set; }
     internal ushort Id;
     internal Vector3 currentWorldMove;
     internal Vector3 absPosition;

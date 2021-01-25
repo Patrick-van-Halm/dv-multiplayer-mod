@@ -23,6 +23,7 @@ namespace DVMultiplayer.Networking
         private static bool isClient;
         private static string host;
         private static int port;
+        private static string username;
         private static bool scriptsInitialized = false;
 
         /// <summary>
@@ -88,8 +89,9 @@ namespace DVMultiplayer.Networking
         /// </summary>
         /// <param name="host">The hostname to connect to</param>
         /// <param name="port">The port of the server</param>
-        public static void Connect(string host, int port)
+        public static void Connect(string host, int port, string username)
         {
+            NetworkManager.username = username;
             NetworkManager.host = host;
             NetworkManager.port = port;
             ClientConnect();
@@ -126,18 +128,20 @@ namespace DVMultiplayer.Networking
         /// <summary>
         /// Starts up the game server and connects to it automatically
         /// </summary>
-        public static void StartServer()
+        public static void StartServer(string username, ushort port)
         {
             if (isHost)
                 return;
 
+            NetworkManager.username = username;
             Main.DebugLog("Start hosting server");
             try
             {
+                server.port = port;
                 server.Create();
                 isHost = true;
                 host = "127.0.0.1";
-                port = 4296;
+                NetworkManager.port = port;
                 ClientConnect();
             }
             catch (Exception ex)
@@ -196,13 +200,15 @@ namespace DVMultiplayer.Networking
 
         private static void InitializeUnityScripts()
         {
+            NetworkPlayerSync playerSync = PlayerManager.PlayerTransform.gameObject.AddComponent<NetworkPlayerSync>();
+            playerSync.IsLocal = true;
+            playerSync.Username = username;
+
             networkManager.AddComponent<NetworkPlayerManager>();
             networkManager.AddComponent<NetworkTrainManager>();
             networkManager.AddComponent<NetworkJunctionManager>();
             networkManager.AddComponent<NetworkSaveGameManager>();
             networkManager.AddComponent<NetworkJobsManager>();
-
-            PlayerManager.PlayerTransform.gameObject.AddComponent<NetworkPlayerSync>().IsLocal = true;
         }
 
         private static void DeInitializeUnityScripts()

@@ -14,22 +14,65 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 {
-    GameObject networkedPlayer;
     Dictionary<ushort, GameObject> networkPlayers = new Dictionary<ushort, GameObject>();
 
     protected override void Awake()
     {
         base.Awake();
-        networkedPlayer = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-        networkedPlayer.GetComponent<CapsuleCollider>().enabled = false;
-        networkedPlayer.AddComponent<NetworkPlayerSync>();
-        networkedPlayer.tag = "NPlayer";
         networkPlayers = new Dictionary<ushort, GameObject>();
 
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
+    }
+
+    private GameObject GetPlayerObject()
+    {
+        GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        player.GetComponent<CapsuleCollider>().enabled = false;
+        player.AddComponent<NetworkPlayerSync>();
+
+        GameObject nametagCanvas = new GameObject("Nametag Canvas");
+        nametagCanvas.transform.parent = player.transform;
+        nametagCanvas.transform.position = new Vector3(0, 1.5f, 0);
+        nametagCanvas.AddComponent<Canvas>();
+        nametagCanvas.AddComponent<RotateTowardsPlayer>();
+
+        RectTransform rectTransform = nametagCanvas.GetComponent<RectTransform>();
+        rectTransform.sizeDelta = new Vector2(1920, 1080);
+        rectTransform.localScale = new Vector3(.0013f, .0004f, 0);
+
+        GameObject nametagBackground = new GameObject("Nametag BG");
+        nametagBackground.transform.parent = nametagCanvas.transform;
+        nametagBackground.transform.localPosition = new Vector3(0, 0, 0);
+
+        RawImage bg = nametagBackground.AddComponent<RawImage>();
+        bg.color = new Color(69 / 255, 69 / 255, 69 / 255, .45f);
+
+        rectTransform = nametagBackground.GetComponent<RectTransform>();
+        rectTransform.localScale = new Vector3(1f, 1f, 0);
+        rectTransform.anchorMin = new Vector2(0, 0);
+        rectTransform.anchorMax = new Vector2(1, 1);
+
+        GameObject nametag = new GameObject("Nametag");
+        nametag.transform.parent = nametagCanvas.transform;
+        nametag.transform.localPosition = new Vector3(0, 0, 0);
+
+        Text tag = nametag.AddComponent<Text>();
+        tag.font = Font.CreateDynamicFontFromOSFont("Arial", 16);
+        tag.fontSize = 200;
+        tag.alignment = TextAnchor.MiddleCenter;
+
+        rectTransform = nametag.GetComponent<RectTransform>();
+        rectTransform.localScale = new Vector3(1f, 3f, 0);
+        rectTransform.anchorMin = new Vector2(0, 0);
+        rectTransform.anchorMax = new Vector2(1, 1);
+        rectTransform.offsetMin = new Vector2(rectTransform.offsetMin.x, 350);
+        rectTransform.offsetMax = new Vector2(rectTransform.offsetMax.x, -350);
+
+        return player;
     }
 
     private void MessageReceived(object sender, MessageReceivedEventArgs e)
@@ -57,7 +100,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            Main.DebugLog($"[CLIENT] PLAYER_DISCONNECT received | Packet size: {reader.Length}");
+            
             //if (reader.Length % 44 != 0 && reader.Length % 34 != 0)
             //{
             //    Main.mod.Logger.Warning("Received malformed spawn packet.");
@@ -70,6 +113,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
                 if (disconnectedPlayer.PlayerId != SingletonBehaviour<UnityClient>.Instance.ID)
                 {
+                    Main.DebugLog($"[CLIENT] < PLAYER_DISCONNECT: Username: {networkPlayers[disconnectedPlayer.PlayerId].GetComponent<NetworkPlayerSync>().Username}");
                     Destroy(networkPlayers[disconnectedPlayer.PlayerId]);
                     networkPlayers.Remove(disconnectedPlayer.PlayerId);
                 }
@@ -89,6 +133,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             writer.Write<NPlayer>(new NPlayer()
             {
                 Id = SingletonBehaviour<UnityClient>.Instance.ID,
+                Username = PlayerManager.PlayerTransform.GetComponent<NetworkPlayerSync>().Username,
                 Position = pos - WorldMover.currentMove,
                 Rotation = PlayerManager.PlayerTransform.rotation,
             });
@@ -158,7 +203,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            Main.DebugLog($"[CLIENT] PLAYER_SPAWN received | Packet size: {reader.Length}");
             //if (reader.Length % 44 != 0 && reader.Length % 34 != 0)
             //{
             //    Main.mod.Logger.Warning("Received malformed spawn packet.");
@@ -171,12 +215,15 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
                 if (player.Id != SingletonBehaviour<UnityClient>.Instance.ID)
                 {
+                    Main.DebugLog($"[CLIENT] < PLAYER_SPAWN received: Username: {player.Username} ");
                     Vector3 pos = player.Position + WorldMover.currentMove;
                     pos = new Vector3(pos.x, pos.y + 1, pos.z);
-                    GameObject playerObject = Instantiate(networkedPlayer, pos, player.Rotation);
+                    GameObject playerObject = Instantiate(GetPlayerObject(), pos, player.Rotation);
                     NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
                     playerSync.absPosition = player.Position;
                     playerSync.Id = player.Id;
+                    playerSync.Username = player.Username;
+                    playerObject.transform.GetChild(0).GetChild(1).GetComponent<Text>().text = player.Username;
                     networkPlayers.Add(player.Id, playerObject);
                     WorldMover.Instance.AddObjectToMove(playerObject.transform);
                 }
@@ -348,6 +395,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     /// <returns>An array containing all the players gameobjects in/on the given traincar</returns>
     internal GameObject[] GetPlayersInTrain(TrainCar train)
     {
-        return networkPlayers.Values.Where(p => p.GetComponent<NetworkPlayerSync>().train?.CarGUID == train.CarGUID).ToArray();
+        return networkPlayers.Values.Where(p => p.GetComponent<NetworkPlayerSync>().Train?.CarGUID == train.CarGUID).ToArray();
     }
 }

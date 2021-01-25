@@ -151,6 +151,7 @@
     <Compile Include="Unity\Jobs\NetworkJobsManager.cs" />
     <Compile Include="Unity\Junction\NetworkJunctionSync.cs" />
     <Compile Include="Unity\Junction\NetworkJunctionManager.cs" />
+    <Compile Include="Unity\Player\RotateTowardsPlayer.cs" />
     <Compile Include="Unity\Savegame\NetworkSaveGameManager.cs" />
     <Compile Include="Unity\Train\NetworkTrainPosSync.cs" />
     <Compile Include="Unity\Player\NetworkPlayerSync.cs" />
