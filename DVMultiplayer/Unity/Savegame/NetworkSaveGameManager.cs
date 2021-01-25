@@ -14,6 +14,8 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
     private SaveGameData offlineSave;
     public bool isLoadingSave;
     public bool IsHostSaveReceived { get; private set; }
+    public bool IsHostSaveLoaded { get; private set; }
+    public bool IsHostSaveLoadedFailed { get; private set; }
 
     protected override void Awake()
     {
@@ -21,8 +23,6 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
     }
-
-    
 
     public void SyncSave()
     {
@@ -89,19 +89,32 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
                 offlineSave = SaveGameManager.data;
                 SaveGameManager.data = SaveGameData.LoadFromString(save.SaveDataString);
                 SaveGameUpgrader.Upgrade();
-                bool carsLoadedSuccessfully = false;
-                JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
-                if (jobject3 != null)
-                {
-                    carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jobject3);
-                    if (!carsLoadedSuccessfully)
-                        Debug.LogError((object)"Cars not loaded successfully!");
-                }
-                else
-                    Debug.LogWarning((object)"Cars save not found!");
+                IsHostSaveLoaded = false;
                 IsHostSaveReceived = true;
             }
         }
+    }
+
+    public void LoadMultiplayerData()
+    {
+        Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
+        Vector3 vector3_2 = SaveGameManager.data.GetVector3("Player_rotation").Value;
+        PlayerManager.PlayerTransform.position = vector3_1 + WorldMover.currentMove;
+        PlayerManager.PlayerTransform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(Quaternion.Euler(vector3_2) * Vector3.forward, Vector3.up).normalized);
+        bool carsLoadedSuccessfully = false;
+        JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
+        if (jobject3 != null)
+        {
+            carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jobject3);
+            if (!carsLoadedSuccessfully)
+                Debug.LogError((object)"Cars not loaded successfully!");
+        }
+        else
+            Main.DebugLog("[WARNING] Cars save not found!");
+
+        
+        IsHostSaveLoadedFailed = !carsLoadedSuccessfully;
+        IsHostSaveLoaded = carsLoadedSuccessfully;
     }
 
     private void OnGUI()
