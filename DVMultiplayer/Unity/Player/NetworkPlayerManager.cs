@@ -154,6 +154,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                     pos = new Vector3(pos.x, pos.y + 1, pos.z);
                     GameObject playerObject = Instantiate(networkedPlayer, pos, player.Rotation);
                     NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
+                    playerSync.absPosition = player.Position;
                     playerSync.Id = player.Id;
                     networkPlayers.Add(player.Id, playerObject);
                     WorldMover.Instance.AddObjectToMove(playerObject.transform);
@@ -199,7 +200,9 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
                     Vector3 pos = location.AbsPosition + WorldMover.currentMove;
                     pos = new Vector3(pos.x, pos.y + 1, pos.z);
-                    playerObject.GetComponent<NetworkPlayerSync>().UpdateLocation(pos, location.NewRotation);
+                    NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
+                    playerSync.absPosition = location.AbsPosition;
+                    playerSync.UpdateLocation(pos, location.NewRotation);
                 }
             }
         }
@@ -208,11 +211,17 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     private void WorldMoved(WorldMover mover, Vector3 newPos)
     {
         Main.DebugLog("[CLIENT] > PLAYER_WORLDMOVED");
+        foreach(NetworkPlayerSync playerSync in GetAllNonLocalPlayerSync())
+        {
+            Vector3 pos = playerSync.absPosition + WorldMover.currentMove;
+            pos = new Vector3(pos.x, pos.y + 1, pos.z);
+            playerSync.UpdateLocation(pos);
+        }
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write<WorldMove>(new WorldMove()
             {
-                WorldPosition = newPos
+                WorldPosition = WorldMover.currentMove
             });
             Main.DebugLog($"[CLIENT] > PLAYER_WORLDMOVED {writer.Length}");
 
