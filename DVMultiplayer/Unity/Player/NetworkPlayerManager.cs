@@ -18,28 +18,27 @@ using UnityEngine.UI;
 
 public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 {
-    GameObject networkedPlayer;
     Dictionary<ushort, GameObject> networkPlayers = new Dictionary<ushort, GameObject>();
 
     protected override void Awake()
     {
         base.Awake();
-        networkedPlayer = GeneratePlayerObject();
-
         networkPlayers = new Dictionary<ushort, GameObject>();
 
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
     }
 
-    private GameObject GeneratePlayerObject()
+    private GameObject GetPlayerObject()
     {
         GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         player.GetComponent<CapsuleCollider>().enabled = false;
+        player.AddComponent<NetworkPlayerSync>();
 
         GameObject nametagCanvas = new GameObject("Nametag Canvas");
         nametagCanvas.transform.parent = player.transform;
         nametagCanvas.transform.position = new Vector3(0, 1.5f, 0);
         nametagCanvas.AddComponent<Canvas>();
+        nametagCanvas.AddComponent<RotateTowardsPlayer>();
 
         RectTransform rectTransform = nametagCanvas.GetComponent<RectTransform>();
         rectTransform.sizeDelta = new Vector2(1920, 1080);
@@ -50,7 +49,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         nametagBackground.transform.localPosition = new Vector3(0, 0, 0);
 
         RawImage bg = nametagBackground.AddComponent<RawImage>();
-        bg.color = new Color(69 / 255, 69 / 255, 69 / 255, .3f);
+        bg.color = new Color(69 / 255, 69 / 255, 69 / 255, .45f);
 
         rectTransform = nametagBackground.GetComponent<RectTransform>();
         rectTransform.localScale = new Vector3(1f, 1f, 0);
@@ -101,7 +100,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            Main.DebugLog($"[CLIENT] PLAYER_DISCONNECT received | Packet size: {reader.Length}");
+            
             //if (reader.Length % 44 != 0 && reader.Length % 34 != 0)
             //{
             //    Main.mod.Logger.Warning("Received malformed spawn packet.");
@@ -114,6 +113,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
                 if (disconnectedPlayer.PlayerId != SingletonBehaviour<UnityClient>.Instance.ID)
                 {
+                    Main.DebugLog($"[CLIENT] < PLAYER_DISCONNECT: Username: {networkPlayers[disconnectedPlayer.PlayerId].GetComponent<NetworkPlayerSync>().Username}");
                     Destroy(networkPlayers[disconnectedPlayer.PlayerId]);
                     networkPlayers.Remove(disconnectedPlayer.PlayerId);
                 }
@@ -203,7 +203,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            Main.DebugLog($"[CLIENT] PLAYER_SPAWN received | Packet size: {reader.Length}");
             //if (reader.Length % 44 != 0 && reader.Length % 34 != 0)
             //{
             //    Main.mod.Logger.Warning("Received malformed spawn packet.");
@@ -216,14 +215,15 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
                 if (player.Id != SingletonBehaviour<UnityClient>.Instance.ID)
                 {
+                    Main.DebugLog($"[CLIENT] < PLAYER_SPAWN received: Username: {player.Username} ");
                     Vector3 pos = player.Position + WorldMover.currentMove;
                     pos = new Vector3(pos.x, pos.y + 1, pos.z);
-                    GameObject playerObject = Instantiate(networkedPlayer, pos, player.Rotation);
+                    GameObject playerObject = Instantiate(GetPlayerObject(), pos, player.Rotation);
                     NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
                     playerSync.absPosition = player.Position;
                     playerSync.Id = player.Id;
                     playerSync.Username = player.Username;
-                    playerObject.transform.Find("Nametag Canvas>Nametag").GetComponent<Text>().text = player.Username;
+                    playerObject.transform.GetChild(0).GetChild(1).GetComponent<Text>().text = player.Username;
                     networkPlayers.Add(player.Id, playerObject);
                     WorldMover.Instance.AddObjectToMove(playerObject.transform);
                 }

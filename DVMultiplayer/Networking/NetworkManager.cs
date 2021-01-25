@@ -128,7 +128,7 @@ namespace DVMultiplayer.Networking
         /// <summary>
         /// Starts up the game server and connects to it automatically
         /// </summary>
-        public static void StartServer(string username)
+        public static void StartServer(string username, ushort port)
         {
             if (isHost)
                 return;
@@ -137,10 +137,11 @@ namespace DVMultiplayer.Networking
             Main.DebugLog("Start hosting server");
             try
             {
+                server.port = port;
                 server.Create();
                 isHost = true;
                 host = "127.0.0.1";
-                port = 4296;
+                NetworkManager.port = port;
                 ClientConnect();
             }
             catch (Exception ex)

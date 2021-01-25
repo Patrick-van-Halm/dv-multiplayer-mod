@@ -16,6 +16,8 @@ namespace DarkRift.Server.Unity
         /// </summary>
         public DarkRiftServer Server { get; private set; }
 
+        public ushort port;
+
 #pragma warning disable IDE0044 // Add readonly modifier, Unity can't serialize readonly fields
         [SerializeField]
         [Tooltip("The configuration file to use.")]
@@ -86,6 +88,8 @@ namespace DarkRift.Server.Unity
 
                 // Add types
                 spawnData.PluginSearch.PluginTypes.AddRange(UnityServerHelper.SearchForPlugins());
+
+                spawnData.Listeners.NetworkListeners[0].Port = port;
 
                 // Create server
                 Server = new DarkRiftServer(spawnData);
