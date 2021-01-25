@@ -516,6 +516,9 @@ namespace DarkRift.Client.Unity
                     handler.Invoke(sender, e);
                 }
             }
+
+            Client = null;
+            Dispatcher = null;
         }
 
         /// <summary>
@@ -536,10 +539,7 @@ namespace DarkRift.Client.Unity
             Client.Disconnected -= Client_Disconnected;
 
             Client.Dispose();
-            Dispatcher.Dispose();
-
-            Client = null;
-            Dispatcher = null;
+            Dispatcher.Dispose();            
         }
     }
 }
