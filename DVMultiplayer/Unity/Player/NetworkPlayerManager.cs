@@ -1,6 +1,7 @@
 ﻿using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
+using DV.TerrainSystem;
 using DVMultiplayer;
 using DVMultiplayer.DTO;
 using DVMultiplayer.DTO.Player;
@@ -100,6 +101,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         if (!NetworkManager.IsHost())
         {
             SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = true;
+            TutorialController.movementAllowed = false;
             SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
             yield return new WaitUntil(() => networkPlayers.ContainsKey(0));
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
@@ -107,7 +109,9 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             SingletonBehaviour<NetworkSaveGameManager>.Instance.LoadMultiplayerData();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoaded || SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed);
             SingletonBehaviour<WorldMover>.Instance.movingEnabled = false;
+            yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
             SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = false;
+            TutorialController.movementAllowed = true;
             if (SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed)
             {
                 Main.DebugLog("Connection failed syncing savegame");
