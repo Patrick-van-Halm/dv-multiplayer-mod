@@ -51,12 +51,27 @@ namespace DVMultiplayer.Utils
                     rt.anchorMin = new Vector2(.5f, 1);
                     rt.anchorMax = new Vector2(.5f, 1);
                     break;
+
+                case RectTransformAnchoring.TopRight:
+                    rt.anchorMin = new Vector2(1f, 1);
+                    rt.anchorMax = new Vector2(1f, 1);
+                    break;
+
+                case RectTransformAnchoring.TopStretch:
+                    rt.anchorMin = new Vector2(0, 1);
+                    rt.anchorMax = new Vector2(1, 1);
+                    break;
+
+                case RectTransformAnchoring.BottomCenter:
+                    rt.anchorMin = new Vector2(.5f, 0);
+                    rt.anchorMax = new Vector2(.5f, 0);
+                    break;
             }
         }
 
         public static void ChangeRect(this RectTransform rt, Rect rect)
         {
-            if (rt.anchorMax.x != 1 || rt.anchorMax.y != 1)
+            if (!(rt.anchorMin.x == 0 && rt.anchorMax.x == 1) && !(rt.anchorMin.y == 0 && rt.anchorMax.y == 1))
             {
                 rt.anchoredPosition = new Vector2(rect.x, rect.y);
                 rt.sizeDelta = new Vector2(rect.width, rect.height);
@@ -69,6 +84,8 @@ namespace DVMultiplayer.Utils
         NotSet,
         TopLeft,
         TopCenter,
-        TopRight
+        TopRight,
+        TopStretch,
+        BottomCenter,
     }
 }
