@@ -21,6 +21,8 @@ namespace DVMultiplayer.Networking
         private string username = "";
         private bool VRShown = false;
         private MenuScreen VRUI;
+        private MenuScreen VRConnectUI;
+        private MenuScreen VRInputUI;
 
         public void ListenToInputs()
         {
@@ -111,6 +113,44 @@ namespace DVMultiplayer.Networking
             if(VRUI == null)
             {
                 VRUI = CustomUI.NetworkUI;
+                VRConnectUI = CustomUI.ConnectMenuUI;
+                VRInputUI = CustomUI.InputScreenUI;
+
+                VRUI.transform.Find("Button Connect").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    SingletonBehaviour<CanvasSpawner>.Instance.Open(VRConnectUI);
+                });
+
+                VRUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    HideUI();
+                });
+
+                VRConnectUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    SingletonBehaviour<CanvasSpawner>.Instance.Open(VRUI);
+                });
+
+                VRConnectUI.transform.Find("[INPUT] IP").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    VRInputUI.GetComponent<InputScreen>().SetTitle("IP Address");
+                    if(VRConnectUI.transform.Find("[INPUT] IP").Find("label").GetComponent<TextMeshProUGUI>().text != "")
+                    {
+                        VRInputUI.GetComponent<InputScreen>().Input = VRConnectUI.transform.Find("[INPUT] IP").Find("label").GetComponent<TextMeshProUGUI>().text;
+                    }
+                    SingletonBehaviour<CanvasSpawner>.Instance.Open(VRInputUI);
+                });
+
+                VRInputUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    SingletonBehaviour<CanvasSpawner>.Instance.Open(VRConnectUI);
+                });
+
+                VRInputUI.transform.Find("Button Confirm").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    VRConnectUI.transform.Find("[INPUT] IP").Find("label").GetComponent<TextMeshProUGUI>().text = VRInputUI.GetComponent<InputScreen>().Input;
+                    SingletonBehaviour<CanvasSpawner>.Instance.Open(VRConnectUI);
+                });
             }
 
             if (showUI && !VRShown)

@@ -176,6 +176,8 @@
     <Compile Include="Unity\Train\NetworkTrainCouplerSync.cs" />
     <Compile Include="Unity\Train\NetworkTrainSync.cs" />
     <Compile Include="Unity\Train\NetworkTrainManager.cs" />
+    <Compile Include="Unity\UI\InputButton.cs" />
+    <Compile Include="Unity\UI\InputScreen.cs" />
     <Compile Include="Utils\UGameObject.cs" />
     <Compile Include="Utils\UUI.cs" />
   </ItemGroup>
@@ -187,6 +189,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\config.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Textures\UI_ArrowLeft.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Textures\UI_Close.png">
