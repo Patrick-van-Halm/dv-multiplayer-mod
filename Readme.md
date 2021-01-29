@@ -14,7 +14,7 @@ Install the mod with Unity Mod Manager.
 
 ## Usage
 
-When in game press the HOME key to open the menu. In the menu you have the option to host your game or to connect to a game someone is hosting.
+When in game press the HOME key to open the menu (F7 in VR). In the menu you have the option to host your game or to connect to a game someone is hosting.
 
 ### Hosting
 When hosting make sure you have port forwarded the port: 4296 UDP and 4296 TCP (unless you have changed this.)
@@ -23,7 +23,6 @@ When hosting make sure you have port forwarded the port: 4296 UDP and 4296 TCP (
 
 ### Connecting
 When connecting make sure you have the IP of the person you want to connect to. The port should be 4296 unless the host changed it.
-As of currently there is no syncing of save files yet so to connect make sure you are using the same save game as the host.
 
 ## Features
 
@@ -38,8 +37,8 @@ As of currently there is no syncing of save files yet so to connect make sure yo
 | Diesel Synchronization  	| :x:                	|
 | Steamer Synchronization 	| :x:                	|
 | Multiple Units          	| :x:                	|
-| Jobs Synchronization    	| :hourglass:          	|
-| World Synchronization   	| :hourglass:         	|
+| Jobs Synchronization    	| :hourglass:         |
+| World Synchronization   	| :hourglass:         |
 | Map                     	| :x:                	|
 
 ## Contributing
