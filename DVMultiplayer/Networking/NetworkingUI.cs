@@ -106,10 +106,30 @@ namespace DVMultiplayer.Networking
             }
         }
 
+        internal void VRDraw()
+        {
+            if(VRUI == null)
+            {
+                VRUI = CustomUI.NetworkUI;
+            }
+
+            if (showUI && !VRShown)
+            {
+                VRShown = true;
+                SingletonBehaviour<CanvasSpawner>.Instance.Open(VRUI);
+            }
+            else if (!showUI && VRShown)
+            {
+                VRShown = false;
+                SingletonBehaviour<CanvasSpawner>.Instance.Close();
+            }
+        }
+
         internal void HideUI()
         {
             showUI = false;
-            UUI.UnlockMouse(showUI);
+            if(!VRManager.IsVREnabled())
+                UUI.UnlockMouse(showUI);
         }
     }
 }
