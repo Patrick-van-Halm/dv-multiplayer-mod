@@ -57,6 +57,7 @@ namespace DVMultiplayer.Networking
 
             Main.OnGameUpdate += UI.ListenToInputs;
             Main.OnGameFixedGUI += UI.Draw;
+            Main.OnGameFixedGUIVR += UI.VRDraw;
         }
 
         private static void OnClientDisconnected(object sender, DisconnectedEventArgs e)

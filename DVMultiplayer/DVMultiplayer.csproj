@@ -73,13 +73,27 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>G:\dev\Derail Valley #90 Debug Client\DerailValley_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>G:\dev\Derail Valley #90 Debug Client\DerailValley_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>G:\dev\Derail Valley #90 Debug Client\DerailValley_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>G:\dev\Derail Valley #90 Debug Client\DerailValley_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
       <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
@@ -119,6 +133,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CustomUI.cs" />
     <Compile Include="Darkrift\Client\SerializableObjectCacheSettings.cs" />
     <Compile Include="Darkrift\Client\UnityClient.cs" />
     <Compile Include="Darkrift\Server\UnityModManagerWriter.cs" />
@@ -144,6 +159,7 @@
     <Compile Include="Networking\NetworkingUI.cs" />
     <Compile Include="Networking\NetworkManager.cs" />
     <Compile Include="Networking\NetworkTags.cs" />
+    <Compile Include="Patches\UpdateImgControllersCanvasSpawner.cs" />
     <Compile Include="Patches\DontLoadSaveFileIfDataIsSet.cs" />
     <Compile Include="Patches\EnableMovementOutsidePauseMenus.cs" />
     <Compile Include="Patches\StopGamePauseInMenus.cs" />
@@ -171,6 +187,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\config.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Textures\UI_Close.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

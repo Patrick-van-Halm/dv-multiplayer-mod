@@ -19,6 +19,8 @@ namespace DVMultiplayer.Networking
         private string conPortString = "4296";
         private string hostPortString = "4296";
         private string username = "";
+        private bool VRShown = false;
+        private MenuScreen VRUI;
 
         public void ListenToInputs()
         {

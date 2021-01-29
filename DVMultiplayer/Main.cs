@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using UnityModManagerNet;
 using static UnityModManagerNet.UnityModManager;
 using System.Reflection;
@@ -15,9 +15,10 @@ namespace DVMultiplayer
     public class Main
     {
         public static ModEntry mod;
-        public static event Action OnGameFixedGUI; 
+        public static event Action OnGameFixedGUI;
+        public static event Action OnGameFixedGUIVR;
         public static event Action OnGameUpdate;
-        private static bool isInitialized = false;
+        public static bool isInitialized = false;
         private static bool enabled;
 
         private static Harmony harmony;
@@ -42,7 +43,7 @@ namespace DVMultiplayer
 
         static void OnUpdate(ModEntry entry, float time)
         {
-            if(!isInitialized && enabled && PlayerManager.PlayerTransform && !LoadingScreenManager.IsLoading)
+            if(!isInitialized && enabled && PlayerManager.PlayerTransform && !LoadingScreenManager.IsLoading && SingletonBehaviour<CanvasSpawner>.Instance)
             {
                 Initialize();
             }
@@ -58,7 +59,7 @@ namespace DVMultiplayer
 
         static void OnFixedGUI(ModEntry entry)
         {
-            if (enabled && isInitialized)
+            if (!VRManager.IsVREnabled() && enabled && isInitialized)
             {
 #if DEBUG
                 DebugUI.OnGUI();
@@ -77,13 +78,18 @@ namespace DVMultiplayer
                 else
                     OnGameFixedGUI?.Invoke();
             }
+            else if(VRManager.IsVREnabled() && enabled && isInitialized)
+            {
+                OnGameFixedGUIVR?.Invoke();
+            }
         }
 
         static void Initialize()
         {
-            isInitialized = true;
             DebugLog("Initializing...");
+            CustomUI.Initialize();
             NetworkManager.Initialize();
+            isInitialized = true;
         }
 #if DEBUG
         public static void DebugLog(string msg)
