@@ -1,4 +1,4 @@
-﻿using DVMultiplayer.Utils;
+using DVMultiplayer.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +18,7 @@ namespace DVMultiplayer.Networking
 
         public void ListenToInputs()
         {
-            if (Input.GetKeyUp(KeyCode.Home))
+            if ((!VRManager.IsVREnabled() && Input.GetKeyUp(KeyCode.Home)) || (VRManager.IsVREnabled() && Input.GetKeyUp(KeyCode.F7)))
             {
                 ToggleUI();
             }
