@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using UnityModManagerNet;
 using static UnityModManagerNet.UnityModManager;
 using System.Reflection;
@@ -58,7 +58,7 @@ namespace DVMultiplayer
 
         static void OnFixedGUI(ModEntry entry)
         {
-            if (!VRManager.IsVREnabled() && enabled && isInitialized)
+            if (enabled && isInitialized)
             {
 #if DEBUG
                 DebugUI.OnGUI();
