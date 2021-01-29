@@ -4,7 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
+using VRTK;
+using Object = UnityEngine.Object;
 
 namespace DVMultiplayer.Networking
 {
@@ -27,7 +31,8 @@ namespace DVMultiplayer.Networking
         public void ToggleUI()
         {
             showUI = !showUI;
-            UUI.UnlockMouse(showUI);
+            if(!VRManager.IsVREnabled())
+                UUI.UnlockMouse(showUI);
         }
 
         public void Draw()
