@@ -1,0 +1,21 @@
+name: Code formatting
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Uncrustify C# Code Formatting
+      uses: mibmo/actions-uncrustify@v2
+    - name: Commit formatted files
+      run: |
+          git add .
+          git commit -m "Format code" -a || true
+    - name: Push formatted code
+      uses: ad-m/github-push-action@v0.6.0
+      with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
