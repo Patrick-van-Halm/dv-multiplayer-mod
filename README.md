@@ -45,7 +45,7 @@ When connecting make sure you have the IP of the person you want to connect to. 
 ## Contributing
 Pull requests/changes are welcome, please open an issue first to discuss what you would like to change.
 
-Please make sure to test as appropriate.
+Please make sure to test and format code as appropriate. (use `uncrustify` or your editors built-in tool)
 
 ## License
 [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
