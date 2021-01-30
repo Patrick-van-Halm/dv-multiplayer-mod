@@ -23,6 +23,12 @@ class NetworkTrainPosSync : MonoBehaviour
         SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
 
         trainCar.OnDerailed += TrainDerail;
+        trainCar.OnRerailed += TrainRerail;
+    }
+
+    private void TrainRerail()
+    {
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendRerailTrainUpdate(trainCar);
     }
 
     private void TrainDerail(TrainCar derailedCar)
@@ -35,7 +41,7 @@ class NetworkTrainPosSync : MonoBehaviour
         yield return new WaitForSeconds(SYNC_CHECKTIME);
         if (NetworkManager.IsHost())
         {
-            if (Vector3.Distance(prevPosition, transform.position) > 5f)
+            if (Vector3.Distance(prevPosition, transform.position) > 3f)
             {
                 prevAngularVelocity = trainCar.rb.angularVelocity;
                 prevVelocity = trainCar.rb.velocity;
