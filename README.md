@@ -26,20 +26,21 @@ When connecting make sure you have the IP of the person you want to connect to. 
 
 ## Features
 
-| **Feature**             	|      **State**     	|
-|-------------------------	|:------------------:	|
-| Shunter Synchronization 	| :hourglass:        	|
-| Coupling                	| :heavy_check_mark: 	|
-| Decoupling              	| :heavy_check_mark: 	|
-| Junctions               	| :heavy_check_mark: 	|
-| Player positioning      	| :heavy_check_mark: 	|
-| Save game Synchronization | :heavy_check_mark: 	|
-| Diesel Synchronization  	| :x:                	|
-| Steamer Synchronization 	| :x:                	|
-| Multiple Units          	| :x:                	|
-| Jobs Synchronization    	| :hourglass:         |
-| World Synchronization   	| :hourglass:         |
-| Map                     	| :x:                	|
+| **Feature**                |      **State**      |
+|--------------------------- |:------------------: |
+| Shunter Synchronization    | :hourglass:         |
+| Coupling                   | :heavy_check_mark:  |
+| Decoupling                 | :heavy_check_mark:  |
+| Junctions                  | :heavy_check_mark:  |
+| Turntable Synchronization  | :x:                 |
+| Player positioning         | :heavy_check_mark:  |
+| Save game Synchronization  | :heavy_check_mark:  |
+| Diesel Synchronization     | :x:                 |
+| Steamer Synchronization    | :x:                 |
+| Multiple Units             | :x:                 |
+| Jobs Synchronization       | :hourglass:         |
+| World Synchronization      | :hourglass:         |
+| Map                        | :x:                 |
 
 ## Contributing
 Pull requests/changes are welcome, please open an issue first to discuss what you would like to change.
