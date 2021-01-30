@@ -26,25 +26,26 @@ When connecting make sure you have the IP of the person you want to connect to. 
 
 ## Features
 
-| **Feature**             	|      **State**     	|
-|-------------------------	|:------------------:	|
-| Shunter Synchronization 	| :hourglass:        	|
-| Coupling                	| :heavy_check_mark: 	|
-| Decoupling              	| :heavy_check_mark: 	|
-| Junctions               	| :heavy_check_mark: 	|
-| Player positioning      	| :heavy_check_mark: 	|
-| Save game Synchronization | :heavy_check_mark: 	|
-| Diesel Synchronization  	| :x:                	|
-| Steamer Synchronization 	| :x:                	|
-| Multiple Units          	| :x:                	|
-| Jobs Synchronization    	| :hourglass:         |
-| World Synchronization   	| :hourglass:         |
-| Map                     	| :x:                	|
+| **Feature**                |      **State**      |
+|--------------------------- |:------------------: |
+| Shunter Synchronization    | :hourglass:         |
+| Coupling                   | :heavy_check_mark:  |
+| Decoupling                 | :heavy_check_mark:  |
+| Junctions                  | :heavy_check_mark:  |
+| Turntable Synchronization  | :x:                 |
+| Player positioning         | :heavy_check_mark:  |
+| Save game Synchronization  | :heavy_check_mark:  |
+| Diesel Synchronization     | :x:                 |
+| Steamer Synchronization    | :x:                 |
+| Multiple Units             | :x:                 |
+| Jobs Synchronization       | :hourglass:         |
+| World Synchronization      | :hourglass:         |
+| Map                        | :x:                 |
 
 ## Contributing
 Pull requests/changes are welcome, please open an issue first to discuss what you would like to change.
 
-Please make sure to test as appropriate.
+Please make sure to test and format code as appropriate. (use `uncrustify` or your editors built-in tool)
 
 ## License
 [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
