@@ -49,6 +49,11 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         PlayerManager.CarChanged += OnPlayerSwitchTrainCarEvent;
     }
 
+    internal void SendRerailTrainUpdate(TrainCar trainCar)
+    {
+        throw new NotImplementedException();
+    }
+
     public void PlayerDisconnect()
     {
         foreach (TrainCar trainCar in trainCars.Where(car => car.IsLoco))
