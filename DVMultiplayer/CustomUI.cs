@@ -1,4 +1,4 @@
-﻿using DVMultiplayer.Utils;
+using DVMultiplayer.Utils;
 using System;
 using System.IO;
 using System.Reflection;
@@ -61,7 +61,7 @@ namespace DVMultiplayer
         private static void GenerateConnectUI()
         {
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
-            GameObject connectMenu = CreateMenu(new MenuBuilder("DVMultiplayer Connect", "Connect", 975, 510f, false, false));
+            GameObject connectMenu = CreateMenu(new MenuBuilder("DVMultiplayer Connect", "Connect", 975, 540f, false, false));
 
             TextFieldBuilder inputIpField = new TextFieldBuilder("IP", connectMenu.transform, new Rect(-32f, -215, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
             TextFieldBuilder inputPortField = new TextFieldBuilder("Port", connectMenu.transform, new Rect(-32f, -315, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f), true);
