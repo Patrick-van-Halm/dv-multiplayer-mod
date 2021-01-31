@@ -23,6 +23,7 @@ namespace DVMultiplayer.Networking
         private MenuScreen VRUI;
         private MenuScreen VRConnectUI;
         private MenuScreen VRInputUI;
+        private MenuScreen VRHostUI;
 
         public void ListenToInputs()
         {
@@ -115,10 +116,44 @@ namespace DVMultiplayer.Networking
                 VRUI = CustomUI.NetworkUI;
                 VRConnectUI = CustomUI.ConnectMenuUI;
                 VRInputUI = CustomUI.InputScreenUI;
+                VRHostUI = CustomUI.HostMenuUI;
 
                 VRUI.transform.Find("Button Connect").GetComponent<Button>().onClick.AddListener(() =>
                 {
                     CustomUI.Open(VRConnectUI);
+                });
+
+                VRConnectUI.transform.Find("Button Connect").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string host = VRConnectUI.transform.Find("TextField IP").GetComponentInChildren<TextMeshProUGUI>().text;
+                    string portString = VRConnectUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text;
+                    string username =  VRConnectUI.transform.Find("TextField Username").GetComponentInChildren<TextMeshProUGUI>().text;
+                    if (!string.IsNullOrWhiteSpace(host) && !string.IsNullOrWhiteSpace(portString) && int.TryParse(portString, out int port) && !string.IsNullOrWhiteSpace(username))
+                    {
+                        NetworkManager.Connect(host, port, username);
+                        HideUI();
+                    }
+                });
+
+                VRUI.transform.Find("Button Host").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    CustomUI.Open(VRHostUI);
+                });
+
+                VRHostUI.transform.Find("Button Host").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string portString = VRConnectUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text;
+                    string username = VRConnectUI.transform.Find("TextField Username").GetComponentInChildren<TextMeshProUGUI>().text;
+
+                    bool portValid = ushort.TryParse(portString, out ushort port) && port < 65535 && port > 0;
+                    if (!portValid)
+                        port = 4296;
+
+                    if (!string.IsNullOrWhiteSpace(username))
+                    {
+                        NetworkManager.StartServer(username, port);
+                        HideUI();
+                    }
                 });
 
                 VRUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
@@ -140,12 +175,12 @@ namespace DVMultiplayer.Networking
             if (showUI && !VRShown)
             {
                 VRShown = true;
-                SingletonBehaviour<CanvasSpawner>.Instance.Open(VRUI);
+                CustomUI.Open(VRUI);
             }
             else if (!showUI && VRShown)
             {
                 VRShown = false;
-                SingletonBehaviour<CanvasSpawner>.Instance.Close();
+                CustomUI.Close();
             }
         }
 
