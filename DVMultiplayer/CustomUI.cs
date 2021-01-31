@@ -262,6 +262,7 @@ namespace DVMultiplayer
 
             TextField field = newTextField.AddComponent<TextField>();
             field.title = textFieldBuilder.name;
+            field.isDigitOnly = textFieldBuilder.isDigitOnly;
             
             return newTextField;
         }

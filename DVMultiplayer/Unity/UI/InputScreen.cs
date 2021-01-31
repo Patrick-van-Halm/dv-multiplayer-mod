@@ -14,9 +14,12 @@ class InputScreen : MonoBehaviour
     private TextMeshProUGUI label;
 
     private string input;
-    private TextMeshProUGUI[] letterButtonsText;
     public bool isUppercase;
-    public bool isDigitOnly;
+    public bool isDigitOnly = false;
+    Button casingButton;
+    Image casingButtonImage;
+    Sprite enabledSprite;
+    Sprite disabledSprite;
 
     public string Input {
         get
@@ -34,14 +37,26 @@ class InputScreen : MonoBehaviour
     {
         label = transform.Find("Label Input").GetComponent<TextMeshProUGUI>();
         TextMeshProUGUI casingBtnText = transform.Find("Button Casing").Find("label").GetComponent<TextMeshProUGUI>();
-        Button casingButton = transform.Find("Button Casing").GetComponent<Button>();
-        casingButton.interactable = !isDigitOnly;
+        casingButton = transform.Find("Button Casing").GetComponent<Button>();
+        casingButtonImage = casingButton.GetComponent<Image>();
+        enabledSprite = casingButtonImage.sprite;
+        Texture2D disabledTexture = UUI.LoadTextureFromFile("UI_Button_disabled.png");
+        disabledSprite = Sprite.Create(disabledTexture, new Rect(0, 0, disabledTexture.width, disabledTexture.height), new Vector2(0.5f, 0.5f), 100f);
         casingButton.onClick.AddListener(() =>
         {
             isUppercase = !isUppercase;
             casingBtnText.text = isUppercase ? "Lowercase" : "Uppercase";
         });
         ResetInput();
+    }
+
+    internal void OnOpen()
+    {
+        casingButton.interactable = !isDigitOnly;
+        if (isDigitOnly)
+            casingButtonImage.sprite = disabledSprite;
+        else
+            casingButtonImage.sprite = enabledSprite;
     }
      
     public void ResetInput()

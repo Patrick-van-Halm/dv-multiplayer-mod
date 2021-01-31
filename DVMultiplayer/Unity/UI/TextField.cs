@@ -11,6 +11,7 @@ using UnityEngine.UI;
 class TextField : MonoBehaviour
 {
     public string title;
+    public bool isDigitOnly = false;
     private void Awake()
     {
         TextMeshProUGUI text = transform.Find("label").GetComponent<TextMeshProUGUI>();
@@ -22,7 +23,9 @@ class TextField : MonoBehaviour
             MenuScreen prevScreen = CustomUI.currentScreen;
             input.SetTitle(title);
             input.Input = text.text;
+            input.isDigitOnly = isDigitOnly;
             CustomUI.Open(CustomUI.InputScreenUI);
+            input.OnOpen();
             btnConfirm.onClick.RemoveAllListeners();
             btnConfirm.onClick.AddListener(() =>
             {
