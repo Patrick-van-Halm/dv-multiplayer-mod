@@ -1,4 +1,4 @@
-﻿using DVMultiplayer.Utils;
+using DVMultiplayer.Utils;
 using System;
 using System.IO;
 using System.Reflection;
@@ -54,7 +54,7 @@ namespace DVMultiplayer
             GameObject mpMenuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Main Menu", "DV Multiplayer", 508, 460, true));
             
             ButtonBuilder connectButtonBuilder = new ButtonBuilder("Connect", "Connect", mpMenuBuilder.transform, new Rect(0f, -177.5f, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center, "Connect to an existing server");
-            ButtonBuilder hostButtonBuilder = new ButtonBuilder("Host", "Host server", mpMenuBuilder.transform, new Rect(0f, -277.5f, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center, "Connect to an existing server");
+            ButtonBuilder hostButtonBuilder = new ButtonBuilder("Host", "Host server", mpMenuBuilder.transform, new Rect(0f, -277.5f, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center, "Host a new server");
 
             GameObject connectSection = CreateSection(new Rect(0f, -177, 458, 91.14999f), RectTransformAnchoring.TopCenter, mpMenuBuilder.transform);
             GameObject connectBtn = CreateButton(connectButtonBuilder);
