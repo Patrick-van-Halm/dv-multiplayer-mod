@@ -59,28 +59,12 @@ namespace DVMultiplayer
 
         static void OnFixedGUI(ModEntry entry)
         {
-            if (!VRManager.IsVREnabled() && enabled && isInitialized)
+            if (enabled && isInitialized)
             {
 #if DEBUG
                 DebugUI.OnGUI();
 #endif
-
-                if(TutorialController.tutorialPartOneInProgress || TutorialController.tutorialPartTwoInProgress)
-                {
-                    GUI.Box(new Rect(Screen.width - 300, 0, 300, 200), "DVMultiplayer note");
-                    GUI.Label(new Rect(Screen.width - 290, 25, 280, 20), "You need to finish the tutorial before you can use DVMultiplayer");
-                }
-                //else if (PlayerManager.)
-                //{
-                //    GUI.Box(new Rect(Screen.width - 100, 0, 100, 50), "DVMultiplayer note");
-                //    GUI.Label(new Rect(Screen.width - 90, 25, 80, 20), "You need to finish the tutorial before you can use DVMultiplayer");
-                //}
-                else
-                    OnGameFixedGUI?.Invoke();
-            }
-            else if(VRManager.IsVREnabled() && enabled && isInitialized)
-            {
-                OnGameFixedGUIVR?.Invoke();
+                OnGameFixedGUI?.Invoke();
             }
         }
 

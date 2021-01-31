@@ -1,4 +1,4 @@
-using DVMultiplayer.Utils;
+﻿using DVMultiplayer.Utils;
 using System;
 using System.IO;
 using System.Reflection;
