@@ -256,8 +256,8 @@ namespace DVMultiplayer
             }
 
             UIElementTooltip tooltip = newButton.GetComponent<UIElementTooltip>();
-            tooltip.tooltipEnabledText = buttonBuilder.tooltipText;
-            tooltip.tooltipDisabledText = "";
+            tooltip.tooltipEnabledText = buttonBuilder.tooltipEnabledText;
+            tooltip.tooltipDisabledText = buttonBuilder.tooltipDisabledText;
 
             newButton.AddComponent<ButtonFeatures>();
 
@@ -411,9 +411,10 @@ namespace DVMultiplayer
             public readonly TextAlignmentOptions textAlignment;
             public readonly RectTransformAnchoring anchor;
             public readonly Vector2? pivot;
-            public readonly string tooltipText;
+            public readonly string tooltipEnabledText;
+            public readonly string tooltipDisabledText;
 
-            public ButtonBuilder(string name, string icon, Transform parent, Rect pos, RectTransformAnchoring anchor, Vector2 pivot, string tooltipText = "")
+            public ButtonBuilder(string name, string icon, Transform parent, Rect pos, RectTransformAnchoring anchor, Vector2 pivot, string tooltipEnabledText = "", string tooltipDisabledText = "")
             {
                 this.name = name;
                 this.type = ButtonType.Icon;
@@ -425,10 +426,11 @@ namespace DVMultiplayer
                 this.textAlignment = TextAlignmentOptions.Left;
                 this.anchor = anchor;
                 this.pivot = pivot;
-                this.tooltipText = tooltipText;
+                this.tooltipEnabledText = tooltipEnabledText;
+                this.tooltipDisabledText = tooltipDisabledText;
             }
 
-            public ButtonBuilder(string name, string label, Transform parent, Rect pos, RectTransformAnchoring anchor, Vector2 pivot, TextAlignmentOptions textAlignment = TextAlignmentOptions.Left, string tooltipText = "")
+            public ButtonBuilder(string name, string label, Transform parent, Rect pos, RectTransformAnchoring anchor, Vector2 pivot, TextAlignmentOptions textAlignment = TextAlignmentOptions.Left, string tooltipEnabledText = "", string tooltipDisabledText = "")
             {
                 this.name = name;
                 this.type = ButtonType.Text;
@@ -440,10 +442,11 @@ namespace DVMultiplayer
                 this.textAlignment = textAlignment;
                 this.anchor = anchor;
                 this.pivot = pivot;
-                this.tooltipText = tooltipText;
+                this.tooltipEnabledText = tooltipEnabledText;
+                this.tooltipDisabledText = tooltipDisabledText;
             }
 
-            public ButtonBuilder(string name, string icon, Transform parent, GameObject btn = null, string tooltipText = "")
+            public ButtonBuilder(string name, string icon, Transform parent, GameObject btn = null, string tooltipEnabledText = "", string tooltipDisabledText = "")
             {
                 this.name = name;
                 this.type = ButtonType.Icon;
@@ -455,10 +458,11 @@ namespace DVMultiplayer
                 this.textAlignment = TextAlignmentOptions.Left;
                 this.anchor = RectTransformAnchoring.NotSet;
                 this.pivot = null;
-                this.tooltipText = tooltipText;
+                this.tooltipEnabledText = tooltipEnabledText;
+                this.tooltipDisabledText = tooltipDisabledText;
             }
 
-            public ButtonBuilder(string name, string label, Transform parent, TextAlignmentOptions textAlignment = TextAlignmentOptions.Left, GameObject btn = null, string tooltipText = "")
+            public ButtonBuilder(string name, string label, Transform parent, TextAlignmentOptions textAlignment = TextAlignmentOptions.Left, GameObject btn = null, string tooltipEnabledText = "", string tooltipDisabledText = "")
             {
                 this.name = name;
                 this.type = ButtonType.Text;
@@ -470,7 +474,8 @@ namespace DVMultiplayer
                 this.textAlignment = textAlignment;
                 this.anchor = RectTransformAnchoring.NotSet;
                 this.pivot = null;
-                this.tooltipText = tooltipText;
+                this.tooltipEnabledText = tooltipEnabledText;
+                this.tooltipDisabledText = tooltipDisabledText;
             }
         }
 
