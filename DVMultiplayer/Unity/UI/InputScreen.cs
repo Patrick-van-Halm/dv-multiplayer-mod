@@ -17,9 +17,6 @@ class InputScreen : MonoBehaviour
     public bool isUppercase;
     public bool isDigitOnly = false;
     Button casingButton;
-    Image casingButtonImage;
-    Sprite enabledSprite;
-    Sprite disabledSprite;
 
     public string Input {
         get
