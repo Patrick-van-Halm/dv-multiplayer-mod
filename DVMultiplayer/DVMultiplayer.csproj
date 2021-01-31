@@ -176,6 +176,7 @@
     <Compile Include="Unity\Train\NetworkTrainCouplerSync.cs" />
     <Compile Include="Unity\Train\NetworkTrainSync.cs" />
     <Compile Include="Unity\Train\NetworkTrainManager.cs" />
+    <Compile Include="Unity\UI\ButtonFeatures.cs" />
     <Compile Include="Unity\UI\InputButton.cs" />
     <Compile Include="Unity\UI\InputScreen.cs" />
     <Compile Include="Unity\UI\TextField.cs" />
