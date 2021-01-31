@@ -1,4 +1,4 @@
-using DVMultiplayer.Utils;
+﻿using DVMultiplayer.Utils;
 using System;
 using System.IO;
 using System.Reflection;
@@ -40,6 +40,12 @@ namespace DVMultiplayer
         {
             currentScreen = screen;
             SingletonBehaviour<CanvasSpawner>.Instance.Open(screen);
+        }
+
+        internal static void Close()
+        {
+            currentScreen = null;
+            SingletonBehaviour<CanvasSpawner>.Instance.Close();
         }
 
         private static void GenerateNetworkUI()
