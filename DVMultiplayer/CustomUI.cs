@@ -281,7 +281,7 @@ namespace DVMultiplayer
             GameObject newTextField = Object.Instantiate(refButton, textFieldBuilder.parent);
             UpdateTextFieldTransform(newTextField, textFieldBuilder);
 
-            newTextField.name = $"[INPUT] {textFieldBuilder.name}";
+            newTextField.name = $"TextField {textFieldBuilder.name}";
             TextMeshProUGUI text = newTextField.transform.Find("label").GetComponent<TextMeshProUGUI>();
             text.alignment = textFieldBuilder.textAlignment;
             text.text = "";
