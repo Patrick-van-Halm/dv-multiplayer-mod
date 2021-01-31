@@ -73,6 +73,7 @@ namespace DVMultiplayer
             DebugLog("Initializing...");
             CustomUI.Initialize();
             NetworkManager.Initialize();
+            FavoritesManager.CreateFavoritesFileIfNotExists();
             isInitialized = true;
         }
 #if DEBUG
