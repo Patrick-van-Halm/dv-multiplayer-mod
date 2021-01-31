@@ -244,9 +244,7 @@ namespace DVMultiplayer
             newButton.name = $"Button {buttonBuilder.name}";
             if(buttonBuilder.type == ButtonType.Icon)
             {
-                Texture2D texture = UUI.LoadTextureFromFile(buttonBuilder.icon);
-                Sprite icon = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f), 100f);
-                newButton.transform.Find("image").GetComponent<Image>().sprite = icon;
+                newButton.transform.Find("image").GetComponent<Image>().SetSprite(buttonBuilder.icon);
             }
             else
             {

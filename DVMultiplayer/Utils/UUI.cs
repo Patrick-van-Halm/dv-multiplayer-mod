@@ -2,6 +2,7 @@
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace DVMultiplayer.Utils
 {
@@ -36,6 +37,16 @@ namespace DVMultiplayer.Utils
                 return texture;
             else
                 return null;
+        }
+
+        public static void SetSprite(this Image img, string filename)
+        {
+            Texture2D texture = UUI.LoadTextureFromFile(filename);
+            if (!texture)
+                return;
+
+            Sprite icon = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f), 100f);
+            img.sprite = icon;
         }
 
         public static void ChangeAnchors(this RectTransform rt, RectTransformAnchoring anchor)
