@@ -31,6 +31,7 @@ namespace DVMultiplayer
             mod.OnToggle = OnToggle;
             mod.OnUpdate = OnUpdate;
             harmony.PatchAll(Assembly.GetExecutingAssembly());
+            new GameObject("SteamManager").AddComponent<SteamManager>();
             return true;
         }
 

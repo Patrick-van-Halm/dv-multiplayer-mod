@@ -60,6 +60,10 @@
       <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\DV.Utils.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Facepunch.Steamworks.Win64, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Facepunch.Steamworks\Facepunch.Steamworks.Win64.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>G:\dev\Derail Valley #90 Debug Client\DerailValley_Data\Managed\Newtonsoft.Json.dll</HintPath>
@@ -153,6 +157,7 @@
     <Compile Include="Unity\Junction\NetworkJunctionManager.cs" />
     <Compile Include="Unity\Player\RotateTowardsPlayer.cs" />
     <Compile Include="Unity\Savegame\NetworkSaveGameManager.cs" />
+    <Compile Include="Unity\Steam\SteamManager.cs" />
     <Compile Include="Unity\Train\NetworkTrainPosSync.cs" />
     <Compile Include="Unity\Player\NetworkPlayerSync.cs" />
     <Compile Include="Unity\Player\NetworkPlayerManager.cs" />
