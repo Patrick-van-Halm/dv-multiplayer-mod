@@ -23,7 +23,7 @@ namespace DVMultiplayer.Networking
         private static bool isClient;
         private static string host;
         private static int port;
-        private static string username;
+        internal static string username;
         private static bool scriptsInitialized = false;
 
         /// <summary>
