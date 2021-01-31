@@ -110,10 +110,11 @@ namespace DVMultiplayer.Networking
 
             if (showUI && !UIShown)
             {
+                // Disable the buttons if the tutorial is not yet finished.
                 UI.transform.Find("Button Connect").GetComponent<Button>().interactable = !(TutorialController.tutorialPartOneInProgress || TutorialController.tutorialPartTwoInProgress);
-                UI.transform.Find("Button Connect").GetComponent<UIElementTooltip>().tooltipDisabledText = (!(TutorialController.tutorialPartOneInProgress || TutorialController.tutorialPartTwoInProgress) ? "" : "Finish the tutorial first");
+                UI.transform.Find("Button Connect").GetComponent<UIElementTooltip>().TooltipNonInteractableText = TutorialController.tutorialPartOneInProgress || TutorialController.tutorialPartTwoInProgress ? "Finish the tutorial first" : "";
                 UI.transform.Find("Button Host").GetComponent<Button>().interactable = !(TutorialController.tutorialPartOneInProgress || TutorialController.tutorialPartTwoInProgress);
-                UI.transform.Find("Button Host").GetComponent<UIElementTooltip>().tooltipDisabledText = (!(TutorialController.tutorialPartOneInProgress || TutorialController.tutorialPartTwoInProgress) ? "" : "Finish the tutorial first");
+                UI.transform.Find("Button Host").GetComponent<UIElementTooltip>().TooltipNonInteractableText = TutorialController.tutorialPartOneInProgress || TutorialController.tutorialPartTwoInProgress ? "Finish the tutorial first" : "";
 
                 UIShown = true;
                 CustomUI.Open(UI);
