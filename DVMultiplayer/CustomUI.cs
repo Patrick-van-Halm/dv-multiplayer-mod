@@ -1,4 +1,4 @@
-﻿using DVMultiplayer.Utils;
+using DVMultiplayer.Utils;
 using System;
 using System.IO;
 using System.Reflection;
@@ -14,6 +14,7 @@ namespace DVMultiplayer
         internal static MenuScreen NetworkUI;
         internal static MenuScreen ConnectMenuUI;
         internal static MenuScreen InputScreenUI;
+        internal static MenuScreen currentScreen;
         internal static bool readyForCSUpdate = false;
         internal static bool CSUpdateFinished = false;
         internal static float menuOffset = -500;
@@ -54,14 +55,26 @@ namespace DVMultiplayer
         private static void GenerateConnectUI()
         {
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
-            GameObject connectMenu = CreateMenu(new MenuBuilder("DVMultiplayer Connect", "Connect", 975, 672.6f, false, false));
+            GameObject connectMenu = CreateMenu(new MenuBuilder("DVMultiplayer Connect", "Connect", 975, 510f, false, false));
 
-            TextFieldBuilder inputIpField = new TextFieldBuilder("IP", connectMenu.transform, new Rect(-32f, -215, 795, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
-            ButtonBuilder connectButtonBuilder = new ButtonBuilder("Connect", "Connect", connectMenu.transform, new Rect(0f, -177.5f, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center, "Connect to an existing server");
+            TextFieldBuilder inputIpField = new TextFieldBuilder("IP", connectMenu.transform, new Rect(-32f, -215, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
+            TextFieldBuilder inputPortField = new TextFieldBuilder("Port", connectMenu.transform, new Rect(-32f, -315, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f), true);
+            TextFieldBuilder inputUsernameField = new TextFieldBuilder("Username", connectMenu.transform, new Rect(-32f, -415, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
+            ButtonBuilder connectButtonBuilder = new ButtonBuilder("Connect", "Connect", connectMenu.transform, new Rect(0f, -515, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f), TextAlignmentOptions.Center);
 
-            GameObject connectSection = CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, connectMenu.transform);
-            GameObject inputFieldIPLabel = CreateLabel("IP", "IP:", connectMenu.transform, new Rect(32, -215, 118, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            GameObject ipSection = CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, connectMenu.transform);
+            GameObject inputFieldIPLabel = CreateLabel("IP", "IP:", connectMenu.transform, new Rect(32, -215, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
             GameObject inputFieldIP = CreateTextField(inputIpField);
+
+            GameObject portSection = CreateSection(new Rect(0f, -277, 925, 91.14999f), RectTransformAnchoring.TopCenter, connectMenu.transform);
+            GameObject inputFieldPortLabel = CreateLabel("Port", "Port:", connectMenu.transform, new Rect(32, -315, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            GameObject inputFieldPort = CreateTextField(inputPortField);
+
+            GameObject usernameSection = CreateSection(new Rect(0f, -377, 925, 91.14999f), RectTransformAnchoring.TopCenter, connectMenu.transform);
+            GameObject inputFieldUsernameLabel = CreateLabel("Username", "Username:", connectMenu.transform, new Rect(32, -415, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            GameObject inputFieldUsername = CreateTextField(inputUsernameField);
+
+            GameObject connectBtn = CreateButton(connectButtonBuilder);
 
             GameObject menu = Object.Instantiate(connectMenu, canvas.transform);
             Object.DestroyImmediate(connectMenu);
@@ -208,7 +221,7 @@ namespace DVMultiplayer
             return newButton;
         }
 
-        private static GameObject CreateLabel(string name, string labelText, Transform parent, Rect rect, TextAlignmentOptions textAlignment, RectTransformAnchoring anchor, Vector2 pivot)
+        private static GameObject CreateLabel(string name, string labelText, Transform parent, Rect rect, FontStyles fontStyle, TextAlignmentOptions textAlignment, RectTransformAnchoring anchor, Vector2 pivot)
         {
             GameObject refLabel = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.transform.Find("Main Menu").Find("title").gameObject;
             GameObject label = Object.Instantiate(refLabel, parent);
@@ -217,6 +230,7 @@ namespace DVMultiplayer
             TextMeshProUGUI titleText = label.GetComponent<TextMeshProUGUI>();
             titleText.text = labelText;
             titleText.alignment = textAlignment;
+            titleText.fontStyle = fontStyle;
 
             RectTransform transform = label.GetComponent<RectTransform>();
             transform.pivot = pivot;
@@ -421,8 +435,9 @@ namespace DVMultiplayer
             public readonly TextAlignmentOptions textAlignment;
             public readonly RectTransformAnchoring anchor;
             public readonly Vector2? pivot;
+            public readonly bool isDigitOnly;
 
-            public TextFieldBuilder(string name, Transform parent, Rect pos, TextAlignmentOptions textAlignment, RectTransformAnchoring anchor, Vector2 pivot)
+            public TextFieldBuilder(string name, Transform parent, Rect pos, TextAlignmentOptions textAlignment, RectTransformAnchoring anchor, Vector2 pivot, bool isDigitOnly = false)
             {
                 this.name = name;
                 this.parent = parent;
@@ -430,6 +445,7 @@ namespace DVMultiplayer
                 this.textAlignment = textAlignment;
                 this.anchor = anchor;
                 this.pivot = pivot;
+                this.isDigitOnly = isDigitOnly;
             }
         }
 
