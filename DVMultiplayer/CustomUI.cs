@@ -1,4 +1,4 @@
-using DVMultiplayer.Utils;
+﻿using DVMultiplayer.Utils;
 using System;
 using System.IO;
 using System.Reflection;
@@ -32,6 +32,12 @@ namespace DVMultiplayer
                 Main.DebugLog($"{ex}");
             }
             readyForCSUpdate = true;
+        }
+
+        internal static void Open(MenuScreen screen)
+        {
+            currentScreen = screen;
+            SingletonBehaviour<CanvasSpawner>.Instance.Open(screen);
         }
 
         private static void GenerateNetworkUI()
@@ -254,6 +260,9 @@ namespace DVMultiplayer
             text.alignment = textFieldBuilder.textAlignment;
             text.text = "";
 
+            TextField field = newTextField.AddComponent<TextField>();
+            field.title = textFieldBuilder.name;
+            
             return newTextField;
         }
 

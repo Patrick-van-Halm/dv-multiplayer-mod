@@ -118,7 +118,7 @@ namespace DVMultiplayer.Networking
 
                 VRUI.transform.Find("Button Connect").GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    SingletonBehaviour<CanvasSpawner>.Instance.Open(VRConnectUI);
+                    CustomUI.Open(VRConnectUI);
                 });
 
                 VRUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
@@ -128,28 +128,12 @@ namespace DVMultiplayer.Networking
 
                 VRConnectUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    SingletonBehaviour<CanvasSpawner>.Instance.Open(VRUI);
-                });
-
-                VRConnectUI.transform.Find("[INPUT] IP").GetComponent<Button>().onClick.AddListener(() =>
-                {
-                    VRInputUI.GetComponent<InputScreen>().SetTitle("IP Address");
-                    if(VRConnectUI.transform.Find("[INPUT] IP").Find("label").GetComponent<TextMeshProUGUI>().text != "")
-                    {
-                        VRInputUI.GetComponent<InputScreen>().Input = VRConnectUI.transform.Find("[INPUT] IP").Find("label").GetComponent<TextMeshProUGUI>().text;
-                    }
-                    SingletonBehaviour<CanvasSpawner>.Instance.Open(VRInputUI);
+                    CustomUI.Open(VRUI);
                 });
 
                 VRInputUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    SingletonBehaviour<CanvasSpawner>.Instance.Open(VRConnectUI);
-                });
-
-                VRInputUI.transform.Find("Button Confirm").GetComponent<Button>().onClick.AddListener(() =>
-                {
-                    VRConnectUI.transform.Find("[INPUT] IP").Find("label").GetComponent<TextMeshProUGUI>().text = VRInputUI.GetComponent<InputScreen>().Input;
-                    SingletonBehaviour<CanvasSpawner>.Instance.Open(VRConnectUI);
+                    CustomUI.Open(VRConnectUI);
                 });
             }
 
