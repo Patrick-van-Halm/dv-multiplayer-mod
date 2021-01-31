@@ -1,4 +1,5 @@
 ﻿using DVMultiplayer;
+using DVMultiplayer.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,29 +7,51 @@ using System.Text;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 class InputScreen : MonoBehaviour
 {
     private TextMeshProUGUI label;
 
-    public string Input { get; internal set; }
+    private string input;
+    private TextMeshProUGUI[] letterButtonsText;
+    public bool isUppercase;
+    public bool isDigitOnly;
+
+    public string Input {
+        get
+        {
+            return input;
+        }
+        internal set
+        {
+            input = value;
+            UpdateLabel();
+        }
+    }
 
     private void Awake()
     {
         label = transform.Find("Label Input").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI casingBtnText = transform.Find("Button Casing").Find("label").GetComponent<TextMeshProUGUI>();
+        Button casingButton = transform.Find("Button Casing").GetComponent<Button>();
+        casingButton.interactable = !isDigitOnly;
+        casingButton.onClick.AddListener(() =>
+        {
+            isUppercase = !isUppercase;
+            casingBtnText.text = isUppercase ? "Lowercase" : "Uppercase";
+        });
         ResetInput();
     }
      
     public void ResetInput()
     {
         Input = "";
-        UpdateLabel();
     }
 
     public void SendKeyPress(char key)
     {
-        Input += key;
-        UpdateLabel();
+        Input += (isUppercase ? $"{key}".ToUpper() : $"{key}");
     }
 
     private void UpdateLabel()
@@ -42,7 +65,6 @@ class InputScreen : MonoBehaviour
             return;
         
         Input = Input.Substring(0, Input.Length - 1);
-        UpdateLabel();
     }
 
     public void SetTitle(string inputWindowTitle)

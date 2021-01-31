@@ -88,7 +88,7 @@ namespace DVMultiplayer
             InputScreen input = inputMenu.AddComponent<InputScreen>();
 
             GameObject inputSection = CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, inputMenu.transform);
-            GameObject currentInput = CreateLabel("Input", "", inputMenu.transform, new Rect(32, -215, 861, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            GameObject currentInput = CreateLabel("Input", "", inputMenu.transform, new Rect(32, -215, 861, 76), FontStyles.Normal, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
 
             char[] row = new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-' };
             for(int i = 0; i < row.Length; i++)
@@ -135,7 +135,10 @@ namespace DVMultiplayer
             InputButton inputbtn = backspaceBtn.AddComponent<InputButton>();
             inputbtn.isBackspace = true;
 
-            builderBtn = new ButtonBuilder($"Confirm", $"Confirm", inputMenu.transform, new Rect(925 - (80 * 9f) + 364, -620, 150, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+            builderBtn = new ButtonBuilder($"Casing", $"Uppercase", inputMenu.transform, new Rect(925 - (80 * 9f) + 229, -620, 180, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+            GameObject caseBtn = CreateButton(builderBtn);
+
+            builderBtn = new ButtonBuilder($"Confirm", $"Confirm", inputMenu.transform, new Rect(925 - (80 * 9f) + 414, -620, 150, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
             GameObject confirmBtn = CreateButton(builderBtn);
 
             GameObject menu = Object.Instantiate(inputMenu, canvas.transform);
