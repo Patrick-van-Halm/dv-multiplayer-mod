@@ -64,7 +64,7 @@ class InputScreen : MonoBehaviour
                 {
                     Backspace();
                 }
-                else if(char.IsLetterOrDigit(c) && !isDigitOnly || char.IsDigit(c) && isDigitOnly)
+                else if((char.IsLetterOrDigit(c) || c == '.' || c == '-') && !isDigitOnly || char.IsDigit(c) && isDigitOnly)
                 {
                     Input += c;
                 }
