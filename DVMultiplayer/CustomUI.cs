@@ -262,7 +262,7 @@ namespace DVMultiplayer
             return newButton;
         }
 
-        private static GameObject CreateLabel(string name, string labelText, Transform parent, Rect rect, FontStyles fontStyle, TextAlignmentOptions textAlignment, RectTransformAnchoring anchor, Vector2 pivot)
+        private static GameObject CreateLabel(string name, string labelText, Transform parent, Rect rect, FontStyles fontStyle, TextAlignmentOptions textAlignment, RectTransformAnchoring anchor, Vector2 pivot, Color? color = null, float? fontSize = null)
         {
             GameObject refLabel = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.transform.Find("Main Menu").Find("title").gameObject;
             GameObject label = Object.Instantiate(refLabel, parent);
@@ -272,6 +272,11 @@ namespace DVMultiplayer
             titleText.text = labelText;
             titleText.alignment = textAlignment;
             titleText.fontStyle = fontStyle;
+            if (color.HasValue)
+                titleText.color = color.Value;
+
+            if (fontSize.HasValue)
+                titleText.fontSize = fontSize.Value;
 
             RectTransform transform = label.GetComponent<RectTransform>();
             transform.pivot = pivot;
