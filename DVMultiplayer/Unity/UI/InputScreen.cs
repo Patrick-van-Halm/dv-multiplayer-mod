@@ -17,6 +17,7 @@ class InputScreen : MonoBehaviour
     public bool isUppercase;
     public bool isDigitOnly = false;
     Button casingButton;
+    private bool listenToKeyboard = false;
 
     public string Input {
         get
@@ -45,7 +46,29 @@ class InputScreen : MonoBehaviour
 
     internal void OnOpen()
     {
+        listenToKeyboard = true;
         casingButton.interactable = !isDigitOnly;
+    }
+
+    internal void OnClose()
+    {
+        listenToKeyboard = false;
+    }
+
+    private void Update()
+    {
+        if(listenToKeyboard)
+            foreach (char c in UnityEngine.Input.inputString)
+            {
+                if (c == '\b') // has backspace/delete been pressed?
+                {
+                    Backspace();
+                }
+                else if(char.IsLetterOrDigit(c) && !isDigitOnly || char.IsDigit(c) && isDigitOnly)
+                {
+                    Input += c;
+                }
+            }
     }
      
     public void ResetInput()

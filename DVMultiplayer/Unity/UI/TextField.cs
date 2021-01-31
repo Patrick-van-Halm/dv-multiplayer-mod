@@ -31,12 +31,14 @@ class TextField : MonoBehaviour
             {
                 text.text = input.Input;
                 CustomUI.Open(prevScreen);
+                input.OnClose();
             });
 
             btnClose.onClick.RemoveAllListeners();
             btnClose.onClick.AddListener(() =>
             {
                 CustomUI.Open(prevScreen);
+                input.OnClose();
             });
         });
     }
