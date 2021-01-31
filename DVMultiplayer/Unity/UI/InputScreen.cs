@@ -17,6 +17,7 @@ class InputScreen : MonoBehaviour
     public bool isUppercase;
     public bool isDigitOnly = false;
     Button casingButton;
+    Button confirmButton;
     private bool listenToKeyboard = false;
 
     public string Input {
@@ -36,6 +37,7 @@ class InputScreen : MonoBehaviour
         label = transform.Find("Label Input").GetComponent<TextMeshProUGUI>();
         TextMeshProUGUI casingBtnText = transform.Find("Button Casing").Find("label").GetComponent<TextMeshProUGUI>();
         casingButton = transform.Find("Button Casing").GetComponent<Button>();
+        confirmButton = transform.Find("Button Confirm").GetComponent<Button>();
         casingButton.onClick.AddListener(() =>
         {
             isUppercase = !isUppercase;
@@ -63,6 +65,10 @@ class InputScreen : MonoBehaviour
                 if (c == '\b') // has backspace/delete been pressed?
                 {
                     Backspace();
+                }
+                else if ((c == '\n') || (c == '\r')) // enter/return
+                {
+                    confirmButton.onClick?.Invoke();
                 }
                 else if((char.IsLetterOrDigit(c) || c == '.' || c == '-') && !isDigitOnly || char.IsDigit(c) && isDigitOnly)
                 {
