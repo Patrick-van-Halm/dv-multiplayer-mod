@@ -170,6 +170,11 @@ namespace DVMultiplayer.Networking
                 {
                     CustomUI.Open(VRConnectUI);
                 });
+
+                VRHostUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    CustomUI.Open(VRUI);
+                });
             }
 
             if (showUI && !VRShown)
