@@ -1,4 +1,4 @@
-﻿using DVMultiplayer.Utils;
+using DVMultiplayer.Utils;
 using System;
 using System.IO;
 using System.Reflection;
@@ -292,6 +292,7 @@ namespace DVMultiplayer
             newTextField.name = $"TextField {textFieldBuilder.name}";
             TextMeshProUGUI text = newTextField.transform.Find("label").GetComponent<TextMeshProUGUI>();
             text.alignment = textFieldBuilder.textAlignment;
+            text.fontStyle = FontStyles.Normal;
             text.text = "";
 
             TextField field = newTextField.AddComponent<TextField>();
