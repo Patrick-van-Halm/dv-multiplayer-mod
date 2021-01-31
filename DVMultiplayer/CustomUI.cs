@@ -434,7 +434,7 @@ namespace DVMultiplayer
                 this.tooltipDisabledText = tooltipDisabledText;
             }
 
-            public ButtonBuilder(string name, string label, Transform parent, Rect pos, RectTransformAnchoring anchor, Vector2 pivot, TextAlignmentOptions textAlignment = TextAlignmentOptions.Left, string tooltipEnabledText = "", string tooltipDisabledText = "")
+            public ButtonBuilder(string name, string label, Transform parent, Rect pos, RectTransformAnchoring anchor, Vector2 pivot, TextAlignmentOptions textAlignment, string tooltipEnabledText = "", string tooltipDisabledText = "")
             {
                 this.name = name;
                 this.type = ButtonType.Text;
@@ -466,7 +466,7 @@ namespace DVMultiplayer
                 this.tooltipDisabledText = tooltipDisabledText;
             }
 
-            public ButtonBuilder(string name, string label, Transform parent, TextAlignmentOptions textAlignment = TextAlignmentOptions.Left, GameObject btn = null, string tooltipEnabledText = "", string tooltipDisabledText = "")
+            public ButtonBuilder(string name, string label, Transform parent, TextAlignmentOptions textAlignment, GameObject btn = null, string tooltipEnabledText = "", string tooltipDisabledText = "")
             {
                 this.name = name;
                 this.type = ButtonType.Text;
