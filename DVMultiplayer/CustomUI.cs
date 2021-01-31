@@ -259,6 +259,8 @@ namespace DVMultiplayer
             tooltip.tooltipEnabledText = buttonBuilder.tooltipText;
             tooltip.tooltipDisabledText = "";
 
+            newButton.AddComponent<ButtonFeatures>();
+
             return newButton;
         }
 

@@ -62,7 +62,5 @@ class InputButton : MonoBehaviour
             button.interactable = true;
         else
             button.interactable = false;
-
-        buttonImage.sprite = button.interactable ? enabledSprite : disabledSprite;
     }
 }
