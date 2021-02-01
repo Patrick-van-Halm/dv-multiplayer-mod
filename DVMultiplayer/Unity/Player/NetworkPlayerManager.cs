@@ -141,6 +141,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             using (Message message = Message.Create((ushort)NetworkTags.PLAYER_SPAWN, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
+        Main.DebugLog($"Listening to world moved event");
         SingletonBehaviour<WorldMover>.Instance.WorldMoved += WorldMoved;
         SingletonBehaviour<CoroutineManager>.Instance.Run(WaitForHost());
     }
@@ -152,6 +153,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         TutorialController.movementAllowed = false;
         if (!NetworkManager.IsHost())
         {
+            Main.DebugLog($"[CLIENT] Receiving savegame");
             // Check if host is connected if so the savegame should be available to receive
             SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
             yield return new WaitUntil(() => networkPlayers.ContainsKey(0));
@@ -175,11 +177,14 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         }
         else
         {
+            Main.DebugLog($"[CLIENT] Sending savegame");
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
         }
 
+        Main.DebugLog($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
         SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
         SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = false;
+        Main.DebugLog($"Finished loading everything. Unlocking mouse and allow movement");
         UUI.UnlockMouse(false);
         TutorialController.movementAllowed = true;
     }

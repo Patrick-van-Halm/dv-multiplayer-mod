@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DVMultiplayer;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,6 +30,7 @@ class NetworkPlayerSync : MonoBehaviour
 
         if(prevPosition == null || Vector3.Distance(prevPosition, transform.position) > SYNC_THRESHOLD)
         {
+            Main.DebugLog("Player location changed sending new location");
             SingletonBehaviour<NetworkPlayerManager>.Instance.UpdateLocalPositionAndRotation(transform.position - WorldMover.currentMove, transform.rotation);
             prevPosition = transform.position;
         }

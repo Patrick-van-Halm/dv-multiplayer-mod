@@ -88,7 +88,7 @@ namespace DVMultiplayer
 #if DEBUG
         public static void DebugLog(string msg)
         {
-            mod.Logger.Log($"[DEBUG] {msg}");
+            mod.Logger.NativeLog($"[DEBUG] {msg}");
         }
 #endif
     }

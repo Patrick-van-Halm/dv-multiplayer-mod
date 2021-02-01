@@ -12,10 +12,16 @@ class NetworkTrainCouplerSync : MonoBehaviour
 
     private void Awake()
     {
+        Main.DebugLog($"NetworkTrainCouplerSync.Awake()");
         coupler = GetComponent<Coupler>();
+        Main.DebugLog($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] NetworkTrainCouplerSync Awake called");
+        Main.DebugLog($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to coupled event");
         coupler.Coupled += CouplerCoupled;
+        Main.DebugLog($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to uncoupled event");
         coupler.Uncoupled += CouplerUncoupled;
+        Main.DebugLog($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to hose connection changed event");
         coupler.HoseConnectionChanged += CouplerHoseConChanged;
+        Main.DebugLog($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to cock changed event");
         coupler.CockChanged += CouplerCockChanged;
     }
 

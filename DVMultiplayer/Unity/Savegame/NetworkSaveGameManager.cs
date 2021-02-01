@@ -1,4 +1,4 @@
-﻿using DarkRift;
+using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DVMultiplayer.DTO.Savegame;
@@ -33,6 +33,7 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
             Main.DebugLog("[CLIENT] > SAVEGAME_SYNC");
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
+                Main.DebugLog($"Save game Json length: {SaveGameManager.data.GetJsonString().Length}");
                 writer.Write<SaveGame>(new SaveGame()
                 {
                     SaveDataString = SaveGameManager.data.GetJsonString()
