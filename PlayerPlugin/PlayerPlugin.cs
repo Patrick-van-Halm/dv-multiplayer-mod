@@ -16,7 +16,7 @@ namespace PlayerPlugin
 
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("2.3.0");
+        public override Version Version => new Version("2.4.0");
 
         public PlayerPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -109,6 +109,23 @@ namespace PlayerPlugin
             using (DarkRiftReader reader = message.GetReader())
             {
                 player = reader.ReadSerializable<NPlayer>();
+                if(players.Count > 0)
+                {
+                    NPlayer host = players.Values.First();
+                    List<string> missingMods = GetMissingMods(host.Mods, player.Mods);
+                    List<string> extraMods = GetMissingMods(player.Mods, host.Mods);
+                    if (missingMods.Count != 0 || extraMods.Count != 0)
+                    {
+                        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                        {
+                            writer.Write(missingMods.ToArray());
+                            writer.Write(extraMods.ToArray());
+
+                            using (Message msg = Message.Create((ushort)NetworkTags.PLAYER_MODS_MISMATCH, writer))
+                                sender.SendMessage(msg, SendMode.Reliable);
+                        }
+                    }
+                }
             }
 
             if (players.Count > 0)
@@ -129,6 +146,17 @@ namespace PlayerPlugin
             }
 
             players.Add(sender, player);
+        }
+
+        private List<string> GetMissingMods(string[] modList1, string[] modList2)
+        {
+            List<string> missingMods = new List<string>();
+            foreach(string mod in modList1)
+            {
+                if (!modList2.Contains(mod))
+                    missingMods.Add(mod);
+            }
+            return missingMods;
         }
     }
 }

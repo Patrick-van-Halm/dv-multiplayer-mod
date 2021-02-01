@@ -9,6 +9,7 @@ using DVMultiplayer.Networking;
 using System.Collections.Generic;
 using System;
 using System.Collections;
+using System.Linq;
 
 namespace DVMultiplayer
 {
@@ -40,9 +41,14 @@ namespace DVMultiplayer
             return true;
         }
 
+        public static string[] GetEnabledMods()
+        {
+            return modEntries.Where(m => m.Active && m.Loaded).Select(m => m.Info.Id).Where(m => m != "UnencryptedSaveGameMod").ToArray();
+        }
+
         static void OnUpdate(ModEntry entry, float time)
         {
-            if(!isInitialized && enabled && PlayerManager.PlayerTransform && !LoadingScreenManager.IsLoading)
+            if (!isInitialized && enabled && PlayerManager.PlayerTransform && !LoadingScreenManager.IsLoading)
             {
                 Initialize();
             }
