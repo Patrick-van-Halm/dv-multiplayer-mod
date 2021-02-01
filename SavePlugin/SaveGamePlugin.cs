@@ -32,7 +32,6 @@ namespace SaveGamePlugin
         {
             using (Message message = e.GetMessage() as Message)
             {
-                Logger.Trace($"Message received: {(NetworkTags)message.Tag}");
                 if (!((NetworkTags)message.Tag).ToString().StartsWith("SAVEGAME_"))
                     return;
 

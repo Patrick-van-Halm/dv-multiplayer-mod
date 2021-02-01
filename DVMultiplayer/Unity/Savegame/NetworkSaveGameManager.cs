@@ -31,16 +31,15 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
     {
         if (NetworkManager.IsHost())
         {
-            Main.DebugLog("[CLIENT] > SAVEGAME_SYNC");
+            Main.DebugLog("[CLIENT] > SAVEGAME_UPDATE");
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
-                Main.DebugLog($"Save game Json length: {SaveGameManager.data.GetJsonString().Length}");
                 writer.Write<SaveGame>(new SaveGame()
                 {
                     SaveDataCars = SaveGameManager.data.GetJObject(SaveGameKeys.Cars).ToString(Formatting.None),
                     PlayerPos = SaveGameManager.data.GetVector3("Player_position").Value
                 });
-                Main.DebugLog($"[CLIENT] > SAVEGAME_SYNC {writer.Length}");
+                Main.DebugLog($"[CLIENT] > SAVEGAME_UPDATE {writer.Length}");
 
                 using (Message message = Message.Create((ushort)NetworkTags.SAVEGAME_UPDATE, writer))
                     SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
