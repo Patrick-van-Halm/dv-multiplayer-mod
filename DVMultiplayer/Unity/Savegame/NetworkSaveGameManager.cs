@@ -70,11 +70,15 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 
     public void PlayerDisconnect()
     {
-        isLoadingSave = true;
-        SaveGameManager.data = offlineSave;
-        SaveGameUpgrader.Upgrade();
+        if(offlineSave != null)
+        {
+            isLoadingSave = true;
+            SaveGameManager.data = offlineSave;
+            offlineSave = null;
+            SaveGameUpgrader.Upgrade();
 
-        SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave());
+            SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave());
+        }
     }
 
     private IEnumerator LoadOfflineSave()
