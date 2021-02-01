@@ -56,7 +56,7 @@ namespace DarkRift.Client.Unity
 
         [SerializeField]
         [Tooltip("Indicates whether the client will connect to the server in the Start method.")]
-        private bool autoConnect = true;
+        private bool autoConnect = false;
 
         [SerializeField]
         [Tooltip("Specifies that DarkRift should take care of multithreading and invoke all events from Unity's main thread.")]
