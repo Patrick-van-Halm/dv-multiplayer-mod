@@ -5,6 +5,8 @@ using System.Xml.Linq;
 using System.Collections.Specialized;
 using System.Threading;
 using DVMultiplayer;
+using System.Net.NetworkInformation;
+using System.Net;
 
 namespace DarkRift.Server.Unity
 {
@@ -107,6 +109,29 @@ namespace DarkRift.Server.Unity
         private void OnApplicationQuit()
         {
             Close();
+        }
+
+        public bool CheckTCPSocketReady()
+        {
+            bool isAvailable = true;
+
+            // Evaluate current system tcp connections. This is the same information provided
+            // by the netstat command line application, just in .Net strongly-typed object
+            // form.  We will look through the list, and if our port we would like to use
+            // in our TcpClient is occupied, we will set isAvailable to false.
+            IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
+            IPEndPoint[] tcpConnInfoArray = ipGlobalProperties.GetActiveTcpListeners();
+
+            foreach (IPEndPoint endpoint in tcpConnInfoArray)
+            {
+                if (endpoint.Port == port)
+                {
+                    isAvailable = false;
+                    break;
+                }
+            }
+
+            return !isAvailable;
         }
 
         /// <summary>
