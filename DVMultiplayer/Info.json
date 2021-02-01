@@ -2,7 +2,7 @@
   "Id": "DVMultiplayer",
   "DisplayName": "Derail Valley Multiplayer",
   "Author": "Patrick van Halm",
-  "Version": "1.2.0",
+  "Version": "1.2.1",
   "AssemblyName": "DVMultiplayer.dll",
   "EntryMethod": "DVMultiplayer.Main.Load"
 }
