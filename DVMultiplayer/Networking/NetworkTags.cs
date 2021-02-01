@@ -24,5 +24,6 @@ namespace DVMultiplayer.Networking
         SWITCH_CHANGED,
         SAVEGAME_UPDATE,
         SAVEGAME_GET,
+        PLAYER_MODS_MISMATCH,
     }
 }

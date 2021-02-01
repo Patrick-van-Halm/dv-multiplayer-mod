@@ -89,9 +89,40 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                     SpawnNetworkPlayer(message);
                     break;
 
+                case NetworkTags.PLAYER_MODS_MISMATCH:
+                    OnModMismatch(message);
+                    break;
+
                 case NetworkTags.PLAYER_LOCATION_UPDATE:
                     UpdateNetworkPositionAndRotation(message);
                     break;
+            }
+        }
+    }
+
+    private void OnModMismatch(Message message)
+    {
+        Main.DebugLog("[CLIENT] Client disconnected due to mods mismatch");
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            //if (reader.Length % 44 != 0 && reader.Length % 34 != 0)
+            //{
+            //    Main.mod.Logger.Warning("Received malformed spawn packet.");
+            //    return;
+            //}
+
+            while (reader.Position < reader.Length)
+            {
+                string[] missingMods = reader.ReadStrings();
+                string[] extraMods = reader.ReadStrings();
+                
+                if(missingMods.Length > 0)
+                    Main.DebugLog($"[MOD MISMATCH] You are missing the following mods: {string.Join(", ", missingMods)}");
+
+                if (extraMods.Length > 0)
+                    Main.DebugLog($"[MOD MISMATCH] You installed mods the host doesn't have, these are: {string.Join(", ", extraMods)}");
+
+                NetworkManager.Disconnect();
             }
         }
     }
@@ -136,11 +167,13 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                 Username = PlayerManager.PlayerTransform.GetComponent<NetworkPlayerSync>().Username,
                 Position = pos - WorldMover.currentMove,
                 Rotation = PlayerManager.PlayerTransform.rotation,
+                Mods = Main.GetEnabledMods()
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.PLAYER_SPAWN, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
+        Main.DebugLog($"Listening to world moved event");
         SingletonBehaviour<WorldMover>.Instance.WorldMoved += WorldMoved;
         SingletonBehaviour<CoroutineManager>.Instance.Run(WaitForHost());
     }
@@ -152,9 +185,12 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         TutorialController.movementAllowed = false;
         if (!NetworkManager.IsHost())
         {
+            Main.DebugLog($"[CLIENT] Receiving savegame");
             // Check if host is connected if so the savegame should be available to receive
             SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
-            yield return new WaitUntil(() => networkPlayers.ContainsKey(0));
+            yield return new WaitUntil(() => networkPlayers.ContainsKey(0) || !NetworkManager.IsClient());
+            if (!NetworkManager.IsClient())
+                yield break;
 
             // Get the online save game
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
@@ -175,11 +211,14 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         }
         else
         {
+            Main.DebugLog($"[CLIENT] Sending savegame");
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
         }
 
+        Main.DebugLog($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
         SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
         SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = false;
+        Main.DebugLog($"Finished loading everything. Unlocking mouse and allow movement");
         UUI.UnlockMouse(false);
         TutorialController.movementAllowed = true;
     }
