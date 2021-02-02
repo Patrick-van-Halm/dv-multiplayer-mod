@@ -10,6 +10,7 @@ using System;
 using Newtonsoft.Json.Linq;
 using System.Collections;
 using DV.TerrainSystem;
+using Newtonsoft.Json;
 
 class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 {
@@ -30,14 +31,15 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
     {
         if (NetworkManager.IsHost())
         {
-            Main.DebugLog("[CLIENT] > SAVEGAME_SYNC");
+            Main.DebugLog("[CLIENT] > SAVEGAME_UPDATE");
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
                 writer.Write<SaveGame>(new SaveGame()
                 {
-                    SaveDataString = SaveGameManager.data.GetJsonString()
+                    SaveDataCars = SaveGameManager.data.GetJObject(SaveGameKeys.Cars).ToString(Formatting.None),
+                    PlayerPos = SaveGameManager.data.GetVector3("Player_position").Value
                 });
-                Main.DebugLog($"[CLIENT] > SAVEGAME_SYNC {writer.Length}");
+                Main.DebugLog($"[CLIENT] > SAVEGAME_UPDATE {writer.Length}");
 
                 using (Message message = Message.Create((ushort)NetworkTags.SAVEGAME_UPDATE, writer))
                     SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
@@ -70,21 +72,24 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 
     public void PlayerDisconnect()
     {
-        isLoadingSave = true;
-        SaveGameManager.data = offlineSave;
-        SaveGameUpgrader.Upgrade();
+        if(offlineSave != null)
+        {
+            isLoadingSave = true;
+            SaveGameManager.data = offlineSave;
+            offlineSave = null;
+            SaveGameUpgrader.Upgrade();
 
-        SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave());
+            SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave());
+        }
     }
 
     private IEnumerator LoadOfflineSave()
     {
+        SingletonBehaviour<NetworkJobsManager>.Instance.PlayerDisconnect();
         UUI.UnlockMouse(true);
         TutorialController.movementAllowed = false;
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
-        Vector3 vector3_2 = SaveGameManager.data.GetVector3("Player_rotation").Value;
         PlayerManager.PlayerTransform.position = vector3_1 + WorldMover.currentMove;
-        PlayerManager.PlayerTransform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(Quaternion.Euler(vector3_2) * Vector3.forward, Vector3.up).normalized);
         bool carsLoadedSuccessfully = false;
         JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
         if (jobject3 != null)
@@ -131,7 +136,8 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
             {
                 SaveGame save = reader.ReadSerializable<SaveGame>();
                 offlineSave = SaveGameManager.data;
-                SaveGameManager.data = SaveGameData.LoadFromString(save.SaveDataString);
+                SaveGameManager.data.SetJObject(SaveGameKeys.Cars, JObject.Parse(save.SaveDataCars));
+                SaveGameManager.data.SetVector3(SaveGameKeys.Player_position, save.PlayerPos);
                 SaveGameUpgrader.Upgrade();
                 IsHostSaveLoaded = false;
                 IsHostSaveReceived = true;
@@ -141,10 +147,9 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 
     public void LoadMultiplayerData()
     {
+        SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
-        Vector3 vector3_2 = SaveGameManager.data.GetVector3("Player_rotation").Value;
         PlayerManager.PlayerTransform.position = vector3_1 + WorldMover.currentMove;
-        PlayerManager.PlayerTransform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(Quaternion.Euler(vector3_2) * Vector3.forward, Vector3.up).normalized);
         bool carsLoadedSuccessfully = false;
         JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
         if (jobject3 != null)

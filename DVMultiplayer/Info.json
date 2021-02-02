@@ -2,7 +2,9 @@
   "Id": "DVMultiplayer",
   "DisplayName": "Derail Valley Multiplayer",
   "Author": "Patrick van Halm",
-  "Version": "1.2.0",
+  "Version": "1.2.1",
   "AssemblyName": "DVMultiplayer.dll",
-  "EntryMethod": "DVMultiplayer.Main.Load"
+  "EntryMethod": "DVMultiplayer.Main.Load",
+  "HomePage": "https://www.nexusmods.com/derailvalley/mods/272",
+  "Repository": "https://raw.githubusercontent.com/Patrick-van-Halm/dv-multiplayer-mod/master/repository.json"
 }

@@ -36,16 +36,19 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         foreach (TrainCar trainCar in trainCars)
         {
+            Main.DebugLog($"Initializing TrainCar Coupling scripts");
             trainCar.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
             trainCar.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
 
             if (trainCar.IsLoco)
             {
+                Main.DebugLog($"Initializing TrainCar Positioning scripts");
                 trainCar.gameObject.AddComponent<NetworkTrainPosSync>();
                 trainCar.gameObject.AddComponent<NetworkTrainSync>();
             }
         }
 
+        Main.DebugLog($"Listening to CarChanged event");
         PlayerManager.CarChanged += OnPlayerSwitchTrainCarEvent;
     }
 

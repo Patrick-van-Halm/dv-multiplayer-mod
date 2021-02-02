@@ -17,9 +17,11 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
     private VisualSwitch[] switches;
     protected override void Awake()
     {
+        Main.DebugLog("NetworkJunctionManager initialized");
         base.Awake();
         switches = GameObject.FindObjectsOfType<VisualSwitch>();
-        foreach(VisualSwitch @switch in switches)
+        Main.DebugLog($"NetworkJunctionManager found {switches.Length} switches in world");
+        foreach (VisualSwitch @switch in switches)
         {
             @switch.junction.gameObject.AddComponent<NetworkJunctionSync>();
         }

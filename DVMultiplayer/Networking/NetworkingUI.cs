@@ -4,17 +4,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
+using VRTK;
+using Object = UnityEngine.Object;
 
 namespace DVMultiplayer.Networking
 {
     public class NetworkingUI
     {
         private bool showUI = false;
-        private string host = "";
-        private string conPortString = "4296";
-        private string hostPortString = "4296";
-        private string username = "";
+        private bool UIShown = false;
+        private MenuScreen UI;
+        private MenuScreen ConnectUI;
+        private MenuScreen HostUI;
+        private MenuScreen SaveFavoriteUI;
+        private MenuScreen FavoritesListUI;
+        private MenuScreen RequestUsernameUI;
+        private MenuScreen HostConnectedMenuUI;
+        private MenuScreen ClientConnectedMenuUI;
 
         public void ListenToInputs()
         {
@@ -27,82 +36,283 @@ namespace DVMultiplayer.Networking
         public void ToggleUI()
         {
             showUI = !showUI;
-            UUI.UnlockMouse(showUI);
+            if(!VRManager.IsVREnabled())
+                UUI.UnlockMouse(showUI);
         }
 
-        public void Draw()
+        internal void Draw()
         {
-            if (showUI)
+            if(UI == null)
             {
-                GUIStyle textStyle = UUI.GenerateStyle(Color.white, 12, TextAnchor.MiddleLeft);
-                int yStart = 20;
-                if (!NetworkManager.IsClient() && !NetworkManager.IsHost())
+                UI = CustomUI.NetworkUI;
+                ConnectUI = CustomUI.ConnectMenuUI;
+                HostUI = CustomUI.HostMenuUI;
+                SaveFavoriteUI = CustomUI.SaveFavoriteMenuUI;
+                FavoritesListUI = CustomUI.FavoriteConnectMenuUI;
+                RequestUsernameUI = CustomUI.UsernameRequestMenuUI;
+                HostConnectedMenuUI = CustomUI.HostConnectedMenuUI;
+                ClientConnectedMenuUI = CustomUI.ClientConnectedMenuUI;
+                int pagination = 0;
+                Favorite selectedFav = null;
+
+                UI.transform.Find("Button Connect to Favorite").GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    GUI.Box(new Rect(20, 20, 300, 70), "Multiplayer settings");
-                    GUI.Label(new Rect(110 - textStyle.CalcSize(new GUIContent("Username:")).x, 45, 80, 20), "Username:");
-                    username = GUI.TextField(new Rect(120, 45, 300 - 130, 20), username);
+                    selectedFav = null;
+                    LoadFavorites(pagination);
+                    CustomUI.Open(FavoritesListUI);
+                });
 
-                    yStart += 80;
+                FavoritesListUI.transform.Find("Button Fav1").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string name = FavoritesListUI.transform.Find($"Button Fav1").GetComponentInChildren<TextMeshProUGUI>().text;
+                    selectedFav = FavoritesManager.Find(name);
+                    CustomUI.Open(RequestUsernameUI);
+                });
 
-                    GUI.Box(new Rect(20, yStart, 300, 110), "Connect to server");
-                    GUI.Label(new Rect(110 - textStyle.CalcSize(new GUIContent("IP:")).x, yStart + 25, 80, 20), "IP:");
-                    host = GUI.TextField(new Rect(120, yStart + 25, 300 - 130, 20), host);
-                    GUI.Label(new Rect(110 - textStyle.CalcSize(new GUIContent("Port:")).x, yStart + 50, 80, 20), "Port:");
-                    conPortString = GUI.TextField(new Rect(120, yStart + 50, 300 - 130, 20), conPortString);
-                    bool connect = GUI.Button(new Rect(80, yStart + 80, 300 - 120, 20), "Connect");
+                FavoritesListUI.transform.Find("Button Fav2").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string name = FavoritesListUI.transform.Find($"Button Fav2").GetComponentInChildren<TextMeshProUGUI>().text;
+                    selectedFav = FavoritesManager.Find(name);
+                    CustomUI.Open(RequestUsernameUI);
+                });
 
-                    ushort port = 0;
-                    bool portValid = ushort.TryParse(conPortString, out port) && port < 65535 && port > 0;
-                    if (connect && portValid && !string.IsNullOrWhiteSpace(username))
+                FavoritesListUI.transform.Find("Button Fav3").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string name = FavoritesListUI.transform.Find($"Button Fav3").GetComponentInChildren<TextMeshProUGUI>().text;
+                    selectedFav = FavoritesManager.Find(name);
+                    CustomUI.Open(RequestUsernameUI);
+                });
+
+                FavoritesListUI.transform.Find("Button Fav4").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string name = FavoritesListUI.transform.Find($"Button Fav4").GetComponentInChildren<TextMeshProUGUI>().text;
+                    selectedFav = FavoritesManager.Find(name);
+                    CustomUI.Open(RequestUsernameUI);
+                });
+
+                FavoritesListUI.transform.Find("Button Del Fav1").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string name = FavoritesListUI.transform.Find($"Button Fav1").GetComponentInChildren<TextMeshProUGUI>().text;
+                    FavoritesManager.Delete(name);
+                    pagination = 0;
+                    LoadFavorites(pagination);
+                });
+
+                FavoritesListUI.transform.Find("Button Del Fav2").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string name = FavoritesListUI.transform.Find($"Button Fav2").GetComponentInChildren<TextMeshProUGUI>().text;
+                    FavoritesManager.Delete(name);
+                    pagination = 0;
+                    LoadFavorites(pagination);
+                });
+
+                FavoritesListUI.transform.Find("Button Del Fav3").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string name = FavoritesListUI.transform.Find($"Button Fav3").GetComponentInChildren<TextMeshProUGUI>().text;
+                    FavoritesManager.Delete(name);
+                    pagination = 0;
+                    LoadFavorites(pagination);
+                });
+
+                FavoritesListUI.transform.Find("Button Del Fav4").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string name = FavoritesListUI.transform.Find($"Button Fav4").GetComponentInChildren<TextMeshProUGUI>().text;
+                    FavoritesManager.Delete(name);
+                    pagination = 0;
+                    LoadFavorites(pagination);
+                });
+
+                RequestUsernameUI.transform.Find("Button Accept").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string username = RequestUsernameUI.transform.Find("TextField Username").GetComponentInChildren<TextMeshProUGUI>().text;
+                    if (!string.IsNullOrWhiteSpace(username))
+                    {
+                        NetworkManager.Connect(selectedFav.Hostname, selectedFav.Port, username);
+                        HideUI();
+                    }
+                });
+
+                UI.transform.Find("Button Connect").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    ConnectUI.transform.Find("TextField IP").GetComponentInChildren<TextMeshProUGUI>().text = "";
+                    ConnectUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text = "";
+                    ConnectUI.transform.Find("TextField Username").GetComponentInChildren<TextMeshProUGUI>().text = "";
+                    ConnectUI.transform.Find("Button Save as Favorite").Find("image").GetComponent<Image>().SetSprite("UI_Unfavorited.png");
+                    CustomUI.Open(ConnectUI);
+                });
+
+                ConnectUI.transform.Find("Button Connect").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string host = ConnectUI.transform.Find("TextField IP").GetComponentInChildren<TextMeshProUGUI>().text;
+                    string portString = ConnectUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text;
+                    string username =  ConnectUI.transform.Find("TextField Username").GetComponentInChildren<TextMeshProUGUI>().text;
+                    if (!string.IsNullOrWhiteSpace(host) && !string.IsNullOrWhiteSpace(portString) && int.TryParse(portString, out int port) && !string.IsNullOrWhiteSpace(username))
+                    {
                         NetworkManager.Connect(host, port, username);
-                    yStart += 120;
-                }
+                        HideUI();
+                    }
+                });
 
-                if (NetworkManager.IsClient() && !NetworkManager.IsHost())
+                ConnectUI.transform.Find("Button Save as Favorite").GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    GUI.Box(new Rect(20, yStart, 300, 80), "Client");
-                    bool connect = GUI.Button(new Rect(80, yStart + 30, 300 - 120, 20), "Disconnect");
+                    string host = ConnectUI.transform.Find("TextField IP").GetComponentInChildren<TextMeshProUGUI>().text;
+                    string portString = ConnectUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text;
+                    if (!string.IsNullOrWhiteSpace(host) && !string.IsNullOrWhiteSpace(portString) && int.TryParse(portString, out int port))
+                    {
+                        CustomUI.Open(SaveFavoriteUI);
+                    }
+                });
 
-                    if (connect)
-                        NetworkManager.Disconnect();
-                    yStart += 90;
-                }
-                
-                if(!NetworkManager.IsHost() && !NetworkManager.IsClient())
+                SaveFavoriteUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    GUI.Box(new Rect(20, yStart, 300, 80), "Hosting");
-                    GUI.Label(new Rect(110 - textStyle.CalcSize(new GUIContent("Port:")).x, yStart + 25, 80, 20), "Port:");
-                    hostPortString = GUI.TextField(new Rect(120, yStart + 25, 300 - 130, 20), hostPortString);
-                    bool button = GUI.Button(new Rect(80, yStart + 50, 300 - 120, 20), "Start server");
+                    CustomUI.Open(ConnectUI);
+                });
 
-                    bool portValid = ushort.TryParse(hostPortString, out ushort port) && port < 65535 && port > 0;
+                SaveFavoriteUI.transform.Find("Button Accept").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string favName = SaveFavoriteUI.transform.Find("TextField Name").GetComponentInChildren<TextMeshProUGUI>().text;
+                    string host = ConnectUI.transform.Find("TextField IP").GetComponentInChildren<TextMeshProUGUI>().text;
+                    string portString = ConnectUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text;
+                    int.TryParse(portString, out int port);
+                    try
+                    {
+                        FavoritesManager.SaveAsFavorite(favName, host, port);
+                        ConnectUI.transform.Find("Button Save as Favorite").Find("image").GetComponent<Image>().SetSprite("UI_Favorited.png");
+                        CustomUI.Open(ConnectUI);
+                    }
+                    catch(Exception ex)
+                    {
+                        Main.DebugLog(ex.Message);
+                        SaveFavoriteUI.transform.Find("Label Error").GetComponentInChildren<TextMeshProUGUI>().text = ex.Message;
+                    }
+                });
+
+                UI.transform.Find("Button Host").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    HostUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text = "";
+                    HostUI.transform.Find("TextField Username").GetComponentInChildren<TextMeshProUGUI>().text = "";
+                    CustomUI.Open(HostUI);
+                });
+
+                HostUI.transform.Find("Button Host").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    string portString = HostUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text;
+                    string username = HostUI.transform.Find("TextField Username").GetComponentInChildren<TextMeshProUGUI>().text;
+
+                    bool portValid = ushort.TryParse(portString, out ushort port) && port < 65535 && port > 0;
                     if (!portValid)
                         port = 4296;
 
-                    if (button && !string.IsNullOrWhiteSpace(username))
+                    if (!string.IsNullOrWhiteSpace(username))
+                    {
                         NetworkManager.StartServer(username, port);
+                        HideUI();
+                    }
+                });
 
-                    yStart += 90;
-                }
-
-                if(NetworkManager.IsHost() && NetworkManager.IsClient())
+                UI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    GUI.Box(new Rect(20, yStart, 300, 80), "Hosting");
-                    GUIStyle center = UUI.GenerateStyle(Color.white, 12, TextAnchor.MiddleCenter);
-                    GUI.Label(new Rect(30, yStart + 25, 290, 20), $"Connected as {username}", center);
-                    bool button = GUI.Button(new Rect(80, yStart + 50, 300 - 120, 20), "Stop server");
+                    HideUI();
+                });
 
-                    if (button)
-                        NetworkManager.StopServer();
+                ClientConnectedMenuUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    HideUI();
+                });
 
+                HostConnectedMenuUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    HideUI();
+                });
+
+                HostConnectedMenuUI.transform.Find("Button Stop Server").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    NetworkManager.StopServer();
+                    HideUI();
+                });
+
+                ClientConnectedMenuUI.transform.Find("Button Disconnect").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    NetworkManager.Disconnect();
+                    HideUI();
+                });
+
+                FavoritesListUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    CustomUI.Open(UI);
+                });
+
+                ConnectUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    CustomUI.Open(UI);
+                });
+
+                HostUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    CustomUI.Open(UI);
+                });
+            }
+
+            if (showUI && !UIShown)
+            {
+                // Disable the buttons if the tutorial is not yet finished.
+                UI.transform.Find("Button Connect").GetComponent<Button>().interactable = !(TutorialController.tutorialPartOneInProgress || TutorialController.tutorialPartTwoInProgress);
+                UI.transform.Find("Button Connect").GetComponent<UIElementTooltip>().TooltipNonInteractableText = TutorialController.tutorialPartOneInProgress || TutorialController.tutorialPartTwoInProgress ? "Finish the tutorial first" : "";
+                UI.transform.Find("Button Host").GetComponent<Button>().interactable = !(TutorialController.tutorialPartOneInProgress || TutorialController.tutorialPartTwoInProgress);
+                UI.transform.Find("Button Host").GetComponent<UIElementTooltip>().TooltipNonInteractableText = TutorialController.tutorialPartOneInProgress || TutorialController.tutorialPartTwoInProgress ? "Finish the tutorial first" : "";
+
+                UIShown = true;
+                if (NetworkManager.IsClient() && NetworkManager.IsHost())
+                {
+                    HostConnectedMenuUI.transform.Find("Label Username").GetComponent<TextMeshProUGUI>().text = $"Connected as: {NetworkManager.username}";
+                    CustomUI.Open(HostConnectedMenuUI);
+                }
+                else if(NetworkManager.IsClient() && !NetworkManager.IsHost())
+                {
+                    ClientConnectedMenuUI.transform.Find("Label Username").GetComponent<TextMeshProUGUI>().text = $"Connected as: {NetworkManager.username}";
+                    CustomUI.Open(ClientConnectedMenuUI);
+                }
+                else
+                {
+                    CustomUI.Open(UI);
                 }
             }
+            else if (!showUI && UIShown)
+            {
+                UIShown = false;
+                CustomUI.Close();
+            }
+        }
+
+        private void LoadFavorites(int pagination)
+        {
+            List<Favorite> favorites = FavoritesManager.GetFavorites();
+            for (int i = 0; i < 4; i++)
+            {
+                FavoritesListUI.transform.Find($"Button Fav{i + 1}").gameObject.SetActive(true);
+                Favorite favorite = null;
+                if (i + (pagination * 4) < favorites.Count)
+                {
+                    favorite = favorites[i + (pagination * 4)];
+                }
+                if (favorite != null)
+                    FavoritesListUI.transform.Find($"Button Fav{i + 1}").GetComponentInChildren<TextMeshProUGUI>().text = favorite.Name;
+                else
+                {
+                    FavoritesListUI.transform.Find($"Button Fav{i + 1}").gameObject.SetActive(false);
+                    FavoritesListUI.transform.Find($"Button Del Fav{i + 1}").gameObject.SetActive(false);
+                }
+            }
+            
+            FavoritesListUI.transform.Find($"Button NextPage").gameObject.SetActive(favorites.Count > 5 + (pagination * 4));
+            FavoritesListUI.transform.Find($"Button PrevPage").gameObject.SetActive(pagination > 0);
         }
 
         internal void HideUI()
         {
             showUI = false;
-            UUI.UnlockMouse(showUI);
+            if(!VRManager.IsVREnabled())
+                UUI.UnlockMouse(showUI);
         }
     }
 }

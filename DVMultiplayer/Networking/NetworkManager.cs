@@ -1,4 +1,4 @@
-﻿using DarkRift;
+using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DarkRift.Server.Unity;
@@ -23,7 +23,7 @@ namespace DVMultiplayer.Networking
         private static bool isClient;
         private static string host;
         private static int port;
-        private static string username;
+        internal static string username;
         private static bool scriptsInitialized = false;
 
         /// <summary>
@@ -103,6 +103,7 @@ namespace DVMultiplayer.Networking
                 return;
 
             isClient = true;
+            Main.DebugLog("[CLIENT] Connecting to server");
             client.ConnectInBackground(host, port, true, OnConnected);
         }
 
@@ -135,19 +136,26 @@ namespace DVMultiplayer.Networking
 
             NetworkManager.username = username;
             Main.DebugLog("Start hosting server");
+            server.port = port;
+            NetworkManager.port = port;
             try
             {
-                server.port = port;
-                server.Create();
-                isHost = true;
-                host = "127.0.0.1";
-                NetworkManager.port = port;
-                ClientConnect();
+                SingletonBehaviour<CoroutineManager>.Instance.Run(StartHosting());
             }
             catch (Exception ex)
             {
                 Main.mod.Logger.Error(ex.Message);
             }
+        }
+
+        private static IEnumerator StartHosting()
+        {
+            server.Create();
+            yield return new WaitUntil(() => server.CheckTCPSocketReady());
+            Main.DebugLog($"Server should be started connecting client now");
+            isHost = true;
+            host = "127.0.0.1";
+            ClientConnect();
         }
 
         /// <summary>
@@ -183,6 +191,7 @@ namespace DVMultiplayer.Networking
             {
                 isClient = false;
                 Main.DebugLog($"[ERROR] {ex.Message}");
+                Main.DebugLog($"Client connecting failed retrying");
                 ClientConnect();
             }
             else
@@ -190,24 +199,36 @@ namespace DVMultiplayer.Networking
                 UI.HideUI();
                 if (!scriptsInitialized)
                 {
+                    Main.DebugLog($"Client connected loading required unity scripts");
                     InitializeUnityScripts();
                     scriptsInitialized = true;
                 }
+
+                Main.DebugLog($"Disabling autosave");
                 SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = true;
+
+                Main.DebugLog($"Everything should be initialized running PlayerConnect method");
                 SingletonBehaviour<NetworkPlayerManager>.Instance.PlayerConnect();
+                Main.DebugLog($"Connecting finished");
             }
         }
 
         private static void InitializeUnityScripts()
         {
+            Main.DebugLog($"[CLIENT] Initializing Player");
             NetworkPlayerSync playerSync = PlayerManager.PlayerTransform.gameObject.AddComponent<NetworkPlayerSync>();
             playerSync.IsLocal = true;
             playerSync.Username = username;
 
+            Main.DebugLog($"[CLIENT] Initializing NetworkPlayerManager");
             networkManager.AddComponent<NetworkPlayerManager>();
+            Main.DebugLog($"[CLIENT] Initializing NetworkTrainManager");
             networkManager.AddComponent<NetworkTrainManager>();
+            Main.DebugLog($"[CLIENT] Initializing NetworkJunctionManager");
             networkManager.AddComponent<NetworkJunctionManager>();
+            Main.DebugLog($"[CLIENT] Initializing NetworkSaveGameManager");
             networkManager.AddComponent<NetworkSaveGameManager>();
+            Main.DebugLog($"[CLIENT] Initializing NetworkJobsManager");
             networkManager.AddComponent<NetworkJobsManager>();
         }
 

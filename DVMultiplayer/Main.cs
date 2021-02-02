@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using UnityModManagerNet;
 using static UnityModManagerNet.UnityModManager;
 using System.Reflection;
@@ -9,15 +9,17 @@ using DVMultiplayer.Networking;
 using System.Collections.Generic;
 using System;
 using System.Collections;
+using System.Linq;
 
 namespace DVMultiplayer
 {
     public class Main
     {
         public static ModEntry mod;
-        public static event Action OnGameFixedGUI; 
+        public static event Action OnGameFixedGUI;
+        public static event Action OnGameFixedGUIVR;
         public static event Action OnGameUpdate;
-        private static bool isInitialized = false;
+        public static bool isInitialized = false;
         private static bool enabled;
 
         private static Harmony harmony;
@@ -40,9 +42,14 @@ namespace DVMultiplayer
             return true;
         }
 
+        public static string[] GetEnabledMods()
+        {
+            return modEntries.Where(m => m.Active && m.Loaded).Select(m => m.Info.Id).Where(m => m != "UnencryptedSaveGameMod").ToArray();
+        }
+
         static void OnUpdate(ModEntry entry, float time)
         {
-            if(!isInitialized && enabled && PlayerManager.PlayerTransform && !LoadingScreenManager.IsLoading)
+            if(!isInitialized && enabled && PlayerManager.PlayerTransform && !LoadingScreenManager.IsLoading && SingletonBehaviour<CanvasSpawner>.Instance)
             {
                 Initialize();
             }
@@ -63,32 +70,22 @@ namespace DVMultiplayer
 #if DEBUG
                 DebugUI.OnGUI();
 #endif
-
-                if(TutorialController.tutorialPartOneInProgress || TutorialController.tutorialPartTwoInProgress)
-                {
-                    GUI.Box(new Rect(Screen.width - 300, 0, 300, 200), "DVMultiplayer note");
-                    GUI.Label(new Rect(Screen.width - 290, 25, 280, 20), "You need to finish the tutorial before you can use DVMultiplayer");
-                }
-                //else if (PlayerManager.)
-                //{
-                //    GUI.Box(new Rect(Screen.width - 100, 0, 100, 50), "DVMultiplayer note");
-                //    GUI.Label(new Rect(Screen.width - 90, 25, 80, 20), "You need to finish the tutorial before you can use DVMultiplayer");
-                //}
-                else
-                    OnGameFixedGUI?.Invoke();
+                OnGameFixedGUI?.Invoke();
             }
         }
 
         static void Initialize()
         {
-            isInitialized = true;
             DebugLog("Initializing...");
+            CustomUI.Initialize();
+            FavoritesManager.CreateFavoritesFileIfNotExists();
             NetworkManager.Initialize();
+            isInitialized = true;
         }
 #if DEBUG
         public static void DebugLog(string msg)
         {
-            mod.Logger.Log($"[DEBUG] {msg}");
+            mod.Logger.NativeLog($"[DEBUG] {msg}");
         }
 #endif
     }

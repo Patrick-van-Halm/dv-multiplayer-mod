@@ -1,5 +1,6 @@
 ﻿using DarkRift.Client;
 using DarkRift.Client.Unity;
+using DVMultiplayer;
 using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
@@ -11,13 +12,12 @@ using UnityEngine;
 class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
 {
     StationController[] allStations;
-    Dictionary<StationController, StationProceduralJobsRuleset> defaultRulesets;
     bool jobGenerationTurnedOff = false;
 
     protected override void Awake()
     {
+        Main.DebugLog($"NetworkJobsManager initialized");
         base.Awake();
-        defaultRulesets = new Dictionary<StationController, StationProceduralJobsRuleset>();
         allStations = GameObject.FindObjectsOfType<StationController>();
 
         //SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
@@ -25,32 +25,24 @@ class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
 
     public void PlayerConnect()
     {
-        if (NetworkManager.IsHost() && jobGenerationTurnedOff)
+        Main.DebugLog($"Disable jobs generation if client");
+        if (NetworkManager.IsHost() || jobGenerationTurnedOff)
             return;
         jobGenerationTurnedOff = true;
 
         foreach(StationController station in allStations)
         {
-            defaultRulesets.Add(station, station.proceduralJobsRuleset);
             station.ExpireAllAvailableJobsInStation();
-            station.proceduralJobsRuleset = new StationProceduralJobsRuleset()
-            {
-                jobsCapacity = 0,
-            };
         }
     }
 
     public void PlayerDisconnect()
     {
-        if (NetworkManager.IsHost() && !jobGenerationTurnedOff)
+        Main.DebugLog($"Enable jobs generation if client");
+        if (NetworkManager.IsHost() || !jobGenerationTurnedOff)
             return;
 
         jobGenerationTurnedOff = false;
-
-        foreach (StationController station in allStations)
-        {
-            station.proceduralJobsRuleset = defaultRulesets[station];
-        }
     }
 
     private void MessageReceived(object sender, MessageReceivedEventArgs e)

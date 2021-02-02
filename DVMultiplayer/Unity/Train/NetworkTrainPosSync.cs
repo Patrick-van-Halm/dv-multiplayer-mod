@@ -1,4 +1,5 @@
-﻿using DVMultiplayer.DTO.Train;
+﻿using DVMultiplayer;
+using DVMultiplayer.DTO.Train;
 using DVMultiplayer.Networking;
 using System;
 using System.Collections;
@@ -19,9 +20,13 @@ class NetworkTrainPosSync : MonoBehaviour
 
     private void Awake()
     {
+        Main.DebugLog($"NetworkTrainPosSync.Awake()");
         trainCar = GetComponent<TrainCar>();
+        Main.DebugLog($"[{trainCar.ID}] NetworkTrainPosSync Awake called");
+        Main.DebugLog($"Starting coroutine for location updating");
         SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
 
+        Main.DebugLog($"Listen to derailment events");
         trainCar.OnDerailed += TrainDerail;
         trainCar.OnRerailed += TrainRerail;
     }
@@ -41,14 +46,12 @@ class NetworkTrainPosSync : MonoBehaviour
         yield return new WaitForSeconds(SYNC_CHECKTIME);
         if (NetworkManager.IsHost())
         {
-            if (Vector3.Distance(prevPosition, transform.position) > 3f)
-            {
-                prevAngularVelocity = trainCar.rb.angularVelocity;
-                prevVelocity = trainCar.rb.velocity;
+            yield return new WaitUntil(() => Vector3.Distance(prevPosition, transform.position) > 5f);
+            prevAngularVelocity = trainCar.rb.angularVelocity;
+            prevVelocity = trainCar.rb.velocity;
 
-                prevPosition = transform.position;
-                SingletonBehaviour<NetworkTrainManager>.Instance.SendTrainLocationUpdate(trainCar);
-            }
+            prevPosition = transform.position;
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendTrainLocationUpdate(trainCar);
         }
         yield return UpdateLocation();
     }
