@@ -453,15 +453,16 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             break;
 
                         case Levers.Horn:
+                            float valHorn = lever.Value;
                             if (train.carType == TrainCarType.LocoShunter)
                             {
-                                float val = lever.Value;
-                                if (val < 0.5)
-                                    val = val - 0.5f * -1;
+                                train.interior.GetComponentInChildren<ShunterDashboardControls>().hornObj.GetComponent<LeverBase>().SetValue(valHorn);
+                                if (valHorn < 0.5)
+                                    valHorn = valHorn * 2;
                                 else
-                                    val = val - 0.5f;
-                                train.interior.GetComponentInChildren<ShunterDashboardControls>().gameObject.GetComponent<Horn>().SetInput(val);
+                                    valHorn = (valHorn - 0.5f) * 2;
                             }
+                            train.GetComponent<LocoControllerBase>().UpdateHorn(valHorn);
                             break;
                     }
                     IsChangeByNetwork = false;

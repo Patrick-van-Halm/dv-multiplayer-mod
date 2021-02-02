@@ -148,7 +148,11 @@ class NetworkTrainSync : MonoBehaviour
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLeverValue(this, Levers.Horn, e.newValue);
+        float val = e.newValue;
+        if (val < .7f && val > .3f)
+            val = 0;
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLeverValue(this, Levers.Horn, val);
     }
 
     private void OnTrainFusePowerStarterStateChanged(int state)
