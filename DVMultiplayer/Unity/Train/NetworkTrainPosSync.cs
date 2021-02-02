@@ -61,14 +61,14 @@ class NetworkTrainPosSync : MonoBehaviour
 
         for(int i = 0; i < location.AmountCars; i++)
         {
-            trainCar.trainset.cars[i].transform.position = location.CarsPositions[i];
+            trainCar.trainset.cars[i].transform.position = location.CarsPositions[i] + WorldMover.currentMove;
             trainCar.trainset.cars[i].transform.rotation = location.CarsRotation[i];
         }
 
         if(trainCar.derailed && !hostDerailed)
         {
             trainCar.derailed = false;
-            trainCar.SetTrack(RailTrack.GetClosest(trainCar.transform.position).track, SingletonBehaviour<NetworkTrainManager>.Instance.CalculateWorldPosition(trainCar.transform.position, trainCar.transform.forward, trainCar.Bounds.center.z), trainCar.transform.forward);
+            trainCar.SetTrack(RailTrack.GetClosest(trainCar.transform.position).track, SingletonBehaviour<NetworkTrainManager>.Instance.CalculateWorldPosition(trainCar.transform.position + WorldMover.currentMove, trainCar.transform.forward, trainCar.Bounds.center.z), trainCar.transform.forward);
         }
     }
 }

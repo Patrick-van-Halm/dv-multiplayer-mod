@@ -157,7 +157,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         Vector3[] carsPositions = new Vector3[trainCar.trainset.cars.Count];
         for(int i = 0; i < carsPositions.Length; i++)
         {
-            carsPositions[i] = trainCar.trainset.cars[i].transform.position;
+            carsPositions[i] = trainCar.trainset.cars[i].transform.position - WorldMover.currentMove;
         }
         Quaternion[] carsRotation = new Quaternion[trainCar.trainset.cars.Count];
         for (int i = 0; i < carsRotation.Length; i++)
