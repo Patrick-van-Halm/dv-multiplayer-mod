@@ -1,4 +1,4 @@
-﻿using DarkRift;
+using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DarkRift.Server.Unity;
@@ -23,7 +23,7 @@ namespace DVMultiplayer.Networking
         private static bool isClient;
         private static string host;
         private static int port;
-        private static string username;
+        internal static string username;
         private static bool scriptsInitialized = false;
 
         /// <summary>
@@ -136,19 +136,26 @@ namespace DVMultiplayer.Networking
 
             NetworkManager.username = username;
             Main.DebugLog("Start hosting server");
+            server.port = port;
+            NetworkManager.port = port;
             try
             {
-                server.port = port;
-                server.Create();
-                isHost = true;
-                host = "127.0.0.1";
-                NetworkManager.port = port;
-                ClientConnect();
+                SingletonBehaviour<CoroutineManager>.Instance.Run(StartHosting());
             }
             catch (Exception ex)
             {
                 Main.mod.Logger.Error(ex.Message);
             }
+        }
+
+        private static IEnumerator StartHosting()
+        {
+            server.Create();
+            yield return new WaitUntil(() => server.CheckTCPSocketReady());
+            Main.DebugLog($"Server should be started connecting client now");
+            isHost = true;
+            host = "127.0.0.1";
+            ClientConnect();
         }
 
         /// <summary>
