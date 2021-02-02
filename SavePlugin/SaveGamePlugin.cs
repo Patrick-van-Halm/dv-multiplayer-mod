@@ -16,7 +16,7 @@ namespace SaveGamePlugin
 
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.5");
+        public override Version Version => new Version("1.0.6");
 
         public SaveGamePlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
