@@ -20,6 +20,7 @@ namespace DVMultiplayer
         internal static MenuScreen UsernameRequestMenuUI;
         internal static MenuScreen HostConnectedMenuUI;
         internal static MenuScreen ClientConnectedMenuUI;
+        internal static MenuScreen ModMismatchScreen;
         internal static MenuScreen currentScreen;
         internal static bool readyForCSUpdate = false;
         internal static bool CSUpdateFinished = false;
@@ -38,6 +39,8 @@ namespace DVMultiplayer
                 GenerateRequestUsernameUI();
                 GenerateHostNetworkUI();
                 GenerateClientNetworkUI();
+                GenerateModMismatchScreenUI();
+                Open(ModMismatchScreen);
             }
             catch (Exception ex)
             {
@@ -56,6 +59,23 @@ namespace DVMultiplayer
         {
             currentScreen = null;
             SingletonBehaviour<CanvasSpawner>.Instance.Close();
+        }
+
+        private static void GenerateModMismatchScreenUI()
+        {
+            GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
+            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer ModMismatched", "Mod mismatch", 800, 500, true, false));
+
+            CreateSection(new Rect(0f, -245, 750, 255), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            //Max 11 mods or if mod amount > 10 show "and {amount} more"
+            CreateLabel("ModsMismatched", "Your mods and the mods of the host mismatched.\n[MISSING] Mod1\n[MISSING] Mod2\n[MISSING] Mod3\n[MISSING] Mod4\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]", menuBuilder.transform, new Rect(32f, -125, 740, 250), FontStyles.Normal, TextAlignmentOptions.TopLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 1f), Color.white, 18);
+            CreateSection(new Rect(0f, 115, 750, 91f), RectTransformAnchoring.BottomCenter, menuBuilder.transform, new Vector2(.5f, 1));
+            ButtonBuilder buttonBuilder = new ButtonBuilder("Ok", "OK", menuBuilder.transform, new Rect(0f, 107, 608, 76), RectTransformAnchoring.BottomCenter, new Vector2(.5f, 1f), TextAlignmentOptions.Center);
+            CreateButton(buttonBuilder);
+
+            GameObject menu = Object.Instantiate(menuBuilder, canvas.transform);
+            Object.DestroyImmediate(menuBuilder);
+            ModMismatchScreen = menu.GetComponent<MenuScreen>();
         }
 
         private static void GenerateNetworkUI()
@@ -412,13 +432,15 @@ namespace DVMultiplayer
             return newTextField;
         }
 
-        private static GameObject CreateSection(Rect rect, RectTransformAnchoring anchor, Transform parent)
+        private static GameObject CreateSection(Rect rect, RectTransformAnchoring anchor, Transform parent, Vector2? pivot = null)
         {
             GameObject refSection = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.transform.Find("Main Menu").Find("Section").gameObject;
             GameObject newSection = Object.Instantiate(refSection, parent);
             RectTransform transform = newSection.GetComponent<RectTransform>();
 
             transform.ChangeAnchors(anchor);
+            if (pivot.HasValue)
+                transform.pivot = pivot.Value;
             transform.ChangeRect(rect);
 
             return newSection;
