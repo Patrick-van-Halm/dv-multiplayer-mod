@@ -17,9 +17,8 @@ class NetworkTurntableSync : MonoBehaviour
 
     private void Update()
     {
-        if(turntable.turntable.targetYRotation != prevRotation)
+        if(turntable.turntable.currentYRotation != prevRotation)
         {
-
             prevRotation = turntable.turntable.currentYRotation;
             OnTurntableRotationChanged(turntable.turntable.currentYRotation);
         }
