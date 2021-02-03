@@ -92,6 +92,17 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
         PlayerManager.PlayerTransform.position = vector3_1 + WorldMover.currentMove;
         bool carsLoadedSuccessfully = false;
+
+        JObject jobject2 = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
+        if (jobject2 != null)
+        {
+            JunctionsSaveManager.Load(jobject2);
+        }
+        else
+        {
+            Main.DebugLog("[WARNING] Junctions save not found!");
+        }
+
         JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
         if (jobject3 != null)
         {
@@ -144,6 +155,17 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
     {
         SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
         bool carsLoadedSuccessfully = false;
+
+        JObject jobject2 = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
+        if (jobject2 != null)
+        {
+            JunctionsSaveManager.Load(jobject2);
+        }
+        else
+        {
+            Main.DebugLog("[WARNING] Junctions save not found!");
+        }
+
         JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
         if (jobject3 != null)
         {
