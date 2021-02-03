@@ -1,4 +1,5 @@
 ﻿using DV.CabControls;
+using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +18,7 @@ class NetworkTurntableSync : MonoBehaviour
 
     private void Update()
     {
-        if(turntable.turntable.currentYRotation != prevRotation)
+        if(NetworkManager.IsHost() && turntable.turntable.currentYRotation != prevRotation)
         {
             prevRotation = turntable.turntable.currentYRotation;
             OnTurntableRotationChanged(turntable.turntable.currentYRotation);
