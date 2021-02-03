@@ -223,10 +223,12 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
 
             // Get the online save game
+            Main.DebugLog($"Syncing Save");
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveReceived);
 
             // Load the online save game
+            Main.DebugLog($"Syncing Loading save");
             SingletonBehaviour<NetworkSaveGameManager>.Instance.LoadMultiplayerData();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoaded || SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed);
             if (SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed)
@@ -244,14 +246,17 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.SaveTrainCarsLoaded);
 
             // Load Train data from server that changed since uptime
+            Main.DebugLog($"Syncing traincars");
             SingletonBehaviour<NetworkTrainManager>.Instance.SyncTrainCars();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced);
 
             // Load Train data from server that changed since uptime
+            Main.DebugLog($"Syncing Junctions");
             SingletonBehaviour<NetworkJunctionManager>.Instance.SyncJunction();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkJunctionManager>.Instance.IsSynced);
 
             // Load Turntable data from server that changed since uptime
+            Main.DebugLog($"Syncing Turntables");
             SingletonBehaviour<NetworkTurntableManager>.Instance.SyncTurntables();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTurntableManager>.Instance.IsSynced);
         }
