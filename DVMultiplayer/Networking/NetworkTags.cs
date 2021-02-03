@@ -25,5 +25,14 @@ namespace DVMultiplayer.Networking
         SAVEGAME_UPDATE,
         SAVEGAME_GET,
         PLAYER_MODS_MISMATCH,
+        TRAIN_SYNC_ALL,
+        TRAIN_RERAIL,
+        TURNTABLE_ANGLE_CHANGED,
+        TURNTABLE_SYNC,
+        PLAYER_SPAWN_SET,
+        PLAYER_INIT,
+        TRAIN_HOSTSYNC,
+        SWITCH_SYNC,
+        SWITCH_HOSTSYNC,
     }
 }

@@ -37,7 +37,7 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
                 writer.Write<SaveGame>(new SaveGame()
                 {
                     SaveDataCars = SaveGameManager.data.GetJObject(SaveGameKeys.Cars).ToString(Formatting.None),
-                    PlayerPos = SaveGameManager.data.GetVector3("Player_position").Value
+                    SaveDataSwitches = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions).ToString(Formatting.None),
                 });
                 Main.DebugLog($"[CLIENT] > SAVEGAME_UPDATE {writer.Length}");
 
@@ -72,18 +72,19 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 
     public void PlayerDisconnect()
     {
-        if(offlineSave != null)
+        if(offlineSave != null && !NetworkManager.IsHost())
         {
             isLoadingSave = true;
+            SaveGameData onlineSave = SaveGameManager.data;
             SaveGameManager.data = offlineSave;
             offlineSave = null;
             SaveGameUpgrader.Upgrade();
 
-            SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave());
+            SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave(onlineSave));
         }
     }
 
-    private IEnumerator LoadOfflineSave()
+    private IEnumerator LoadOfflineSave(SaveGameData onlineSave)
     {
         SingletonBehaviour<NetworkJobsManager>.Instance.PlayerDisconnect();
         UUI.UnlockMouse(true);
@@ -126,18 +127,12 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
         using (DarkRiftReader reader = message.GetReader())
         {
             Main.DebugLog($"[CLIENT] SAVEGAME_GET received | Packet size: {reader.Length}");
-            //if (reader.Length % 44 != 0 && reader.Length % 34 != 0)
-            //{
-            //    Main.mod.Logger.Warning("Received malformed spawn packet.");
-            //    return;
-            //}
-
             while (reader.Position < reader.Length)
             {
                 SaveGame save = reader.ReadSerializable<SaveGame>();
                 offlineSave = SaveGameManager.data;
                 SaveGameManager.data.SetJObject(SaveGameKeys.Cars, JObject.Parse(save.SaveDataCars));
-                SaveGameManager.data.SetVector3(SaveGameKeys.Player_position, save.PlayerPos);
+                SaveGameManager.data.SetJObject(SaveGameKeys.Junctions, JObject.Parse(save.SaveDataSwitches));
                 SaveGameUpgrader.Upgrade();
                 IsHostSaveLoaded = false;
                 IsHostSaveReceived = true;
@@ -148,8 +143,6 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
     public void LoadMultiplayerData()
     {
         SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
-        Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
-        PlayerManager.PlayerTransform.position = vector3_1 + WorldMover.currentMove;
         bool carsLoadedSuccessfully = false;
         JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
         if (jobject3 != null)

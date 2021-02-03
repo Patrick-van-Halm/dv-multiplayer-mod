@@ -14,6 +14,8 @@ using UnityEngine;
 class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
 {
     public bool IsChangeByNetwork { get; internal set; }
+    public bool IsSynced { get; internal set; }
+
     private VisualSwitch[] switches;
     protected override void Awake()
     {
@@ -31,9 +33,13 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
 
     public void PlayerDisconnect()
     {
+        if (switches == null)
+            return;
+
         foreach (VisualSwitch @switch in switches)
         {
-            Destroy(@switch.junction.gameObject.GetComponent<NetworkJunctionSync>());
+            if(@switch.junction.gameObject.GetComponent<NetworkJunctionSync>())
+                Destroy(@switch.junction.gameObject.GetComponent<NetworkJunctionSync>());
         }
     }
 
@@ -46,15 +52,43 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
                 case NetworkTags.SWITCH_CHANGED:
                     ReceiveNetworkJunctionSwitch(message);
                     break;
+
+                case NetworkTags.SWITCH_SYNC:
+                    ReceiveServerSwitches(message);
+                    break;
             }
         }
     }
 
+    private void ReceiveServerSwitches(Message message)
+    {
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            Main.DebugLog($"[CLIENT] < SWITCH_SYNC");
+
+            while (reader.Position < reader.Length)
+            {
+                Switch[] switchesServer = reader.ReadSerializables<Switch>();
+
+                foreach(Switch switchInfo in switchesServer)
+                {
+                    VisualSwitch junction = switches.FirstOrDefault(j => j.junction.position == switchInfo.Position);
+                    if (junction)
+                    {
+                        if (switchInfo.SwitchToLeft && junction.junction.selectedBranch == 0 || !switchInfo.SwitchToLeft && junction.junction.selectedBranch == 1)
+                            return;
+                        IsChangeByNetwork = true;
+                        junction.junction.Switch((Junction.SwitchMode)switchInfo.Mode);
+                        IsChangeByNetwork = false;
+                    }
+                }
+            }
+        }
+        IsSynced = true;
+    }
+
     public void OnJunctionSwitched(Vector3 position, Junction.SwitchMode mode, bool switchedToLeft)
     {
-        if (IsChangeByNetwork)
-            return;
-
         Main.DebugLog($"Junction received switch");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
@@ -75,12 +109,7 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            Main.DebugLog($"[CLIENT] SWITCH_CHANGED received | Packet size: {reader.Length}");
-            //if (reader.Length % 30 != 0)
-            //{
-            //    Main.mod.Logger.Warning("Received malformed location update packet.");
-            //    return;
-            //}
+            Main.DebugLog($"[CLIENT] < SWITCH_CHANGED");
 
             while (reader.Position < reader.Length)
             {
@@ -96,6 +125,40 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
                     IsChangeByNetwork = false;
                 }
             }
+        }
+    }
+
+    internal void SyncHost()
+    {
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            List<Switch> serverSwitches = new List<Switch>();
+            foreach(VisualSwitch s in switches)
+            {
+                serverSwitches.Add(new Switch()
+                {
+                    Position = s.junction.position,
+                    Mode = SwitchMode.NO_SOUND,
+                    SwitchToLeft = s.junction.selectedBranch == 0
+                });
+            }
+            writer.Write(serverSwitches.ToArray());
+
+
+            using (Message message = Message.Create((ushort)NetworkTags.SWITCH_HOSTSYNC, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
+    }
+
+    internal void SyncJunction()
+    {
+        IsSynced = false;
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write(true);
+
+            using (Message message = Message.Create((ushort)NetworkTags.SWITCH_SYNC, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
     }
 }

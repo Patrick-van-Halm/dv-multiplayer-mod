@@ -13,7 +13,7 @@ namespace DVMultiplayer.DTO.Player
 
         public void Deserialize(DeserializeEvent e)
         {
-            this.PlayerId = e.Reader.ReadUInt16();
+            PlayerId = e.Reader.ReadUInt16();
         }
 
         public void Serialize(SerializeEvent e)

@@ -33,11 +33,17 @@ class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainRerail()
     {
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
+            return;
+
         SingletonBehaviour<NetworkTrainManager>.Instance.SendRerailTrainUpdate(trainCar);
     }
 
     private void TrainDerail(TrainCar derailedCar)
     {
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork && !NetworkManager.IsHost())
+            return;
+
         SingletonBehaviour<NetworkTrainManager>.Instance.SendDerailTrainUpdate(trainCar);
     }
 
@@ -56,22 +62,29 @@ class NetworkTrainPosSync : MonoBehaviour
         yield return UpdateLocation();
     }
 
-    internal void UpdateLocation(TrainLocation location)
+    internal IEnumerator UpdateLocation(TrainLocation location)
     {
-        trainCar.rb.angularVelocity = location.AngularVelocity;
+        location.Position = location.Position + WorldMover.currentMove;
+        if (trainCar.derailed && !hostDerailed)
+        {
+            yield return SingletonBehaviour<NetworkTrainManager>.Instance.RerailDesynced(trainCar, location.Position, location.Forward);
+        }
+
+        if (Vector3.Distance(prevPosition, location.Position) > 5f)
+        {
+            transform.position = location.Position;
+            transform.rotation = location.Rotation;
+            prevPosition = transform.position;
+        }
+
         trainCar.rb.velocity = location.Velocity;
+        trainCar.rb.angularVelocity = location.AngularVelocity;
         trainCar.transform.forward = location.Forward;
-
-        for(int i = 0; i < location.AmountCars; i++)
-        {
-            trainCar.trainset.cars[i].transform.position = location.CarsPositions[i] + WorldMover.currentMove;
-            trainCar.trainset.cars[i].transform.rotation = location.CarsRotation[i];
-        }
-
-        if(trainCar.derailed && !hostDerailed)
-        {
-            trainCar.derailed = false;
-            trainCar.SetTrack(RailTrack.GetClosest(trainCar.transform.position).track, SingletonBehaviour<NetworkTrainManager>.Instance.CalculateWorldPosition(trainCar.transform.position + WorldMover.currentMove, trainCar.transform.forward, trainCar.Bounds.center.z), trainCar.transform.forward);
-        }
+        
+        //for(int i = 0; i < location.AmountCars; i++)
+        //{
+        //    trainCar.trainset.cars[i].transform.position = location.CarsPositions[i] + WorldMover.currentMove;
+        //    trainCar.trainset.cars[i].transform.rotation = location.CarsRotation[i];
+        //}
     }
 }

@@ -11,9 +11,8 @@ class NetworkPlayerSync : MonoBehaviour
     public TrainCar Train { get; set; }
     public bool IsLocal { get; set; } = false;
     public string Username { get; set; }
+    public string[] Mods { get; set; }
     internal ushort Id;
-    internal Vector3 currentWorldMove;
-    internal Vector3 absPosition;
     private Vector3 prevPosition;
     private Vector3 newPosition;
     private const float SYNC_THRESHOLD = 0.1f;
@@ -30,7 +29,7 @@ class NetworkPlayerSync : MonoBehaviour
 
         if(prevPosition == null || Vector3.Distance(prevPosition, transform.position) > SYNC_THRESHOLD)
         {
-            Main.DebugLog("Player location changed sending new location");
+           // Main.DebugLog("Player location changed sending new location");
             SingletonBehaviour<NetworkPlayerManager>.Instance.UpdateLocalPositionAndRotation(transform.position - WorldMover.currentMove, transform.rotation);
             prevPosition = transform.position;
         }

@@ -1,5 +1,6 @@
 ﻿using DarkRift;
 using DarkRift.Server;
+using DVMultiplayer.DTO.Junction;
 using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
@@ -13,10 +14,13 @@ namespace JunctionPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.0");
+        public override Version Version => new Version("1.0.3");
+
+        private List<Switch> switchStates;
 
         public JunctionPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
+            switchStates = new List<Switch>();
             ClientManager.ClientConnected += OnClientConnected;
         }
 
@@ -29,12 +33,52 @@ namespace JunctionPlugin
         {
             using (Message message = e.GetMessage() as Message)
             {
-                switch ((NetworkTags)message.Tag)
+                NetworkTags tag = (NetworkTags)message.Tag;
+                if (!tag.ToString().StartsWith("SWITCH_"))
+                    return;
+
+                Logger.Trace($"[SERVER] < {tag.ToString()}");
+
+                switch (tag)
                 {
                     case NetworkTags.SWITCH_CHANGED:
-                        ReliableSendToOthers(message, e.Client);
+                        UpdateSwitch(message, e.Client);
+                        break;
+
+                    case NetworkTags.SWITCH_SYNC:
+                        SyncSwitchStatesWithClient(e.Client);
                         break;
                 }
+            }
+        }
+
+        private void UpdateSwitch(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                Switch switchInfo = reader.ReadSerializable<Switch>();
+                Switch s = switchStates.FirstOrDefault(t => t.Position == switchInfo.Position);
+                if (s != null)
+                {
+                    s.SwitchToLeft = switchInfo.SwitchToLeft;
+                }
+                else
+                {
+                    switchStates.Add(switchInfo);
+                }
+            }
+
+            ReliableSendToOthers(message, client);
+        }
+
+        private void SyncSwitchStatesWithClient(IClient sender)
+        {
+            using (DarkRiftWriter writer = DarkRiftWriter.Create())
+            {
+                writer.Write(switchStates.ToArray());
+
+                using (Message msg = Message.Create((ushort)NetworkTags.SWITCH_SYNC, writer))
+                    sender.SendMessage(msg, SendMode.Reliable);
             }
         }
 

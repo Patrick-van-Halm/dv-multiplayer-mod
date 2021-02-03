@@ -6,10 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using DV;
+using DVMultiplayer.Darkrift;
 
 namespace DVMultiplayer.DTO.Junction
 {
-    class Switch : IDarkRiftSerializable
+    public class Switch : IDarkRiftSerializable
     {
         public Vector3 Position { get; set; }
         public SwitchMode Mode { get; set; }
@@ -17,18 +18,16 @@ namespace DVMultiplayer.DTO.Junction
 
         public void Deserialize(DeserializeEvent e)
         {
-            this.Position = new Vector3(e.Reader.ReadSingle(), e.Reader.ReadSingle(), e.Reader.ReadSingle());
-            this.Mode = (SwitchMode)e.Reader.ReadInt32();
-            this.SwitchToLeft = e.Reader.ReadBoolean();
+            Position = e.Reader.ReadVector3();
+            Mode = (SwitchMode)e.Reader.ReadInt32();
+            SwitchToLeft = e.Reader.ReadBoolean();
         }
 
         public void Serialize(SerializeEvent e)
         {
-            e.Writer.Write(this.Position.x);
-            e.Writer.Write(this.Position.y);
-            e.Writer.Write(this.Position.z);
-            e.Writer.Write((int)this.Mode);
-            e.Writer.Write(this.SwitchToLeft);
+            e.Writer.Write(Position);
+            e.Writer.Write((int)Mode);
+            e.Writer.Write(SwitchToLeft);
         }
     }
 

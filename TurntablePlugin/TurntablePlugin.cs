@@ -1,6 +1,6 @@
 ﻿using DarkRift;
 using DarkRift.Server;
-using DVMultiplayer.DTO.Savegame;
+using DVMultiplayer.DTO.Turntable;
 using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
@@ -8,17 +8,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SaveGamePlugin
+namespace TurntablePlugin
 {
-    public class SaveGamePlugin : Plugin
+    public class TurntablePlugin : Plugin
     {
-        private SaveGame save;
-
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.8");
+        public override Version Version => new Version("1.0.2");
 
-        public SaveGamePlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
+        private List<Turntable> turntableStates = new List<Turntable>();
+
+        public TurntablePlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
             ClientManager.ClientConnected += OnClientConnected;
         }
@@ -33,44 +33,52 @@ namespace SaveGamePlugin
             using (Message message = e.GetMessage() as Message)
             {
                 NetworkTags tag = (NetworkTags)message.Tag;
-                if (!tag.ToString().StartsWith("SAVEGAME_"))
+                if (!tag.ToString().StartsWith("TURNTABLE_"))
                     return;
 
                 Logger.Trace($"[SERVER] < {tag.ToString()}");
 
                 switch (tag)
                 {
-                    case NetworkTags.SAVEGAME_UPDATE:
-                        UpdateSaveGame(message);
+                    case NetworkTags.TURNTABLE_ANGLE_CHANGED:
+                        OnTurntableChanged(message, e.Client);
                         break;
 
-                    case NetworkTags.SAVEGAME_GET:
-                        SendSaveGame(e.Client);
+                    case NetworkTags.TURNTABLE_SYNC:
+                        SendAllTurntableStates(e.Client);
                         break;
                 }
             }
         }
 
-        private void SendSaveGame(IClient sender)
+        private void SendAllTurntableStates(IClient sender)
         {
-            if (save != null && sender.ID != 0)
+            using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
-                using (DarkRiftWriter writer = DarkRiftWriter.Create())
-                {
-                    writer.Write<SaveGame>(save);
+                writer.Write(turntableStates.ToArray());
 
-                    using (Message outMessage = Message.Create((ushort)NetworkTags.SAVEGAME_GET, writer))
-                        sender.SendMessage(outMessage, SendMode.Reliable);
-                }
+                using (Message msg = Message.Create((ushort)NetworkTags.TURNTABLE_SYNC, writer))
+                    sender.SendMessage(msg, SendMode.Reliable);
             }
         }
 
-        private void UpdateSaveGame(Message message)
+        private void OnTurntableChanged(Message message, IClient sender)
         {
             using (DarkRiftReader reader = message.GetReader())
             {
-                save = reader.ReadSerializable<SaveGame>();
+                Turntable turntableInfo = reader.ReadSerializable<Turntable>();
+                Turntable turntable = turntableStates.FirstOrDefault(t => t.Position == turntableInfo.Position);
+                if (turntable != null)
+                {
+                    turntable.Rotation = turntableInfo.Rotation;
+                }
+                else
+                {
+                    turntableStates.Add(turntableInfo);
+                }
             }
+
+            UnreliableSendToOthers(message, sender);
         }
 
         private void UnreliableSendToOthers(Message message, IClient sender)

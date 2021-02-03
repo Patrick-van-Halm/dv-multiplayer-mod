@@ -11,11 +11,14 @@ using System.Linq;
 using DV.PointSet;
 using UnityEngine;
 using System;
+using DV.TerrainSystem;
 
 class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 {
     public TrainCar[] trainCars;
     public bool IsChangeByNetwork { get; internal set; }
+    public bool IsSynced { get; private set; }
+    public bool SaveTrainCarsLoaded { get; internal set; }
 
     protected override void Awake()
     {
@@ -31,6 +34,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     public void OnFinishedLoading()
     {
+        SaveTrainCarsLoaded = false;
         trainCars = GameObject.FindObjectsOfType<TrainCar>();
         Main.DebugLog($"{trainCars.Length} traincars found, {trainCars.Where(car => car.IsLoco).Count()} are locomotives");
 
@@ -39,30 +43,123 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             Main.DebugLog($"Initializing TrainCar Coupling scripts");
             trainCar.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
             trainCar.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+            Main.DebugLog($"Initializing TrainCar Positioning script");
+            trainCar.gameObject.AddComponent<NetworkTrainPosSync>();
 
             if (trainCar.IsLoco)
             {
-                Main.DebugLog($"Initializing TrainCar Positioning scripts");
-                trainCar.gameObject.AddComponent<NetworkTrainPosSync>();
+                Main.DebugLog($"Initializing TrainCar input script");
                 trainCar.gameObject.AddComponent<NetworkTrainSync>();
             }
         }
 
         Main.DebugLog($"Listening to CarChanged event");
         PlayerManager.CarChanged += OnPlayerSwitchTrainCarEvent;
+        if (NetworkManager.IsHost())
+        {
+            SyncInitializedTrains();
+        }
+        SaveTrainCarsLoaded = true;
+    }
+
+    private void SyncInitializedTrains()
+    {
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            List<WorldTrain> trains = new List<WorldTrain>();
+            foreach(TrainCar car in trainCars)
+            {
+                car.LoadInterior();
+                car.keepInteriorLoaded = true;
+
+                Bogie bogie1 = car.Bogies[0];
+                Bogie bogie2 = car.Bogies[car.Bogies.Length - 1];
+
+                WorldTrain train = new WorldTrain()
+                {
+                    Guid = car.CarGUID,
+                    Id = car.ID,
+                    CarType = car.carType,
+                    IsLoco = car.IsLoco,
+                    Position = car.transform.position - WorldMover.currentMove,
+                    Rotation = car.transform.rotation,
+                    Velocity = car.rb.velocity,
+                    AngularVelocity = car.rb.angularVelocity,
+                    Forward = car.transform.forward,
+                    IsBogie1Derailed = bogie1.HasDerailed,
+                    IsBogie2Derailed = bogie2.HasDerailed,
+                    Bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
+                    Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
+                    Bogie1RailTrackName = bogie1.track.name,
+                    Bogie2RailTrackName = bogie2.track.name,
+                    IsFrontCouplerCoupled = car.frontCoupler.coupledTo != null,
+                    IsRearCouplerCoupled = car.rearCoupler.coupledTo != null,
+                    IsPlayerSpawned = car.playerSpawnedCar
+                };
+
+                if (car.IsLoco)
+                {
+                    LocoControllerBase loco = car.GetComponent<LocoControllerBase>();
+                    train.Throttle = loco.throttle;
+                    train.Brake = loco.brake;
+                    train.IndepBrake = loco.independentBrake;
+                    train.Reverser = loco.reverser;
+                    train.Sander = loco.IsSandOn() ? 1 : 0;
+                }
+                
+                switch (car.carType)
+                {
+                    case TrainCarType.LocoShunter:
+                        LocoControllerShunter loco = car.GetComponent<LocoControllerShunter>();
+                        ShunterDashboardControls dashboard = car.interior.GetComponentInChildren<ShunterDashboardControls>();
+                        train.Shunter = new Shunter()
+                        {
+                            IsEngineOn = loco.GetEngineRunning(),
+                            IsMainFuseOn = dashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1,
+                            IsSideFuse1On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1,
+                            IsSideFuse2On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1
+                        };
+                        break;
+                }
+                trains.Add(train);
+            }
+
+            Main.mod.Logger.Log($"[CLIENT] > TRAIN_HOSTSYNC: amountOfTrains: {trains.Count}");
+            writer.Write(trains.ToArray());
+
+            using (Message message = Message.Create((ushort)NetworkTags.TRAIN_HOSTSYNC, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
     }
 
     internal void SendRerailTrainUpdate(TrainCar trainCar)
     {
-        throw new NotImplementedException();
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write(new TrainRerail()
+            {
+                 TrainId = trainCar.CarGUID,
+                 Position = trainCar.transform.position - WorldMover.currentMove,
+                 Forward = trainCar.transform.forward,
+                 Rotation = trainCar.transform.rotation
+            });
+
+            using (Message message = Message.Create((ushort)NetworkTags.TRAIN_RERAIL, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
     }
 
     public void PlayerDisconnect()
     {
-        foreach (TrainCar trainCar in trainCars.Where(car => car.IsLoco))
+        if (trainCars == null)
+            return;
+
+        foreach (TrainCar trainCar in trainCars)
         {
-            Destroy(trainCar.GetComponent<NetworkTrainPosSync>());
-            Destroy(trainCar.GetComponent<NetworkTrainSync>());
+            if(trainCar.GetComponent<NetworkTrainPosSync>())
+                Destroy(trainCar.GetComponent<NetworkTrainPosSync>());
+            if(trainCar.IsLoco && trainCar.GetComponent<NetworkTrainSync>())
+                Destroy(trainCar.GetComponent<NetworkTrainSync>());
         }
     }
 
@@ -70,11 +167,17 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         if (trainCar)
         {
-            if (!trainCar.GetComponent<NetworkTrainSync>())
+            if (!trainCar.GetComponent<NetworkTrainSync>() && trainCar.IsLoco)
                 trainCar.gameObject.AddComponent<NetworkTrainSync>();
 
             if (!trainCar.GetComponent<NetworkTrainPosSync>())
                 trainCar.gameObject.AddComponent<NetworkTrainPosSync>();
+
+            if(!trainCar.frontCoupler.GetComponent<NetworkTrainCouplerSync>())
+                trainCar.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+
+            if(!trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>())
+                trainCar.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
         }
 
         NetworkPlayerSync playerSync = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync();
@@ -127,16 +230,216 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 case NetworkTags.TRAIN_COUPLE_COCK:
                     OnTrainCouplerCockChange(message);
                     break;
+
+                case NetworkTags.TRAIN_SYNC_ALL:
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(OnTrainSyncAll(message));
+                    break;
+
+                case NetworkTags.TRAIN_RERAIL:
+                    OnTrainRerail(message);
+                    break;
             }
         }
+    }
+
+    private void OnTrainRerail(Message message)
+    {
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            while (reader.Position < reader.Length)
+            {
+                TrainRerail rerail = reader.ReadSerializable<TrainRerail>();
+                TrainCar train = trainCars.FirstOrDefault(t => t.CarGUID == rerail.TrainId);
+                if (train && train.derailed)
+                {
+                    train.Rerail(RailTrack.GetClosest(rerail.Position + WorldMover.currentMove).track, CalculateWorldPosition(rerail.Position + WorldMover.currentMove, rerail.Forward, train.Bounds.center.z), rerail.Forward);
+                }
+            }
+        }
+    }
+
+    private IEnumerator OnTrainSyncAll(Message message)
+    {
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            while (reader.Position < reader.Length)
+            {
+                WorldTrain[] allTrains = reader.ReadSerializables<WorldTrain>();
+                Main.DebugLog($"Synching trains. Train amount: {allTrains.Length}");
+                foreach (WorldTrain selectedTrain in allTrains)
+                {
+                    Main.DebugLog($"Synching train: {selectedTrain.Guid}.");
+
+                    TrainCar train = trainCars.FirstOrDefault(t => t.CarGUID == selectedTrain.Guid);
+                    Main.DebugLog($"Train found: {train != null}");
+                    if (!train)
+                    {
+                        Main.DebugLog($"Initializing train");
+                        train = InitializeNewTrainCar(selectedTrain);
+                        Main.DebugLog($"Train found: {train != null}");
+                        if (!train)
+                            continue;
+                    }
+                    Main.DebugLog($"Train load interior");
+                    train.LoadInterior();
+                    train.keepInteriorLoaded = true;
+                    Main.DebugLog($"Train interior should stay loaded: {train.keepInteriorLoaded}");
+
+                    Main.DebugLog($"Train set derailed");
+                    bool isDerailed = train.derailed;
+                    Main.DebugLog($"Train is derailed: {isDerailed}");
+                    selectedTrain.Position = selectedTrain.Position + WorldMover.currentMove;
+                    if (train.Bogies != null && train.Bogies.Length >= 2)
+                    {
+                        Main.DebugLog($"Train Bogies synching");
+                        Bogie bogie1 = train.Bogies[0];
+                        Bogie bogie2 = train.Bogies[train.Bogies.Length - 1];
+                        Main.DebugLog($"Train bogies are set {bogie1 != null && bogie2 != null}");
+
+                        isDerailed = selectedTrain.IsBogie1Derailed || selectedTrain.IsBogie2Derailed;
+                        Main.DebugLog($"Train is derailed by bogies {isDerailed}");
+                        if (selectedTrain.IsBogie1Derailed && !bogie1.HasDerailed)
+                        {
+                            bogie1.Derail();
+                        }
+
+                        if (selectedTrain.IsBogie2Derailed && !bogie2.HasDerailed)
+                        {
+                            bogie2.Derail();
+                        }
+                        Main.DebugLog($"Train bogies synced");
+                    }
+
+                    if (!isDerailed && train.derailed)
+                    {
+                        Main.DebugLog($"Train is not derailed on host so rerail");
+                        yield return RerailDesynced(train, selectedTrain.Position, selectedTrain.Forward);
+                    }
+
+                    Main.DebugLog($"Train positioning sync: {selectedTrain.Position.ToString("G3")}");
+                    train.transform.position = selectedTrain.Position;
+                    Main.DebugLog($"Train rotation sync: {selectedTrain.Rotation.ToString("G3")}");
+                    train.transform.rotation = selectedTrain.Rotation;
+
+                    Main.DebugLog($"Train Loco specific sync");
+                    switch (selectedTrain.CarType)
+                    {
+                        case TrainCarType.LocoShunter:
+                            Main.DebugLog($"Train Loco is shunter");
+                            LocoControllerShunter controllerShunter = train.GetComponent<LocoControllerShunter>();
+                            Main.DebugLog($"Train controller found {controllerShunter != null}");
+                            Shunter shunter = selectedTrain.Shunter;
+                            Main.DebugLog($"Train Loco Server data found {shunter != null}");
+
+                            ShunterDashboardControls shunterDashboard = train.interior.GetComponentInChildren<ShunterDashboardControls>();
+                            Main.DebugLog($"Shunter dashboard found {shunterDashboard != null}");
+                            if (shunter.IsEngineOn)
+                            {
+                                Main.DebugLog($"Sync engine on state");
+                                if (shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 0)
+                                    shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Use();
+
+                                if (shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Value == 0)
+                                    shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Use();
+
+                                if (shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 0)
+                                    shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Use();
+
+                                controllerShunter.SetEngineRunning(true);
+                            }
+                            else
+                            {
+                                Main.DebugLog($"Sync engine off state");
+                                if (shunter.IsSideFuse1On && shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 0 || !shunter.IsSideFuse1On && shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1)
+                                    train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Use();
+
+                                if (shunter.IsSideFuse2On && shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Value == 0 || !shunter.IsSideFuse2On && shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Value == 1)
+                                    train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Use();
+
+                                if (shunter.IsMainFuseOn && shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 0 || !shunter.IsMainFuseOn && shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1)
+                                    shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Use();
+
+                                controllerShunter.SetEngineRunning(false);
+                            }
+                            break;
+                    }
+                    Main.DebugLog($"Train Loco specific sync finished");
+
+                    if (train.IsLoco)
+                    {
+                        Main.DebugLog($"Train Loco generic sync");
+                        LocoControllerBase controller = train.GetComponent<LocoControllerBase>();
+                        Main.DebugLog($"Train Loco controller found {controller != null}");
+                        if (selectedTrain.Brake.HasValue && selectedTrain.Brake.Value != controller.brake)
+                        {
+                            Main.DebugLog($"Train Loco sync Brake");
+                            controller.SetThrottle(selectedTrain.Brake.Value);
+                        }
+
+                        if (selectedTrain.IndepBrake.HasValue && selectedTrain.IndepBrake.Value != controller.independentBrake)
+                        {
+                            Main.DebugLog($"Train Loco sync IndepBrake");
+                            controller.SetThrottle(selectedTrain.IndepBrake.Value);
+                        }
+
+                        if (selectedTrain.Sander.HasValue && selectedTrain.Sander.Value != 0 && !controller.IsSandOn())
+                        {
+                            Main.DebugLog($"Train Loco sync Sander");
+                            controller.SetSanders(selectedTrain.Sander.Value);
+                        }
+
+                        if (selectedTrain.Reverser.HasValue && selectedTrain.Reverser.Value != controller.reverser)
+                        {
+                            Main.DebugLog($"Train Loco sync Reverser");
+                            controller.SetSanders(selectedTrain.Reverser.Value);
+                        }
+
+                        if (selectedTrain.Throttle.HasValue && selectedTrain.Throttle.Value != controller.throttle)
+                        {
+                            Main.DebugLog($"Train Loco sync Throttle");
+                            controller.SetThrottle(selectedTrain.Throttle.Value);
+                        }
+                    }
+
+                    Main.DebugLog($"Train physics sync");
+                    train.rb.velocity = selectedTrain.Velocity;
+                    train.rb.angularVelocity = selectedTrain.AngularVelocity;
+                    Main.DebugLog($"Train physics sync finished");
+                    Main.DebugLog($"Train should be synced");
+                }
+            }
+        }
+        IsSynced = true;
+    }
+
+    private TrainCar InitializeNewTrainCar(WorldTrain train)
+    {
+        GameObject carPrefab = CarTypes.GetCarPrefab(train.CarType);
+        TrainCar newTrain = CarSpawner.SpawnLoadedCar(carPrefab, train.Id, train.Guid, train.IsPlayerSpawned, train.Position, train.Rotation, 
+            train.IsBogie1Derailed, RailTrackRegistry.GetTrackWithName(train.Bogie1RailTrackName), train.Bogie1PositionAlongTrack,
+            train.IsBogie2Derailed, RailTrackRegistry.GetTrackWithName(train.Bogie2RailTrackName), train.Bogie2PositionAlongTrack,
+            train.IsFrontCouplerCoupled, train.IsRearCouplerCoupled);
+
+        newTrain.gameObject.AddComponent<NetworkTrainPosSync>();
+        if (newTrain.IsLoco)
+            newTrain.gameObject.AddComponent<NetworkTrainSync>();
+
+        newTrain.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+        newTrain.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+        return newTrain;
+    }
+
+    internal IEnumerator RerailDesynced(TrainCar trainCar, Vector3 pos, Vector3 fwd)
+    {
+        IsChangeByNetwork = true;
+        trainCar.Rerail(trainCar.Bogies[0].track, CalculateWorldPosition(pos, fwd, trainCar.Bounds.center.z), fwd);
+        yield return new WaitUntil(() => !trainCar.derailed);
+        IsChangeByNetwork = false;
     }
 
     #region Sending
     internal void SendDerailTrainUpdate(TrainCar trainCar)
     {
-        if (!NetworkManager.IsHost())
-            return;
-
         Main.DebugLog($"[CLIENT] > TRAIN_DERAIL: TrainID: {trainCar.ID}");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
@@ -157,16 +460,16 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             return;
 
         Main.DebugLog($"[CLIENT] > TRAIN_LOCATION_UPDATE: TrainID: {trainCar.ID}");
-        Vector3[] carsPositions = new Vector3[trainCar.trainset.cars.Count];
-        for(int i = 0; i < carsPositions.Length; i++)
-        {
-            carsPositions[i] = trainCar.trainset.cars[i].transform.position - WorldMover.currentMove;
-        }
-        Quaternion[] carsRotation = new Quaternion[trainCar.trainset.cars.Count];
-        for (int i = 0; i < carsRotation.Length; i++)
-        {
-            carsRotation[i] = trainCar.trainset.cars[i].transform.rotation;
-        }
+        //Vector3[] carsPositions = new Vector3[trainCar.trainset.cars.Count];
+        //for(int i = 0; i < carsPositions.Length; i++)
+        //{
+        //    carsPositions[i] = trainCar.trainset.cars[i].transform.position - WorldMover.currentMove;
+        //}
+        //Quaternion[] carsRotation = new Quaternion[trainCar.trainset.cars.Count];
+        //for (int i = 0; i < carsRotation.Length; i++)
+        //{
+        //    carsRotation[i] = trainCar.trainset.cars[i].transform.rotation;
+        //}
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
@@ -177,10 +480,12 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 Velocity = trainCar.rb.velocity,
                 AngularVelocity = trainCar.rb.angularVelocity,
                 IsDerailed = trainCar.derailed,
-                AmountCars = (uint)trainCar.trainset.cars.Count,
-                LocoInTrainSetIndex = (uint)trainCar.indexInTrainset,
-                CarsPositions = carsPositions,
-                CarsRotation = carsRotation
+                Position = trainCar.transform.position - WorldMover.currentMove,
+                Rotation = trainCar.transform.rotation
+                //AmountCars = (uint)trainCar.trainset.cars.Count,
+                //LocoInTrainSetIndex = (uint)trainCar.indexInTrainset,
+                //CarsPositions = carsPositions,
+                //CarsRotation = carsRotation
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_LOCATION_UPDATE, writer))
@@ -245,6 +550,20 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             });
 
             using (Message message = Message.Create(isCoupled ? (ushort)NetworkTags.TRAIN_COUPLE : (ushort)NetworkTags.TRAIN_UNCOUPLE, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
+    }
+
+    internal void SyncTrainCars()
+    {
+        IsSynced = false;
+        Main.DebugLog($"[CLIENT] > TRAIN_SYNC_ALL");
+
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write(true);
+
+            using (Message message = Message.Create((ushort)NetworkTags.TRAIN_SYNC_ALL, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
     }
@@ -363,21 +682,15 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            //if (reader.Length % 30 != 0)
-            //{
-            //    Main.mod.Logger.Warning("Received malformed lever update packet.");
-            //    return;
-            //}
-
             while (reader.Position < reader.Length)
             {
                 TrainLocation location = reader.ReadSerializable<TrainLocation>();
                 TrainCar train = trainCars.FirstOrDefault(t => t.IsLoco && t.CarGUID == location.TrainId);
-                Main.DebugLog($"[CLIENT] < TRAIN_LOCATION_UPDATE: Packet size: {reader.Length}, TrainID: {train.ID}");
 
                 if (train)
                 {
-                    train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location);
+                    Main.DebugLog($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location));
                 }
             }
         }
@@ -522,12 +835,6 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            //if (reader.Length % 30 != 0)
-            //{
-            //    Main.mod.Logger.Warning("Received malformed lever update packet.");
-            //    return;
-            //}
-
             while (reader.Position < reader.Length)
             {
                 TrainCouplerCockChange cockChange = reader.ReadSerializable<TrainCouplerCockChange>();
@@ -553,12 +860,6 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            //if (reader.Length % 30 != 0)
-            //{
-            //    Main.mod.Logger.Warning("Received malformed lever update packet.");
-            //    return;
-            //}
-
             while (reader.Position < reader.Length)
             {
                 TrainCouplerHoseChange hoseChange = reader.ReadSerializable<TrainCouplerHoseChange>();

@@ -178,6 +178,7 @@ namespace DVMultiplayer.Networking
             {
                 server.Close();
                 isHost = false;
+                TutorialController.movementAllowed = true;
             }
             catch (Exception ex)
             {
@@ -230,6 +231,8 @@ namespace DVMultiplayer.Networking
             networkManager.AddComponent<NetworkSaveGameManager>();
             Main.DebugLog($"[CLIENT] Initializing NetworkJobsManager");
             networkManager.AddComponent<NetworkJobsManager>();
+            Main.DebugLog($"[CLIENT] Initializing NetworkTurntableManager");
+            networkManager.AddComponent<NetworkTurntableManager>();
         }
 
         private static void DeInitializeUnityScripts()
@@ -249,6 +252,9 @@ namespace DVMultiplayer.Networking
             Main.DebugLog($"[DISCONNECTING] NetworkSaveGameManager Deinitializing");
             networkManager.GetComponent<NetworkSaveGameManager>().PlayerDisconnect();
             Object.Destroy(networkManager.GetComponent<NetworkSaveGameManager>());
+            Main.DebugLog($"[DISCONNECTING] Initializing NetworkTurntableManager");
+            networkManager.GetComponent<NetworkTurntableManager>().PlayerDisconnect();
+            Object.Destroy(networkManager.GetComponent<NetworkTurntableManager>());
 
             Main.DebugLog($"[DISCONNECTING] NetworkPlayerSync Deinitializing");
             Object.Destroy(PlayerManager.PlayerTransform.gameObject.GetComponent<NetworkPlayerSync>());

@@ -14,10 +14,13 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.3.1");
+        public override Version Version => new Version("1.5.6");
+
+        private List<WorldTrain> worldTrains;
 
         public TrainPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
+            worldTrains = new List<WorldTrain>();
             ClientManager.ClientConnected += OnClientConnected;
         }
 
@@ -30,11 +33,27 @@ namespace TrainPlugin
         {
             using (Message message = e.GetMessage() as Message)
             {
-                switch ((NetworkTags) message.Tag)
+                NetworkTags tag = (NetworkTags)message.Tag;
+                if (!tag.ToString().StartsWith("TRAIN_"))
+                    return;
+
+                Logger.Trace($"[SERVER] < {tag.ToString()}");
+
+                switch (tag)
                 {
                     case NetworkTags.TRAIN_LEVER:
-                    case NetworkTags.TRAIN_SWITCH:
+                        UpdateTrainLever(message, e.Client);
+                        break;
+
+                    case NetworkTags.TRAIN_RERAIL:
+                        UpdateTrainRerail(message, e.Client);
+                        break;
+
                     case NetworkTags.TRAIN_DERAIL:
+                        UpdateTrainDerailed(message, e.Client);
+                        break;
+
+                    case NetworkTags.TRAIN_SWITCH:
                     case NetworkTags.TRAIN_COUPLE:
                     case NetworkTags.TRAIN_UNCOUPLE:
                     case NetworkTags.TRAIN_COUPLE_HOSE:
@@ -42,11 +61,196 @@ namespace TrainPlugin
                         ReliableSendToOthers(message, e.Client);
                         break;
 
+                    case NetworkTags.TRAIN_SYNC_ALL:
+                        SendWorldTrains(e.Client);
+                        break;
+
+                    case NetworkTags.TRAIN_HOSTSYNC:
+                        SyncTrainDataFromHost(message);
+                        break;
+
                     case NetworkTags.TRAIN_LOCATION_UPDATE:
-                        UnreliableSendToOthers(message, e.Client);
+                        UpdateTrainPosition(message, e.Client);
                         break;
                 }
             }
+        }
+
+        private void SyncTrainDataFromHost(Message message)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                worldTrains.Clear();
+                worldTrains.AddRange(reader.ReadSerializables<WorldTrain>());
+            }
+        }
+
+        private void UpdateTrainDerailed(Message message, IClient sender)
+        {
+            if(worldTrains != null)
+            {
+                using (DarkRiftReader reader = message.GetReader())
+                {
+                    TrainDerail derailed = reader.ReadSerializable<TrainDerail>();
+                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == derailed.TrainId);
+                    if (train == null)
+                    {
+                        Logger.Error($"[{derailed.TrainId}] Train not found");
+                    }
+                    else
+                    {
+                        train.IsBogie1Derailed = true;
+                        train.IsBogie2Derailed = true;
+                    }
+                }
+            }
+
+            Logger.Trace("[SERVER] > TRAIN_DERAIL");
+            ReliableSendToOthers(message, sender);
+        }
+
+        private void UpdateTrainRerail(Message message, IClient sender)
+        {
+            if (worldTrains != null)
+            {
+                using (DarkRiftReader reader = message.GetReader())
+                {
+                    TrainRerail rerailed = reader.ReadSerializable<TrainRerail>();
+                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == rerailed.TrainId);
+                    if (train == null)
+                    {
+                        Logger.Error($"[{rerailed.TrainId}] Train not found");
+                    }
+                    else
+                    {
+                        train.IsBogie1Derailed = false;
+                        train.IsBogie2Derailed = false;
+                        train.Position = rerailed.Position;
+                        train.Forward = rerailed.Forward;
+                        train.Rotation = rerailed.Rotation;
+                    }
+                }
+            }
+            Logger.Trace("[SERVER] > TRAIN_RERAIL");
+            ReliableSendToOthers(message, sender);
+        }
+
+        private void SendWorldTrains(IClient sender)
+        {
+            if (worldTrains != null)
+            {
+                using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                {
+                    Logger.Trace("[SERVER] > TRAIN_SYNC_ALL");
+
+                    writer.Write(worldTrains.ToArray());
+
+                    using (Message msg = Message.Create((ushort)NetworkTags.TRAIN_SYNC_ALL, writer))
+                        sender.SendMessage(msg, SendMode.Reliable);
+                }
+            }
+        }
+
+        private void UpdateTrainLever(Message message, IClient sender)
+        {
+            if (worldTrains != null)
+            {
+                using (DarkRiftReader reader = message.GetReader())
+                {
+                    TrainLever lever = reader.ReadSerializable<TrainLever>();
+                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == lever.TrainId);
+                    if (train == null)
+                    {
+                        Logger.Error($"[{lever.TrainId}] Train not found");
+                    }
+                    else
+                    {
+                        switch (lever.Lever)
+                        {
+                            case Levers.Throttle:
+                                train.Throttle = lever.Value;
+                                break;
+
+                            case Levers.Brake:
+                                train.Brake = lever.Value;
+                                break;
+
+                            case Levers.IndependentBrake:
+                                train.IndepBrake = lever.Value;
+                                break;
+
+                            case Levers.Sander:
+                                train.Sander = lever.Value;
+                                break;
+
+                            case Levers.Reverser:
+                                train.Reverser = lever.Value;
+                                break;
+                        }
+
+                        switch (train.CarType)
+                        {
+                            case TrainCarType.LocoShunter:
+                                Shunter shunter = train.Shunter;
+                                switch (lever.Lever)
+                                {
+                                    case Levers.MainFuse:
+                                        shunter.IsMainFuseOn = lever.Value == 1;
+                                        if (lever.Value == 0)
+                                            shunter.IsEngineOn = false;
+                                        break;
+
+                                    case Levers.SideFuse_1:
+                                        shunter.IsSideFuse1On = lever.Value == 1;
+                                        if (lever.Value == 0)
+                                            shunter.IsEngineOn = false;
+                                        break;
+
+                                    case Levers.SideFuse_2:
+                                        shunter.IsSideFuse2On = lever.Value == 1;
+                                        if (lever.Value == 0)
+                                            shunter.IsEngineOn = false;
+                                        break;
+
+                                    case Levers.FusePowerStarter:
+                                        shunter.IsEngineOn = lever.Value == 1;
+                                        break;
+                                }
+                                break;
+                        }
+                    }
+                }
+            }
+            Logger.Trace("[SERVER] > TRAIN_LEVER");
+            ReliableSendToOthers(message, sender);
+        }
+
+        private void UpdateTrainPosition(Message message, IClient sender)
+        {
+            if (worldTrains != null)
+            {
+                using (DarkRiftReader reader = message.GetReader())
+                {
+                    TrainLocation newLocation = reader.ReadSerializable<TrainLocation>();
+                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == newLocation.TrainId);
+                    if (train == null)
+                    {
+                        Logger.Error($"[{newLocation.TrainId}] Train not found");
+                    }
+                    else
+                    {
+                        train.Position = newLocation.Position;
+                        train.Rotation = newLocation.Rotation;
+                        train.Velocity = newLocation.Velocity;
+                        train.AngularVelocity = newLocation.AngularVelocity;
+                        train.Forward = newLocation.Forward;
+                        train.IsBogie1Derailed = newLocation.IsDerailed;
+                        train.IsBogie2Derailed = newLocation.IsDerailed;
+                    }
+                }
+            }
+            Logger.Trace("[SERVER] > TRAIN_LOCATION_UPDATE");
+            UnreliableSendToOthers(message, sender);
         }
 
         private void UnreliableSendToOthers(Message message, IClient sender)

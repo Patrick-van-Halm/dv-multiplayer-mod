@@ -15,9 +15,9 @@ namespace DVMultiplayer.DTO.Train
 
         public void Deserialize(DeserializeEvent e)
         {
-            this.TrainIdCoupler = e.Reader.ReadString();
-            this.IsCouplerFront = e.Reader.ReadBoolean();
-            this.IsOpen = e.Reader.ReadBoolean();
+            TrainIdCoupler = e.Reader.ReadString();
+            IsCouplerFront = e.Reader.ReadBoolean();
+            IsOpen = e.Reader.ReadBoolean();
         }
 
         public void Serialize(SerializeEvent e)

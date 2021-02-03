@@ -1,4 +1,5 @@
 ﻿using DarkRift;
+using DVMultiplayer.Darkrift;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,20 +7,20 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace DVMultiplayer.DTO.Train
+namespace DVMultiplayer.DTO.Player
 {
-    public class TrainDerail : IDarkRiftSerializable
+    public class SetSpawn : IDarkRiftSerializable
     {
-        public string TrainId { get; set; }
+        public Vector3 Position { get; set; }
 
         public void Deserialize(DeserializeEvent e)
         {
-            TrainId = e.Reader.ReadString();
+            Position = e.Reader.ReadVector3();
         }
 
         public void Serialize(SerializeEvent e)
         {
-            e.Writer.Write(TrainId);
+            e.Writer.Write(Position);
         }
     }
 }

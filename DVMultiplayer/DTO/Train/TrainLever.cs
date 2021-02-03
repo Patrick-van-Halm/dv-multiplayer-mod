@@ -30,16 +30,16 @@ namespace DVMultiplayer.DTO.Train
 
         public void Deserialize(DeserializeEvent e)
         {
-            this.TrainId = e.Reader.ReadString();
-            this.Lever = (Levers) e.Reader.ReadUInt32();
-            this.Value = e.Reader.ReadSingle();
+            TrainId = e.Reader.ReadString();
+            Lever = (Levers) e.Reader.ReadUInt32();
+            Value = e.Reader.ReadSingle();
         }
 
         public void Serialize(SerializeEvent e)
         {
-            e.Writer.Write(this.TrainId);
-            e.Writer.Write((uint) this.Lever);
-            e.Writer.Write(this.Value);
+            e.Writer.Write(TrainId);
+            e.Writer.Write((uint) Lever);
+            e.Writer.Write(Value);
         }
     }
 }

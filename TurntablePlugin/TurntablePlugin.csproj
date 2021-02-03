@@ -4,15 +4,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{C3EB586C-DD26-404B-B118-2325637A960B}</ProjectGuid>
+    <ProjectGuid>{33A6F155-F53F-4D24-9A77-6157ED955A6D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>TrainPlugin</RootNamespace>
-    <AssemblyName>TrainPlugin</AssemblyName>
+    <RootNamespace>TurntablePlugin</RootNamespace>
+    <AssemblyName>TurntablePlugin</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -32,10 +31,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>G:\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\Assembly-CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="DarkRift">
       <HintPath>..\DVMultiplayer\lib\DarkRift.dll</HintPath>
       <Private>False</Private>
@@ -58,12 +53,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="TrainPlugin.cs" />
+    <Compile Include="TurntablePlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DVMultiplayer\DVMultiplayer.csproj">
-      <Project>{cf3cddf7-aec2-4b54-af12-f8a84e807e3d}</Project>
+      <Project>{CF3CDDF7-AEC2-4B54-AF12-F8A84E807E3D}</Project>
       <Name>DVMultiplayer</Name>
       <Private>False</Private>
     </ProjectReference>

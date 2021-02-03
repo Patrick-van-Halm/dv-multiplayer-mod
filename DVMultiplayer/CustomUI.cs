@@ -40,7 +40,6 @@ namespace DVMultiplayer
                 GenerateHostNetworkUI();
                 GenerateClientNetworkUI();
                 GenerateModMismatchScreenUI();
-                Open(ModMismatchScreen);
             }
             catch (Exception ex)
             {

@@ -1,4 +1,5 @@
 ﻿using DarkRift;
+using DVMultiplayer.Darkrift;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -11,21 +12,19 @@ namespace DVMultiplayer.DTO.Savegame
 {
     public class SaveGame : IDarkRiftSerializable
     {
-        public Vector3 PlayerPos { get; set; }
         public string SaveDataCars { get; set; }
+        public string SaveDataSwitches { get; set; }
 
         public void Deserialize(DeserializeEvent e)
         {
             SaveDataCars = e.Reader.ReadString();
-            PlayerPos = new Vector3(e.Reader.ReadSingle(), e.Reader.ReadSingle(), e.Reader.ReadSingle());
+            SaveDataSwitches = e.Reader.ReadString();
         }
 
         public void Serialize(SerializeEvent e)
         {
             e.Writer.Write(SaveDataCars);
-            e.Writer.Write(this.PlayerPos.x);
-            e.Writer.Write(this.PlayerPos.y);
-            e.Writer.Write(this.PlayerPos.z);
+            e.Writer.Write(SaveDataSwitches);
         }
     }
 }
