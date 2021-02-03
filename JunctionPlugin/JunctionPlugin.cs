@@ -14,7 +14,7 @@ namespace JunctionPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.3");
+        public override Version Version => new Version("1.0.4");
 
         private List<Switch> switchStates;
 
