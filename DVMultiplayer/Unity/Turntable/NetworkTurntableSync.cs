@@ -1,6 +1,6 @@
 ﻿using DV.CabControls;
-using DVMultiplayer.Networking;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,19 +10,21 @@ using UnityEngine;
 class NetworkTurntableSync : MonoBehaviour
 {
     private TurntableController turntable;
-    private float prevRotation;
+    private LeverBase lever;
+    private float prevTargetRotation;
     private void Awake()
     {
         turntable = GetComponent<TurntableController>();
+        lever = turntable.leverGO.GetComponent<LeverBase>();
+        SingletonBehaviour<CoroutineManager>.Instance.Run(CheckInput());
     }
 
-    private void Update()
+    private IEnumerator CheckInput()
     {
-        if(NetworkManager.IsHost() && turntable.turntable.currentYRotation != prevRotation)
-        {
-            prevRotation = turntable.turntable.currentYRotation;
-            OnTurntableRotationChanged(turntable.turntable.currentYRotation);
-        }
+        yield return new WaitUntil(() => lever.IsGrabbedOrHoverScrolled());
+        yield return new WaitUntil(() => !lever.IsGrabbedOrHoverScrolled());
+        OnTurntableRotationChanged(turntable.turntable.targetYRotation);
+        yield return CheckInput();
     }
 
     private void OnTurntableRotationChanged(float targetYRotation)

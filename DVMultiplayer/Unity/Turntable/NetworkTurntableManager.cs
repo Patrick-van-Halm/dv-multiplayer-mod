@@ -6,6 +6,7 @@ using DVMultiplayer;
 using DVMultiplayer.DTO.Turntable;
 using DVMultiplayer.Networking;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -78,15 +79,21 @@ class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableManager>
                     TurntableController turntableController = turntables.FirstOrDefault(j => j.transform.position == turntable.Position);
                     if (turntableController)
                     {
-                        IsChangeByNetwork = true;
-                        turntableController.turntable.targetYRotation = turntable.Rotation;
-                        turntableController.turntable.RotateToTargetRotation();
-                        IsChangeByNetwork = false;
+                        SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableByNetwork(turntableController, turntable));
                     }
                 }
             }
         }
         IsSynced = true;
+    }
+
+    private IEnumerator RotateTurntableByNetwork(TurntableController turntableController, Turntable turntable)
+    {
+        IsChangeByNetwork = true;
+        turntableController.turntable.targetYRotation = turntable.Rotation;
+        turntableController.turntable.RotateToTargetRotation();
+        yield return new WaitUntil(() => turntableController.turntable.currentYRotation == turntable.Rotation);
+        IsChangeByNetwork = false;
     }
 
     internal void OnTurntableRotationChanged(TurntableController turntable, float value)
@@ -131,10 +138,7 @@ class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableManager>
                 TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == turntableInfo.Position);
                 if (turntable)
                 {
-                    IsChangeByNetwork = true;
-                    turntable.turntable.targetYRotation = turntableInfo.Rotation;
-                    turntable.turntable.RotateToTargetRotation();
-                    IsChangeByNetwork = false;
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableByNetwork(turntable, turntableInfo));
                 }
             }
         }
