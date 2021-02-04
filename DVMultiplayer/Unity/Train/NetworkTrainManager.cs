@@ -67,14 +67,20 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             List<WorldTrain> trains = new List<WorldTrain>();
-            foreach(TrainCar car in trainCars)
+            Main.DebugLog($"Host synching trains with server. Train amount: {trainCars.Length}");
+            foreach (TrainCar car in trainCars)
             {
+                Main.DebugLog($"Load train interior if not loaded");
                 car.LoadInterior();
+                Main.DebugLog($"Keep train interior loaded");
                 car.keepInteriorLoaded = true;
 
+                Main.DebugLog($"Get train bogies");
                 Bogie bogie1 = car.Bogies[0];
                 Bogie bogie2 = car.Bogies[car.Bogies.Length - 1];
+                Main.DebugLog($"Train bogies found: {bogie1 != null && bogie2 != null}");
 
+                Main.DebugLog($"Set train defaults");
                 WorldTrain train = new WorldTrain()
                 {
                     Guid = car.CarGUID,
@@ -99,19 +105,29 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
                 if (car.IsLoco)
                 {
+                    Main.DebugLog($"Set locomotive defaults");
                     LocoControllerBase loco = car.GetComponent<LocoControllerBase>();
+                    Main.DebugLog($"Loco controller found: {loco != null}");
                     train.Throttle = loco.throttle;
+                    Main.DebugLog($"Throttle set: {train.Throttle}");
                     train.Brake = loco.brake;
+                    Main.DebugLog($"Brake set: {train.Brake}");
                     train.IndepBrake = loco.independentBrake;
+                    Main.DebugLog($"IndepBrake set: {train.IndepBrake}");
                     train.Reverser = loco.reverser;
+                    Main.DebugLog($"Reverser set: {train.Reverser}");
                     train.Sander = loco.IsSandOn() ? 1 : 0;
+                    Main.DebugLog($"Sander set: {train.Sander}");
                 }
                 
                 switch (car.carType)
                 {
                     case TrainCarType.LocoShunter:
+                        Main.DebugLog($"Set shunter defaults");
                         LocoControllerShunter loco = car.GetComponent<LocoControllerShunter>();
+                        Main.DebugLog($"Shunter controller found: {loco != null}");
                         ShunterDashboardControls dashboard = car.interior.GetComponentInChildren<ShunterDashboardControls>();
+                        Main.DebugLog($"Shunter dashboard found: {dashboard != null}");
                         train.Shunter = new Shunter()
                         {
                             IsEngineOn = loco.GetEngineRunning(),
@@ -119,12 +135,14 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             IsSideFuse1On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1,
                             IsSideFuse2On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1
                         };
+                        Main.DebugLog($"Shunter set: IsEngineOn: {train.Shunter.IsEngineOn}, IsMainFuseOn: {train.Shunter.IsMainFuseOn}, IsSideFuse1On: {train.Shunter.IsSideFuse1On}, IsSideFuse2On: {train.Shunter.IsSideFuse2On}");
                         break;
                 }
+                Main.DebugLog($"Add train to sync pile");
                 trains.Add(train);
             }
 
-            Main.mod.Logger.Log($"[CLIENT] > TRAIN_HOSTSYNC: amountOfTrains: {trains.Count}");
+            Main.mod.Logger.Log($"[CLIENT] > TRAIN_HOSTSYNC: AmountOfTrains: {trains.Count}");
             writer.Write(trains.ToArray());
 
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_HOSTSYNC, writer))
@@ -370,34 +388,34 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         Main.DebugLog($"Train Loco generic sync");
                         LocoControllerBase controller = train.GetComponent<LocoControllerBase>();
                         Main.DebugLog($"Train Loco controller found {controller != null}");
-                        if (selectedTrain.Brake.HasValue && selectedTrain.Brake.Value != controller.brake)
+                        if (selectedTrain.Brake != controller.brake)
                         {
                             Main.DebugLog($"Train Loco sync Brake");
-                            controller.SetThrottle(selectedTrain.Brake.Value);
+                            controller.SetBrake(selectedTrain.Brake);
                         }
 
-                        if (selectedTrain.IndepBrake.HasValue && selectedTrain.IndepBrake.Value != controller.independentBrake)
+                        if (selectedTrain.IndepBrake != controller.independentBrake)
                         {
                             Main.DebugLog($"Train Loco sync IndepBrake");
-                            controller.SetThrottle(selectedTrain.IndepBrake.Value);
+                            controller.SetIndependentBrake(selectedTrain.IndepBrake);
                         }
 
-                        if (selectedTrain.Sander.HasValue && selectedTrain.Sander.Value != 0 && !controller.IsSandOn())
+                        if (selectedTrain.Sander != 0 && !controller.IsSandOn())
                         {
                             Main.DebugLog($"Train Loco sync Sander");
-                            controller.SetSanders(selectedTrain.Sander.Value);
+                            controller.SetSanders(selectedTrain.Sander);
                         }
 
-                        if (selectedTrain.Reverser.HasValue && selectedTrain.Reverser.Value != controller.reverser)
+                        if (selectedTrain.Reverser != controller.reverser)
                         {
                             Main.DebugLog($"Train Loco sync Reverser");
-                            controller.SetSanders(selectedTrain.Reverser.Value);
+                            controller.SetReverser(selectedTrain.Reverser);
                         }
 
-                        if (selectedTrain.Throttle.HasValue && selectedTrain.Throttle.Value != controller.throttle)
+                        if (selectedTrain.Throttle != controller.throttle)
                         {
                             Main.DebugLog($"Train Loco sync Throttle");
-                            controller.SetThrottle(selectedTrain.Throttle.Value);
+                            controller.SetThrottle(selectedTrain.Throttle);
                         }
                     }
 
@@ -616,12 +634,6 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            //if (reader.Length % 30 != 0)
-            //{
-            //    Main.mod.Logger.Warning("Received malformed lever update packet.");
-            //    return;
-            //}
-
             while (reader.Position < reader.Length)
             {
                 TrainCarChange changedCar = reader.ReadSerializable<TrainCarChange>();
@@ -652,12 +664,6 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            //if (reader.Length % 30 != 0)
-            //{
-            //    Main.mod.Logger.Warning("Received malformed lever update packet.");
-            //    return;
-            //}
-
             while (reader.Position < reader.Length)
             {
                 TrainDerail derailed = reader.ReadSerializable<TrainDerail>();
@@ -700,12 +706,6 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            //if (reader.Length % 30 != 0)
-            //{
-            //    Main.mod.Logger.Warning("Received malformed lever update packet.");
-            //    return;
-            //}
-
             while (reader.Position < reader.Length)
             {
                 TrainLever lever = reader.ReadSerializable<TrainLever>();
@@ -715,26 +715,27 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 {
                     Main.DebugLog($"[CLIENT] < TRAIN_LEVER: Packet size: {reader.Length}, TrainID: {train.ID}, Lever: {lever.Lever}, Value: {lever.Value}");
                     IsChangeByNetwork = true;
+                    LocoControllerBase baseController = train.GetComponent<LocoControllerBase>();
                     switch (lever.Lever)
                     {
                         case Levers.Throttle:
-                            train.GetComponent<LocoControllerBase>().SetThrottle(lever.Value);
+                            baseController.SetThrottle(lever.Value);
                             break;
 
                         case Levers.Brake:
-                            train.GetComponent<LocoControllerBase>().SetBrake(lever.Value);
+                            baseController.SetBrake(lever.Value);
                             break;
 
                         case Levers.IndependentBrake:
-                            train.GetComponent<LocoControllerBase>().SetIndependentBrake(lever.Value);
+                            baseController.SetIndependentBrake(lever.Value);
                             break;
 
                         case Levers.Reverser:
-                            train.GetComponent<LocoControllerBase>().SetReverser(lever.Value);
+                            baseController.SetReverser(lever.Value);
                             break;
 
                         case Levers.Sander:
-                            train.GetComponent<LocoControllerBase>().SetSanders(lever.Value);
+                            baseController.SetSanders(lever.Value);
                             break;
 
                         case Levers.SideFuse_1:
@@ -775,7 +776,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                                 else
                                     valHorn = (valHorn - 0.5f) * 2;
                             }
-                            train.GetComponent<LocoControllerBase>().UpdateHorn(valHorn);
+                            baseController.UpdateHorn(valHorn);
                             break;
                     }
                     IsChangeByNetwork = false;

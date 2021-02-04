@@ -40,11 +40,11 @@ namespace DVMultiplayer.DTO.Train
         public bool IsPlayerSpawned { get; set; }
 
         // Locomotive (Only set if item is locomotive)
-        public float? Throttle { get; set; } = null;
-        public float? Brake { get; set; } = null;
-        public float? IndepBrake { get; set; } = null;
-        public float? Sander { get; set; } = null;
-        public float? Reverser { get; set; } = null;
+        public float Throttle { get; set; } = 0;
+        public float Brake { get; set; } = 0;
+        public float IndepBrake { get; set; } = 0;
+        public float Sander { get; set; } = 0;
+        public float Reverser { get; set; } = 0;
 
         // Specific Train states
         public Shunter Shunter { get; set; } = new Shunter();
@@ -76,11 +76,11 @@ namespace DVMultiplayer.DTO.Train
 
             if (IsLoco)
             {
-                Throttle = e.Reader.ReadNullableSingle();
-                Brake = e.Reader.ReadNullableSingle();
-                IndepBrake = e.Reader.ReadNullableSingle();
-                Sander = e.Reader.ReadNullableSingle();
-                Reverser = e.Reader.ReadNullableSingle();
+                Throttle = e.Reader.ReadSingle();
+                Brake = e.Reader.ReadSingle();
+                IndepBrake = e.Reader.ReadSingle();
+                Sander = e.Reader.ReadSingle();
+                Reverser = e.Reader.ReadSingle();
             }
 
             switch (CarType)
