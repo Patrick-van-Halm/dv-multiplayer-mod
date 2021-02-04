@@ -33,15 +33,12 @@ class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainRerail()
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
-            return;
-
         SingletonBehaviour<NetworkTrainManager>.Instance.SendRerailTrainUpdate(trainCar);
     }
 
     private void TrainDerail(TrainCar derailedCar)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork && !NetworkManager.IsHost())
+        if (!NetworkManager.IsHost())
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendDerailTrainUpdate(trainCar);
@@ -70,14 +67,36 @@ class NetworkTrainPosSync : MonoBehaviour
             yield return SingletonBehaviour<NetworkTrainManager>.Instance.RerailDesynced(trainCar, location.Position, location.Forward);
         }
 
-        if (Vector3.Distance(prevPosition, location.Position) > 5f)
+        if (Vector3.Distance(prevPosition, location.Position) > 5f && trainCar.frontCoupler.coupledTo == null && trainCar.rearCoupler.coupledTo == null)
         {
             transform.position = location.Position;
             transform.rotation = location.Rotation;
-            prevPosition = transform.position;
         }
 
-        trainCar.rb.velocity = location.Velocity;
+        if (trainCar.frontCoupler.coupledTo != null || trainCar.rearCoupler.coupledTo != null)
+        {
+            if (Vector3.Distance(prevPosition, location.Position) > 3f)
+            {
+                trainCar.rb.velocity = location.Velocity * 1.5f;
+            }
+            else if (Vector3.Distance(prevPosition, location.Position) < 3f && Vector3.Distance(prevPosition, location.Position) > 0.1f)
+            {
+                trainCar.rb.velocity = location.Velocity * 1.2f;
+            }
+            else if (Vector3.Distance(prevPosition, location.Position) < .1f && Vector3.Distance(prevPosition, location.Position) > -0.1f)
+            {
+                trainCar.rb.velocity = location.Velocity;
+            }
+            else if (Vector3.Distance(prevPosition, location.Position) < -.1f && Vector3.Distance(prevPosition, location.Position) > -1f)
+            {
+                trainCar.rb.velocity = location.Velocity * .8f;
+            }
+            else if (Vector3.Distance(prevPosition, location.Position) < -1f && Vector3.Distance(prevPosition, location.Position) > -3f)
+            {
+                trainCar.rb.velocity = location.Velocity * .5f;
+            }
+        }
+        prevPosition = location.Position;
         trainCar.rb.angularVelocity = location.AngularVelocity;
         trainCar.transform.forward = location.Forward;
         
