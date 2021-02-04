@@ -292,6 +292,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             while (reader.Position < reader.Length)
             {
+                IsChangeByNetwork = true;
                 WorldTrain[] allTrains = reader.ReadSerializables<WorldTrain>();
                 Main.DebugLog($"Synching trains. Train amount: {allTrains.Length}");
                 foreach (WorldTrain selectedTrain in allTrains)
@@ -442,6 +443,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     Main.DebugLog($"Train physics sync finished");
                     Main.DebugLog($"Train should be synced");
                 }
+                IsChangeByNetwork = false;
             }
         }
         IsSynced = true;
@@ -492,9 +494,17 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
+            Bogie bogie1 = trainCar.Bogies[0];
+            Bogie bogie2 = trainCar.Bogies[trainCar.Bogies.Length - 1];
             writer.Write<TrainDerail>(new TrainDerail()
             {
-                TrainId = trainCar.CarGUID
+                TrainId = trainCar.CarGUID,
+                IsBogie1Derailed = bogie1.HasDerailed,
+                IsBogie2Derailed = bogie2.HasDerailed,
+                Bogie1TrackName = bogie1.HasDerailed ? "" : bogie1.track.name,
+                Bogie2TrackName = bogie2.HasDerailed ? "" : bogie2.track.name,
+                Bogie1PositionAlongTrack = bogie1.HasDerailed ? 0 : bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
+                Bogie2PositionAlongTrack = bogie2.HasDerailed ? 0 : bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_DERAIL, writer))
@@ -520,7 +530,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 Velocity = trainCar.rb.velocity,
                 AngularVelocity = trainCar.rb.angularVelocity,
                 IsBogie1Derailed = bogie1.HasDerailed,
-                IsBogie2Derailed = bogie1.HasDerailed,
+                IsBogie2Derailed = bogie2.HasDerailed,
                 Position = trainCar.transform.position - WorldMover.currentMove,
                 Rotation = trainCar.transform.rotation,
                 Bogie1TrackName = bogie1.track.name,
@@ -705,12 +715,13 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         if (buffer.NotSyncedAddToBuffer(IsSynced, OnTrainDerailment, message))
             return;
+
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)
             {
                 TrainDerail derailed = reader.ReadSerializable<TrainDerail>();
-                TrainCar train = trainCars.FirstOrDefault(t => t.IsLoco && t.CarGUID == derailed.TrainId);
+                TrainCar train = trainCars.FirstOrDefault(t => t.CarGUID == derailed.TrainId);
                 
                 if (train)
                 {

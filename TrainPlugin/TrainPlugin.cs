@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.5.7");
+        public override Version Version => new Version("1.5.8");
 
         private List<WorldTrain> worldTrains;
 
@@ -99,8 +99,12 @@ namespace TrainPlugin
                     }
                     else
                     {
-                        train.IsBogie1Derailed = true;
-                        train.IsBogie2Derailed = true;
+                        train.IsBogie1Derailed = derailed.IsBogie1Derailed;
+                        train.IsBogie2Derailed = derailed.IsBogie2Derailed;
+                        train.Bogie1RailTrackName = derailed.Bogie1TrackName;
+                        train.Bogie2RailTrackName = derailed.Bogie2TrackName;
+                        train.Bogie1PositionAlongTrack = derailed.Bogie1PositionAlongTrack;
+                        train.Bogie2PositionAlongTrack = derailed.Bogie2PositionAlongTrack;
                     }
                 }
             }
@@ -213,7 +217,10 @@ namespace TrainPlugin
                                         break;
 
                                     case Levers.FusePowerStarter:
-                                        shunter.IsEngineOn = lever.Value == 1;
+                                        if(shunter.IsSideFuse1On && shunter.IsSideFuse2On && shunter.IsMainFuseOn && lever.Value == 1)
+                                            shunter.IsEngineOn = true;
+                                        else if (lever.Value == 0)
+                                            shunter.IsEngineOn = false;
                                         break;
                                 }
                                 break;
