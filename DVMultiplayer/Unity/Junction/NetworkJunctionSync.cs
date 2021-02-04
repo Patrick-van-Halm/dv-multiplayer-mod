@@ -19,9 +19,6 @@ class NetworkJunctionSync : MonoBehaviour
 
     private void OnJunctionSwitched(Junction.SwitchMode mode, int branchNum)
     {
-        if (SingletonBehaviour<NetworkJunctionManager>.Instance.IsChangeByNetwork)
-            return;
-
         SingletonBehaviour<NetworkJunctionManager>.Instance.OnJunctionSwitched(junction.position, mode, branchNum == 0);
     }
 
