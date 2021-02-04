@@ -306,7 +306,6 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     Main.DebugLog($"Train set derailed");
                     bool isDerailed = train.derailed;
                     Main.DebugLog($"Train is derailed: {isDerailed}");
-                    selectedTrain.Position = selectedTrain.Position + WorldMover.currentMove;
                     if (train.Bogies != null && train.Bogies.Length >= 2)
                     {
                         Main.DebugLog($"Train Bogies synching");
@@ -326,18 +325,26 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             bogie2.Derail();
                         }
                         Main.DebugLog($"Train bogies synced");
+
+                        if(bogie1.HasDerailed || bogie2.HasDerailed)
+                        {
+                            Main.DebugLog("Teleport train to derailed position");
+                            train.transform.position = selectedTrain.Position + WorldMover.currentMove;
+                            train.transform.rotation = selectedTrain.Rotation;
+
+                            Main.DebugLog("Stop syncing rest of train since values will be reset at rerail");
+                            continue;
+                        }
                     }
+
+                    Main.DebugLog($"Train repositioning sync: Pos: {selectedTrain.Position.ToString("G3")}");
+                    TeleportTrainToTrack(train, selectedTrain.Bogie1RailTrackName, selectedTrain.Position, selectedTrain.Forward);
 
                     if (!isDerailed && train.derailed)
                     {
                         Main.DebugLog($"Train is not derailed on host so rerail");
                         yield return RerailDesynced(train, selectedTrain.Position, selectedTrain.Forward);
                     }
-
-                    Main.DebugLog($"Train positioning sync: {selectedTrain.Position.ToString("G3")}");
-                    train.transform.position = selectedTrain.Position;
-                    Main.DebugLog($"Train rotation sync: {selectedTrain.Rotation.ToString("G3")}");
-                    train.transform.rotation = selectedTrain.Rotation;
 
                     Main.DebugLog($"Train Loco specific sync");
                     switch (selectedTrain.CarType)
@@ -450,14 +457,24 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     internal IEnumerator RerailDesynced(TrainCar trainCar, Vector3 pos, Vector3 fwd)
     {
         IsChangeByNetwork = true;
-        trainCar.Rerail(trainCar.Bogies[0].track, CalculateWorldPosition(pos, fwd, trainCar.Bounds.center.z), fwd);
+        trainCar.Rerail(trainCar.Bogies[0].track, CalculateWorldPosition(pos, fwd, trainCar.Bounds.center.z) + WorldMover.currentMove, fwd);
         yield return new WaitUntil(() => !trainCar.derailed);
+        IsChangeByNetwork = false;
+    }
+
+    internal void TeleportTrainToTrack(TrainCar trainCar, string trackname, Vector3 pos, Vector3 fwd)
+    {
+        IsChangeByNetwork = true;
+        trainCar.SetTrack(RailTrackRegistry.GetTrackWithName(trackname), CalculateWorldPosition(pos, fwd, trainCar.Bounds.center.z) + WorldMover.currentMove, fwd);
         IsChangeByNetwork = false;
     }
 
     #region Sending
     internal void SendDerailTrainUpdate(TrainCar trainCar)
     {
+        if (!IsSynced)
+            return;
+
         Main.DebugLog($"[CLIENT] > TRAIN_DERAIL: TrainID: {trainCar.ID}");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
@@ -478,32 +495,25 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             return;
 
         Main.DebugLog($"[CLIENT] > TRAIN_LOCATION_UPDATE: TrainID: {trainCar.ID}");
-        //Vector3[] carsPositions = new Vector3[trainCar.trainset.cars.Count];
-        //for(int i = 0; i < carsPositions.Length; i++)
-        //{
-        //    carsPositions[i] = trainCar.trainset.cars[i].transform.position - WorldMover.currentMove;
-        //}
-        //Quaternion[] carsRotation = new Quaternion[trainCar.trainset.cars.Count];
-        //for (int i = 0; i < carsRotation.Length; i++)
-        //{
-        //    carsRotation[i] = trainCar.trainset.cars[i].transform.rotation;
-        //}
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
+            Bogie bogie1 = trainCar.Bogies[0];
+            Bogie bogie2 = trainCar.Bogies[trainCar.Bogies.Length - 1];
             writer.Write<TrainLocation>(new TrainLocation()
             {
                 TrainId = trainCar.CarGUID,
                 Forward = trainCar.transform.forward,
                 Velocity = trainCar.rb.velocity,
                 AngularVelocity = trainCar.rb.angularVelocity,
-                IsDerailed = trainCar.derailed,
+                IsBogie1Derailed = bogie1.HasDerailed,
+                IsBogie2Derailed = bogie1.HasDerailed,
                 Position = trainCar.transform.position - WorldMover.currentMove,
-                Rotation = trainCar.transform.rotation
-                //AmountCars = (uint)trainCar.trainset.cars.Count,
-                //LocoInTrainSetIndex = (uint)trainCar.indexInTrainset,
-                //CarsPositions = carsPositions,
-                //CarsRotation = carsRotation
+                Rotation = trainCar.transform.rotation,
+                Bogie1TrackName = bogie1.track.name,
+                Bogie2TrackName = bogie2.track.name,
+                Bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
+                Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_LOCATION_UPDATE, writer))
@@ -513,6 +523,9 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     internal void SendNewLeverValue(NetworkTrainSync trainSync, Levers lever, float value)
     {
+        if (!IsSynced)
+            return;
+
         TrainCar curTrain = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Train;
         Main.DebugLog($"[CLIENT] > TRAIN_LEVER: TrainID: {curTrain.ID}, Lever: {lever}, value: {value}");
         if (!curTrain.IsLoco)
@@ -534,7 +547,10 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void SendPlayerTrainCarChange(TrainCar train)
     {
-        if(train)
+        if (!IsSynced)
+            return;
+
+        if (train)
             Main.DebugLog($"[CLIENT] > TRAIN_SWITCH: TrainId {train.ID}, GUID: {train.CarGUID}");
         else
             Main.DebugLog($"[CLIENT] > TRAIN_SWITCH: Player left train");
@@ -554,6 +570,9 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     internal void SendTrainsCoupledChange(Coupler thisCoupler, Coupler otherCoupler, bool viaChainInteraction, bool isCoupled)
     {
+        if (!IsSynced)
+            return;
+
         Main.DebugLog($"[CLIENT] > TRAIN_COUPLE: Coupler_1: {thisCoupler.train.ID}, Coupler_2: {otherCoupler.train.ID}");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
@@ -588,6 +607,9 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     internal void SendCouplerCockChanged(Coupler coupler, bool isCockOpen)
     {
+        if (!IsSynced)
+            return;
+
         Main.DebugLog($"[CLIENT] > TRAIN_COUPLE_COCK: Coupler: {coupler.train.ID}, isOpen: {isCockOpen}");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
@@ -606,6 +628,9 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     internal void SendCouplerHoseConChanged(Coupler coupler, bool isConnected)
     {
+        if (!IsSynced)
+            return;
+
         Main.DebugLog($"[CLIENT] > TRAIN_COUPLE_HOSE: Coupler: {coupler.train.ID}, IsConnected: {isConnected}");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
@@ -632,6 +657,9 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     #region Receiving
     private void OnPlayerTrainCarChange(Message message)
     {
+        if (!IsSynced)
+            return;
+
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)
@@ -662,6 +690,9 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void OnTrainDerailment(Message message)
     {
+        if (!IsSynced)
+            return;
+
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)
@@ -686,6 +717,9 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void OnTrainLocationMessage(Message message)
     {
+        if (!IsSynced)
+            return;
+
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)
@@ -704,6 +738,9 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void OnTrainLeverMessage(Message message)
     {
+        if (!IsSynced)
+            return;
+
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)

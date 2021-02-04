@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.5.6");
+        public override Version Version => new Version("1.5.7");
 
         private List<WorldTrain> worldTrains;
 
@@ -244,8 +244,12 @@ namespace TrainPlugin
                         train.Velocity = newLocation.Velocity;
                         train.AngularVelocity = newLocation.AngularVelocity;
                         train.Forward = newLocation.Forward;
-                        train.IsBogie1Derailed = newLocation.IsDerailed;
-                        train.IsBogie2Derailed = newLocation.IsDerailed;
+                        train.IsBogie1Derailed = newLocation.IsBogie1Derailed;
+                        train.Bogie1PositionAlongTrack = newLocation.Bogie1PositionAlongTrack;
+                        train.Bogie1RailTrackName = newLocation.Bogie1TrackName;
+                        train.IsBogie2Derailed = newLocation.IsBogie2Derailed;
+                        train.Bogie2PositionAlongTrack = newLocation.Bogie2PositionAlongTrack;
+                        train.Bogie2RailTrackName = newLocation.Bogie2TrackName;
                     }
                 }
             }
