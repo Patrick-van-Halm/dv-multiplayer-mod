@@ -11,6 +11,12 @@ namespace DVMultiplayer.DTO.Train
     public class TrainDerail : IDarkRiftSerializable
     {
         public string TrainId { get; set; }
+        public bool IsBogie1Derailed { get; internal set; }
+        public bool IsBogie2Derailed { get; internal set; }
+        public string Bogie1TrackName { get; internal set; }
+        public string Bogie2TrackName { get; internal set; }
+        public double Bogie1PositionAlongTrack { get; internal set; }
+        public double Bogie2PositionAlongTrack { get; internal set; }
 
         public void Deserialize(DeserializeEvent e)
         {
