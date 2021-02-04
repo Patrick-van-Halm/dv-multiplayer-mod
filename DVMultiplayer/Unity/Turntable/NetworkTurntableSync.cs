@@ -19,18 +19,27 @@ class NetworkTurntableSync : MonoBehaviour
     {
         turntable = GetComponent<TurntableController>();
         lever = turntable.leverGO.GetComponent<LeverBase>();
-        keyboardInput = turntable.GetComponentInChildren<TurntableControlKeyboardInput>();
-        keyboardInput.enabled = false;
         playerCameraTransform = PlayerManager.PlayerCamera.transform;
         coroutineInputLever = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckInputLever());
         turntable.Snapped += Turntable_Snapped;
+        SingletonBehaviour<CoroutineManager>.Instance.Run(DisableKeyboardInput());
+    }
+
+    private IEnumerator DisableKeyboardInput()
+    {
+        yield return new WaitUntil(() => {
+            keyboardInput = turntable.GetComponentInChildren<TurntableControlKeyboardInput>();
+            return keyboardInput;
+        });
+        keyboardInput.enabled = false;
     }
 
     private void OnDestroy()
     {
         SingletonBehaviour<CoroutineManager>.Instance.Stop(coroutineInputLever);
         turntable.Snapped -= Turntable_Snapped;
-        keyboardInput.enabled = true;
+        if(keyboardInput)
+            keyboardInput.enabled = true;
     }
 
     private void Turntable_Snapped()
