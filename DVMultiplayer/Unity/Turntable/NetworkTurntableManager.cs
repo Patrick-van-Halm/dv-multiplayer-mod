@@ -151,7 +151,11 @@ class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableManager>
                 TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == turntableInfo.Position);
                 if (turntable && turntableInfo.Rotation.HasValue)
                 {
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo));
+                    turntable.leverGO.GetComponent<LeverBase>().SetValue(.5f);
+                    if(Mathf.Abs(turntable.turntable.currentYRotation - turntableInfo.Rotation.Value) > .1f)
+                    {
+                        SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo));
+                    }
                 }
                 else if (turntable && turntableInfo.LeverAngle.HasValue)
                 {

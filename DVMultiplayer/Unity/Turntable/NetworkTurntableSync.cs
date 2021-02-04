@@ -24,7 +24,7 @@ class NetworkTurntableSync : MonoBehaviour
         yield return new WaitUntil(() => lever.IsGrabbedOrHoverScrolled());
         yield return new WaitUntil(() => {
             OnTurntableLeverAngleChanged(lever.Value);
-            return !lever.IsGrabbedOrHoverScrolled();
+            return !lever.IsGrabbedOrHoverScrolled() && lever.Value > .45f && lever.Value < .55f;
         });
         OnTurntableRotationChanged(turntable.turntable.targetYRotation);
         yield return CheckInput();
