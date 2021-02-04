@@ -338,7 +338,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     }
 
                     Main.DebugLog($"Train repositioning sync: Pos: {selectedTrain.Position.ToString("G3")}");
-                    TeleportTrainToTrack(train, selectedTrain.Bogie1RailTrackName, selectedTrain.Position, selectedTrain.Forward);
+                    TeleportTrainToTrack(train, selectedTrain.Position , selectedTrain.Forward);
 
                     if (!isDerailed && train.derailed)
                     {
@@ -457,15 +457,17 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     internal IEnumerator RerailDesynced(TrainCar trainCar, Vector3 pos, Vector3 fwd)
     {
         IsChangeByNetwork = true;
-        trainCar.Rerail(trainCar.Bogies[0].track, CalculateWorldPosition(pos, fwd, trainCar.Bounds.center.z) + WorldMover.currentMove, fwd);
+        trainCar.Rerail(trainCar.Bogies[0].track, CalculateWorldPosition(pos + WorldMover.currentMove, fwd, trainCar.Bounds.center.z), fwd);
         yield return new WaitUntil(() => !trainCar.derailed);
         IsChangeByNetwork = false;
     }
 
-    internal void TeleportTrainToTrack(TrainCar trainCar, string trackname, Vector3 pos, Vector3 fwd)
+    internal void TeleportTrainToTrack(TrainCar trainCar, Vector3 pos, Vector3 fwd)
     {
         IsChangeByNetwork = true;
-        trainCar.SetTrack(RailTrackRegistry.GetTrackWithName(trackname), CalculateWorldPosition(pos, fwd, trainCar.Bounds.center.z) + WorldMover.currentMove, fwd);
+        trainCar.MoveToTrack(RailTrack.GetClosest(pos + WorldMover.currentMove).track, CalculateWorldPosition(pos + WorldMover.currentMove, fwd, trainCar.Bounds.center.z), fwd);
+        trainCar.transform.position = pos + WorldMover.currentMove;
+        trainCar.transform.forward = fwd;
         IsChangeByNetwork = false;
     }
 
