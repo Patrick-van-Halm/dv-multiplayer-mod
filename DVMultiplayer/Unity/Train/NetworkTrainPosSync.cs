@@ -52,7 +52,6 @@ class NetworkTrainPosSync : MonoBehaviour
             yield return new WaitUntil(() => Vector3.Distance(prevPosition, transform.position) > 5f);
             prevAngularVelocity = trainCar.rb.angularVelocity;
             prevVelocity = trainCar.rb.velocity;
-
             prevPosition = transform.position;
             SingletonBehaviour<NetworkTrainManager>.Instance.SendTrainLocationUpdate(trainCar);
         }
@@ -65,6 +64,15 @@ class NetworkTrainPosSync : MonoBehaviour
         if (trainCar.derailed && !hostDerailed)
         {
             yield return SingletonBehaviour<NetworkTrainManager>.Instance.RerailDesynced(trainCar, location.Position, location.Forward);
+        }
+        else if(trainCar.derailed && hostDerailed)
+        {
+            transform.position = location.Position;
+            transform.rotation = location.Rotation;
+            prevPosition = location.Position;
+            trainCar.rb.angularVelocity = location.AngularVelocity;
+            trainCar.transform.forward = location.Forward;
+            yield break;
         }
 
         if (Vector3.Distance(prevPosition, location.Position) > 5f && trainCar.frontCoupler.coupledTo == null && trainCar.rearCoupler.coupledTo == null)
