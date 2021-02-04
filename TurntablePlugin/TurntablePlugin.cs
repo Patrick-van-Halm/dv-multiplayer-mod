@@ -14,7 +14,7 @@ namespace TurntablePlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.2");
+        public override Version Version => new Version("1.0.3");
 
         private List<Turntable> turntableStates = new List<Turntable>();
 
@@ -78,7 +78,7 @@ namespace TurntablePlugin
                 }
             }
 
-            UnreliableSendToOthers(message, sender);
+            ReliableSendToOthers(message, sender);
         }
 
         private void UnreliableSendToOthers(Message message, IClient sender)

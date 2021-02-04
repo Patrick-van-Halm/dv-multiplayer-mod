@@ -79,7 +79,7 @@ class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableManager>
                     TurntableController turntableController = turntables.FirstOrDefault(j => j.transform.position == turntable.Position);
                     if (turntableController)
                     {
-                        SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableByNetwork(turntableController, turntable));
+                        SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntableController, turntable));
                     }
                 }
             }
@@ -87,29 +87,42 @@ class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableManager>
         IsSynced = true;
     }
 
-    private IEnumerator RotateTurntableByNetwork(TurntableController turntableController, Turntable turntable)
+    private IEnumerator RotateTurntableTowardsByNetwork(TurntableController turntableController, Turntable turntable)
     {
         IsChangeByNetwork = true;
-        turntableController.turntable.targetYRotation = turntable.Rotation;
+        turntableController.turntable.targetYRotation = turntable.Rotation.Value;
         turntableController.turntable.RotateToTargetRotation();
-        yield return new WaitUntil(() => turntableController.turntable.currentYRotation == turntable.Rotation);
+        yield return new WaitUntil(() => turntableController.turntable.currentYRotation == turntable.Rotation.Value);
         IsChangeByNetwork = false;
     }
 
-    internal void OnTurntableRotationChanged(TurntableController turntable, float value)
+    internal void OnTurntableRotationChanged(TurntableController turntable, float value, bool isLever)
     {
         Main.DebugLog($"[CLIENT] > TURNTABLE_ANGLE_CHANGED");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
-            writer.Write(new Turntable()
+            if (!isLever)
             {
-                Position = turntable.transform.position,
-                Rotation = value
-            });
+                writer.Write(new Turntable()
+                {
+                    Position = turntable.transform.position,
+                    Rotation = value,
+                    LeverAngle = null
+                });
+            }
+            else
+            {
+                writer.Write(new Turntable()
+                {
+                    Position = turntable.transform.position,
+                    Rotation = null,
+                    LeverAngle = value
+                });
+            }
 
             using (Message message = Message.Create((ushort)NetworkTags.TURNTABLE_ANGLE_CHANGED, writer))
-                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Unreliable);
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
     }
 
@@ -136,11 +149,17 @@ class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableManager>
                 Turntable turntableInfo = reader.ReadSerializable<Turntable>();
 
                 TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == turntableInfo.Position);
-                if (turntable)
+                if (turntable && turntableInfo.Rotation.HasValue)
                 {
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableByNetwork(turntable, turntableInfo));
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo));
+                }
+                else if (turntable && turntableInfo.LeverAngle.HasValue)
+                {
+                    turntable.leverGO.GetComponent<LeverBase>().SetValue(turntableInfo.LeverAngle.Value);
                 }
             }
         }
     }
+
+    
 }

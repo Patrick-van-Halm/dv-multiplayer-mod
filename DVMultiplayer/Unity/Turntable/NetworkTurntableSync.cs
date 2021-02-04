@@ -11,7 +11,7 @@ class NetworkTurntableSync : MonoBehaviour
 {
     private TurntableController turntable;
     private LeverBase lever;
-    private float prevTargetRotation;
+    private float prevLeverAngle;
     private void Awake()
     {
         turntable = GetComponent<TurntableController>();
@@ -22,16 +22,25 @@ class NetworkTurntableSync : MonoBehaviour
     private IEnumerator CheckInput()
     {
         yield return new WaitUntil(() => lever.IsGrabbedOrHoverScrolled());
-        yield return new WaitUntil(() => !lever.IsGrabbedOrHoverScrolled());
+        yield return new WaitUntil(() => {
+            OnTurntableLeverAngleChanged(lever.Value);
+            return !lever.IsGrabbedOrHoverScrolled();
+        });
         OnTurntableRotationChanged(turntable.turntable.targetYRotation);
         yield return CheckInput();
     }
 
+    private void OnTurntableLeverAngleChanged(float value)
+    {
+        if (prevLeverAngle != value)
+        {
+            prevLeverAngle = value;
+            SingletonBehaviour<NetworkTurntableManager>.Instance.OnTurntableRotationChanged(turntable, value, true);
+        }
+    }
+
     private void OnTurntableRotationChanged(float targetYRotation)
     {
-        if (SingletonBehaviour<NetworkTurntableManager>.Instance.IsChangeByNetwork)
-            return;
-
-        SingletonBehaviour<NetworkTurntableManager>.Instance.OnTurntableRotationChanged(turntable, targetYRotation);
+        SingletonBehaviour<NetworkTurntableManager>.Instance.OnTurntableRotationChanged(turntable, targetYRotation, false);
     }
 }
