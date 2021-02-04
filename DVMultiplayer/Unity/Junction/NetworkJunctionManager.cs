@@ -2,9 +2,11 @@
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DVMultiplayer;
+using DVMultiplayer.Darkrift;
 using DVMultiplayer.DTO.Junction;
 using DVMultiplayer.Networking;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,6 +19,8 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
     public bool IsSynced { get; internal set; }
 
     private VisualSwitch[] switches;
+    private BufferQueue buffer = new BufferQueue();
+
     protected override void Awake()
     {
         Main.DebugLog("NetworkJunctionManager initialized");
@@ -29,6 +33,9 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
         }
 
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
+
+        if (NetworkManager.IsHost())
+            IsSynced = true;
     }
 
     public void PlayerDisconnect()
@@ -72,30 +79,34 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
 
                 foreach(Switch switchInfo in switchesServer)
                 {
-                    VisualSwitch junction = switches.FirstOrDefault(j => j.junction.position == switchInfo.Position);
+                    VisualSwitch junction = switches.FirstOrDefault(j => j.junction.position == switchInfo.Position + WorldMover.currentMove);
                     if (junction)
                     {
                         if (switchInfo.SwitchToLeft && junction.junction.selectedBranch == 0 || !switchInfo.SwitchToLeft && junction.junction.selectedBranch == 1)
-                            return;
+                            continue;
                         IsChangeByNetwork = true;
-                        junction.junction.Switch((Junction.SwitchMode)switchInfo.Mode);
+                        junction.junction.Switch(Junction.SwitchMode.NO_SOUND);
                         IsChangeByNetwork = false;
                     }
                 }
             }
         }
         IsSynced = true;
+        buffer.RunBuffer();
     }
 
     public void OnJunctionSwitched(Vector3 position, Junction.SwitchMode mode, bool switchedToLeft)
     {
-        Main.DebugLog($"Junction received switch");
+        if (!IsSynced)
+            return;
+
+        Main.DebugLog($"[CLIENT] > SWITCH_CHANGED");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write<Switch>(new Switch()
             {
-                Position = position,
+                Position = position - WorldMover.currentMove,
                 Mode = (SwitchMode)mode,
                 SwitchToLeft = switchedToLeft
             });
@@ -107,6 +118,9 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
 
     public void ReceiveNetworkJunctionSwitch(Message message)
     {
+        if (buffer.NotSyncedAddToBuffer(IsSynced, ReceiveNetworkJunctionSwitch, message))
+            return;
+
         using (DarkRiftReader reader = message.GetReader())
         {
             Main.DebugLog($"[CLIENT] < SWITCH_CHANGED");
@@ -115,7 +129,7 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
             {
                 Switch switchInfo = reader.ReadSerializable<Switch>();
 
-                VisualSwitch junction = switches.FirstOrDefault(j => j.junction.position == switchInfo.Position);
+                VisualSwitch junction = switches.FirstOrDefault(j => j.junction.position == switchInfo.Position + WorldMover.currentMove);
                 if (junction)
                 {
                     if (switchInfo.SwitchToLeft && junction.junction.selectedBranch == 0 || !switchInfo.SwitchToLeft && junction.junction.selectedBranch == 1)
@@ -125,28 +139,6 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
                     IsChangeByNetwork = false;
                 }
             }
-        }
-    }
-
-    internal void SyncHost()
-    {
-        using (DarkRiftWriter writer = DarkRiftWriter.Create())
-        {
-            List<Switch> serverSwitches = new List<Switch>();
-            foreach(VisualSwitch s in switches)
-            {
-                serverSwitches.Add(new Switch()
-                {
-                    Position = s.junction.position,
-                    Mode = SwitchMode.NO_SOUND,
-                    SwitchToLeft = s.junction.selectedBranch == 0
-                });
-            }
-            writer.Write(serverSwitches.ToArray());
-
-
-            using (Message message = Message.Create((ushort)NetworkTags.SWITCH_HOSTSYNC, writer))
-                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
     }
 

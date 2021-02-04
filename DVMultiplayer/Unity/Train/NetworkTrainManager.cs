@@ -12,6 +12,7 @@ using DV.PointSet;
 using UnityEngine;
 using System;
 using DV.TerrainSystem;
+using DVMultiplayer.Darkrift;
 
 class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 {
@@ -19,6 +20,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     public bool IsChangeByNetwork { get; internal set; }
     public bool IsSynced { get; private set; }
     public bool SaveTrainCarsLoaded { get; internal set; }
+    private BufferQueue buffer = new BufferQueue();
 
     protected override void Awake()
     {
@@ -148,10 +150,14 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_HOSTSYNC, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
+        IsSynced = true;
     }
 
     internal void SendRerailTrainUpdate(TrainCar trainCar)
     {
+        if (!IsSynced)
+            return;
+
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write(new TrainRerail()
@@ -169,15 +175,16 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     public void PlayerDisconnect()
     {
+        SingletonBehaviour<UnityClient>.Instance.MessageReceived -= OnMessageReceived;
         if (trainCars == null)
             return;
 
         foreach (TrainCar trainCar in trainCars)
         {
             if(trainCar.GetComponent<NetworkTrainPosSync>())
-                Destroy(trainCar.GetComponent<NetworkTrainPosSync>());
+                DestroyImmediate(trainCar.GetComponent<NetworkTrainPosSync>());
             if(trainCar.IsLoco && trainCar.GetComponent<NetworkTrainSync>())
-                Destroy(trainCar.GetComponent<NetworkTrainSync>());
+                DestroyImmediate(trainCar.GetComponent<NetworkTrainSync>());
         }
     }
 
@@ -262,13 +269,16 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void OnTrainRerail(Message message)
     {
+        if (buffer.NotSyncedAddToBuffer(IsSynced, OnTrainRerail, message))
+            return;
+
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)
             {
                 TrainRerail rerail = reader.ReadSerializable<TrainRerail>();
                 TrainCar train = trainCars.FirstOrDefault(t => t.CarGUID == rerail.TrainId);
-                if (train && train.derailed)
+                if (train)
                 {
                     train.Rerail(RailTrack.GetClosest(rerail.Position + WorldMover.currentMove).track, CalculateWorldPosition(rerail.Position + WorldMover.currentMove, rerail.Forward, train.Bounds.center.z), rerail.Forward);
                 }
@@ -435,6 +445,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             }
         }
         IsSynced = true;
+        buffer.RunBuffer();
     }
 
     private TrainCar InitializeNewTrainCar(WorldTrain train)
@@ -493,7 +504,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     internal void SendTrainLocationUpdate(TrainCar trainCar)
     {
-        if (!NetworkManager.IsHost())
+        if (!IsSynced)
             return;
 
         Main.DebugLog($"[CLIENT] > TRAIN_LOCATION_UPDATE: TrainID: {trainCar.ID}");
@@ -659,7 +670,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     #region Receiving
     private void OnPlayerTrainCarChange(Message message)
     {
-        if (!IsSynced)
+        if (buffer.NotSyncedAddToBuffer(IsSynced, OnPlayerTrainCarChange, message))
             return;
 
         using (DarkRiftReader reader = message.GetReader())
@@ -692,9 +703,8 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void OnTrainDerailment(Message message)
     {
-        if (!IsSynced)
+        if (buffer.NotSyncedAddToBuffer(IsSynced, OnTrainDerailment, message))
             return;
-
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)
@@ -740,7 +750,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void OnTrainLeverMessage(Message message)
     {
-        if (!IsSynced)
+        if (buffer.NotSyncedAddToBuffer(IsSynced, OnTrainLeverMessage, message))
             return;
 
         using (DarkRiftReader reader = message.GetReader())
@@ -826,6 +836,9 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void OnTrainCoupleChange(Message message, bool isCoupled)
     {
+        if (buffer.NotSyncedAddToBuffer(IsSynced, OnTrainCoupleChange, message, isCoupled))
+            return;
+
         using (DarkRiftReader reader = message.GetReader())
         {
             //if (reader.Length % 30 != 0)
@@ -873,6 +886,9 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void OnTrainCouplerCockChange(Message message)
     {
+        if (buffer.NotSyncedAddToBuffer(IsSynced, OnTrainCouplerCockChange, message))
+            return;
+
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)
@@ -898,6 +914,9 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void OnTrainCouplerHoseChange(Message message)
     {
+        if (buffer.NotSyncedAddToBuffer(IsSynced, OnTrainCouplerHoseChange, message))
+            return;
+
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)
