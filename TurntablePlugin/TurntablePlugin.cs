@@ -14,7 +14,7 @@ namespace TurntablePlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.3");
+        public override Version Version => new Version("1.0.4");
 
         private List<Turntable> turntableStates = new List<Turntable>();
 
@@ -47,6 +47,10 @@ namespace TurntablePlugin
                     case NetworkTags.TURNTABLE_SYNC:
                         SendAllTurntableStates(e.Client);
                         break;
+
+                    case NetworkTags.TURNTABLE_SNAP:
+                        OnTurntableSnap(message, e.Client);
+                        break;
                 }
             }
         }
@@ -71,6 +75,27 @@ namespace TurntablePlugin
                 if (turntable != null)
                 {
                     turntable.Rotation = turntableInfo.Rotation;
+                    turntable.LeverAngle = turntableInfo.LeverAngle;
+                }
+                else
+                {
+                    turntableStates.Add(turntableInfo);
+                }
+            }
+
+            ReliableSendToOthers(message, sender);
+        }
+
+        private void OnTurntableSnap(Message message, IClient sender)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                Turntable turntableInfo = reader.ReadSerializable<Turntable>();
+                Turntable turntable = turntableStates.FirstOrDefault(t => t.Position == turntableInfo.Position);
+                if (turntable != null)
+                {
+                    turntable.Rotation = turntableInfo.Rotation;
+                    turntable.LeverAngle = turntableInfo.LeverAngle;
                 }
                 else
                 {
