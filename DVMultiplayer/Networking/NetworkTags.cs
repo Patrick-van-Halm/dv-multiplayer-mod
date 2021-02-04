@@ -34,5 +34,6 @@ namespace DVMultiplayer.Networking
         TRAIN_HOSTSYNC,
         SWITCH_SYNC,
         SWITCH_HOSTSYNC,
+        TURNTABLE_SNAP,
     }
 }
