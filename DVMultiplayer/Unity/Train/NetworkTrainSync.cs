@@ -10,6 +10,8 @@ class NetworkTrainSync : MonoBehaviour
 {
     private TrainCar loco;
     public bool listenToLocalPlayerInputs = false;
+    LocoControllerBase baseController;
+    private bool sanderCoroutineActive;
 
     public void ListenToTrainInputEvents()
     {
@@ -17,17 +19,17 @@ class NetworkTrainSync : MonoBehaviour
             return;
 
         Main.DebugLog($"[{loco.ID}] Listen to base loco controller");
-        LocoControllerBase baseLocomotiveController = loco.GetComponent<LocoControllerBase>();
+        baseController = loco.GetComponent<LocoControllerBase>();
         Main.DebugLog($"[{loco.ID}] Listen throttle change on base loco controller");
-        baseLocomotiveController.ThrottleUpdated += OnTrainThrottleChanged;
+        baseController.ThrottleUpdated += OnTrainThrottleChanged;
         Main.DebugLog($"[{loco.ID}] Listen brake change on base loco controller");
-        baseLocomotiveController.BrakeUpdated += OnTrainBrakeChanged;
+        baseController.BrakeUpdated += OnTrainBrakeChanged;
         Main.DebugLog($"[{loco.ID}] Listen indepBrake change on base loco controller");
-        baseLocomotiveController.IndependentBrakeUpdated += OnTrainIndependentBrakeChanged;
+        baseController.IndependentBrakeUpdated += OnTrainIndependentBrakeChanged;
         Main.DebugLog($"[{loco.ID}] Listen reverser change on base loco controller");
-        baseLocomotiveController.ReverserUpdated += OnTrainReverserStateChanged;
+        baseController.ReverserUpdated += OnTrainReverserStateChanged;
         Main.DebugLog($"[{loco.ID}] Listen sander change on base loco controller");
-        baseLocomotiveController.SandersUpdated += OnTrainSanderChanged;
+        baseController.SandersUpdated += OnTrainSanderChanged;
         //loco.TrainCarCollisions.CarDamaged += OnTrainDamaged;
 
         Main.DebugLog($"[{loco.ID}] Listen to specific train events");
@@ -67,18 +69,16 @@ class NetworkTrainSync : MonoBehaviour
         if (!loco || !loco.IsLoco)
             return;
 
-        Main.DebugLog($"[{loco.ID}] Stop listening to base loco controller");
-        LocoControllerBase baseLocomotiveController = loco.GetComponent<LocoControllerBase>();
         Main.DebugLog($"[{loco.ID}] Stop listening throttle change on base loco controller");
-        baseLocomotiveController.ThrottleUpdated -= OnTrainThrottleChanged;
+        baseController.ThrottleUpdated -= OnTrainThrottleChanged;
         Main.DebugLog($"[{loco.ID}] Stop listening brake change on base loco controller");
-        baseLocomotiveController.BrakeUpdated -= OnTrainBrakeChanged;
+        baseController.BrakeUpdated -= OnTrainBrakeChanged;
         Main.DebugLog($"[{loco.ID}] Stop listening indepBrake change on base loco controller");
-        baseLocomotiveController.IndependentBrakeUpdated -= OnTrainIndependentBrakeChanged;
+        baseController.IndependentBrakeUpdated -= OnTrainIndependentBrakeChanged;
         Main.DebugLog($"[{loco.ID}] Stop listening reverser change on base loco controller");
-        baseLocomotiveController.ReverserUpdated -= OnTrainReverserStateChanged;
+        baseController.ReverserUpdated -= OnTrainReverserStateChanged;
         Main.DebugLog($"[{loco.ID}] Stop listening sander change on base loco controller");
-        baseLocomotiveController.SandersUpdated -= OnTrainSanderChanged;
+        baseController.SandersUpdated -= OnTrainSanderChanged;
 
         Main.DebugLog($"[{loco.ID}] Stop listening to train specific events");
         switch (loco.carType)
@@ -202,10 +202,21 @@ class NetworkTrainSync : MonoBehaviour
 
     private void OnTrainSanderChanged(float value)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs || sanderCoroutineActive)
             return;
+        SingletonBehaviour<CoroutineManager>.Instance.Run(SanderUpdate());
+    }
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLeverValue(this, Levers.Sander, value);
+    private IEnumerator SanderUpdate()
+    {
+        sanderCoroutineActive = true;
+        if (baseController.IsSandOn())
+        {
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLeverValue(this, Levers.Sander, 1);
+            yield return new WaitUntil(() => !baseController.IsSandOn());
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLeverValue(this, Levers.Sander, 0);
+        }
+        sanderCoroutineActive = false;
     }
 
     private void OnTrainReverserStateChanged(float value)
