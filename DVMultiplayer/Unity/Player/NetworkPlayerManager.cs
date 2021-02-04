@@ -22,6 +22,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     private SetSpawn spawnData;
     private bool modMismatched = false;
 
+    public bool IsSynced { get; private set; }
+
     protected override void Awake()
     {
         base.Awake();
@@ -30,15 +32,17 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
     }
 
-    private GameObject GetPlayerObject()
+    private GameObject GetNewPlayerObject(Vector3 pos, Quaternion rotation, string username)
     {
         GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        player.transform.position = pos;
+        player.transform.rotation = rotation;
         player.GetComponent<CapsuleCollider>().enabled = false;
         player.AddComponent<NetworkPlayerSync>();
 
         GameObject nametagCanvas = new GameObject("Nametag Canvas");
         nametagCanvas.transform.parent = player.transform;
-        nametagCanvas.transform.position = new Vector3(0, 1.5f, 0);
+        nametagCanvas.transform.localPosition = new Vector3(0, 1.5f, 0);
         nametagCanvas.AddComponent<Canvas>();
         nametagCanvas.AddComponent<RotateTowardsPlayer>();
 
@@ -66,6 +70,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         tag.font = Font.CreateDynamicFontFromOSFont("Arial", 16);
         tag.fontSize = 200;
         tag.alignment = TextAnchor.MiddleCenter;
+        tag.text = username;
 
         rectTransform = nametag.GetComponent<RectTransform>();
         rectTransform.localScale = new Vector3(1f, 3f, 0);
@@ -74,7 +79,9 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         rectTransform.offsetMin = new Vector2(rectTransform.offsetMin.x, 350);
         rectTransform.offsetMax = new Vector2(rectTransform.offsetMax.x, -350);
 
-        return player;
+        GameObject p = Instantiate(player);
+        Destroy(player);
+        return p;
     }
 
     private void MessageReceived(object sender, MessageReceivedEventArgs e)
@@ -246,11 +253,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.SaveTrainCarsLoaded);
 
             // Load Train data from server that changed since uptime
-            Main.DebugLog($"Syncing traincars");
-            SingletonBehaviour<NetworkTrainManager>.Instance.SyncTrainCars();
-            yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced);
-
-            // Load Train data from server that changed since uptime
             Main.DebugLog($"Syncing Junctions");
             SingletonBehaviour<NetworkJunctionManager>.Instance.SyncJunction();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkJunctionManager>.Instance.IsSynced);
@@ -259,6 +261,11 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             Main.DebugLog($"Syncing Turntables");
             SingletonBehaviour<NetworkTurntableManager>.Instance.SyncTurntables();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTurntableManager>.Instance.IsSynced);
+
+            // Load Train data from server that changed since uptime
+            Main.DebugLog($"Syncing traincars");
+            SingletonBehaviour<NetworkTrainManager>.Instance.SyncTrainCars();
+            yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced);
         }
         else
         {
@@ -303,21 +310,20 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                 {
                     Main.DebugLog($"[CLIENT] < PLAYER_SPAWN: Username: {player.Username} ");
 
-                    Vector3 pos = playerPos.Position + WorldMover.currentMove;
+                    Vector3 pos = playerPos.Position;
                     pos = new Vector3(pos.x, pos.y + 1, pos.z);
                     Quaternion rotation = Quaternion.identity;
                     if (playerPos.Rotation.HasValue)
                         rotation = playerPos.Rotation.Value;
-                    GameObject playerObject = Instantiate(GetPlayerObject(), pos, rotation);
+                    GameObject playerObject = GetNewPlayerObject(pos, rotation, player.Username);
+                    WorldMover.Instance.AddObjectToMove(playerObject.transform);
 
                     NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
                     playerSync.Id = player.Id;
                     playerSync.Username = player.Username;
                     playerSync.Mods = player.Mods;
 
-                    playerObject.transform.GetChild(0).GetChild(1).GetComponent<Text>().text = player.Username;
                     networkPlayers.Add(player.Id, playerObject);
-                    WorldMover.Instance.AddObjectToMove(playerObject.transform);
                 }
             }
         }
@@ -335,7 +341,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             writer.Write<Location>(new Location()
             {
                 Id = SingletonBehaviour<UnityClient>.Instance.ID,
-                Position = position,
+                Position = position - WorldMover.currentMove,
                 Rotation = rotation
             });
 
@@ -346,6 +352,9 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
     private void UpdateNetworkPositionAndRotation(Message message)
     {
+        if (SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave)
+            return;
+
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)
@@ -355,7 +364,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                 GameObject playerObject = null;
                 if (location.Id != SingletonBehaviour<UnityClient>.Instance.ID && networkPlayers.TryGetValue(location.Id, out playerObject))
                 {
-                    Vector3 pos = location.Position + WorldMover.currentMove;
+                    Vector3 pos = location.Position;
                     pos = new Vector3(pos.x, pos.y + 1, pos.z);
                     NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
                     playerSync.UpdateLocation(pos, location.Rotation);

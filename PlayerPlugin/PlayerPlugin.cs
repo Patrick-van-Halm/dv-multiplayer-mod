@@ -18,7 +18,7 @@ namespace PlayerPlugin
 
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("2.6.5");
+        public override Version Version => new Version("2.6.6");
 
         public PlayerPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -202,7 +202,7 @@ namespace PlayerPlugin
         }
     }
 
-    struct Player
+    class Player
     {
         public readonly ushort id;
         public readonly string username;

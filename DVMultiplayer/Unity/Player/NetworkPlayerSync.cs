@@ -15,40 +15,35 @@ class NetworkPlayerSync : MonoBehaviour
     internal ushort Id;
     private Vector3 prevPosition;
     private Vector3 newPosition;
+    private Vector3 absPosition;
     private const float SYNC_THRESHOLD = 0.1f;
+
+    private void Start()
+    {
+        absPosition = transform.position;
+        newPosition = absPosition;
+    }
 
     private void Update()
     {
         if (!IsLocal)
         {
-            if (newPosition == null)
-                newPosition = transform.position;
-            transform.position = Vector3.Lerp(transform.position, newPosition, 15 * (Time.deltaTime / 2));
+            transform.position = Vector3.Lerp(transform.position, newPosition + WorldMover.currentMove, 15 * (Time.deltaTime / 2));
             return;
         }
 
         if(prevPosition == null || Vector3.Distance(prevPosition, transform.position) > SYNC_THRESHOLD)
         {
            // Main.DebugLog("Player location changed sending new location");
-            SingletonBehaviour<NetworkPlayerManager>.Instance.UpdateLocalPositionAndRotation(transform.position - WorldMover.currentMove, transform.rotation);
+            SingletonBehaviour<NetworkPlayerManager>.Instance.UpdateLocalPositionAndRotation(transform.position, transform.rotation);
             prevPosition = transform.position;
         }
     }
 
-    //private void FixedUpdate()
-    //{
-    //    if (IsLocal)
-    //        return;
-    //    if(olderPosition != null && prevPosition != null)
-    //    {
-    //        UpdateLocation(transform.position + trainCar.rb.velocity / 2 * Time.deltaTime, transform.rotation);
-    //    }
-    //}
-
     public void UpdateLocation(Vector3 pos, Quaternion? rot = null)
     {
         newPosition = pos;
-        if(rot.HasValue)
+        if (rot.HasValue)
             transform.rotation = rot.Value;
     }
 }
