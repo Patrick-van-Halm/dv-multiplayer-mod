@@ -80,11 +80,11 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
             offlineSave = null;
             SaveGameUpgrader.Upgrade();
 
-            SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave(onlineSave));
+            SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave());
         }
     }
 
-    private IEnumerator LoadOfflineSave(SaveGameData onlineSave)
+    private IEnumerator LoadOfflineSave()
     {
         SingletonBehaviour<NetworkJobsManager>.Instance.PlayerDisconnect();
         UUI.UnlockMouse(true);
