@@ -91,6 +91,7 @@ class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableManager>
     {
         IsChangeByNetwork = true;
         turntableController.turntable.targetYRotation = turntable.Rotation.Value;
+        turntableController.GetComponent<NetworkTurntableSync>().yRot = turntableController.turntable.targetYRotation;
         turntableController.turntable.RotateToTargetRotation();
         yield return new WaitUntil(() => turntableController.turntable.currentYRotation == turntable.Rotation.Value);
         IsChangeByNetwork = false;
