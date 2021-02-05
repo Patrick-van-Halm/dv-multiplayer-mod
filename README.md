@@ -69,10 +69,10 @@ Features have been split into sections to show different parts of the game. The 
 | SteamAPI Integration         | :x:                |                        |
 
 ### Reporting Issues
-If you have found a bug, please open an issue and describe the bug in as much detail as possible and include both the server log which you can find in:
+If you have found a bug, please open an issue and describe the bug in as much detail as possible and include both the server log which can be found in:
 * Derail Valley Directory -> Mods -> DVMultiplayer -> Logs -> (Date) -> (Time).log
 
-And also the player log, which can be found in:
+And the player log, which can be found in:
 * AppData -> LocalLow -> Altfuture -> Derail Valley -> Player.log
 
 ## Contributing
