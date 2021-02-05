@@ -300,7 +300,7 @@ namespace DVMultiplayer
             InputButton inputbtn = backspaceBtn.AddComponent<InputButton>();
             inputbtn.isBackspace = true;
 
-            builderBtn = new ButtonBuilder($"Paste", $"Paste", inputMenu.transform, new Rect(925 - (80 * 9f) + 120, -620, 150, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+            builderBtn = new ButtonBuilder($"Paste", $"Paste", inputMenu.transform, new Rect(925 - (80 * 9f) + 125, -620, 150, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
             GameObject pasteBtn = CreateButton(builderBtn);
             InputButton inputPastebtn = pasteBtn.AddComponent<InputButton>();
             inputPastebtn.isPaste = true;
