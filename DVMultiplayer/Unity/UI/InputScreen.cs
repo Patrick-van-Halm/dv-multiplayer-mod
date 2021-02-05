@@ -46,6 +46,15 @@ class InputScreen : MonoBehaviour
         ResetInput();
     }
 
+    internal void Paste()
+    {
+        TextEditor editor = new TextEditor();
+        if (editor.Paste())
+        {
+            Input += editor.text;
+        }
+    }
+
     internal void OnOpen()
     {
         listenToKeyboard = true;
@@ -59,22 +68,29 @@ class InputScreen : MonoBehaviour
 
     private void Update()
     {
-        if(listenToKeyboard)
-            foreach (char c in UnityEngine.Input.inputString)
+        if (listenToKeyboard)
+        {
+            if ((UnityEngine.Input.GetKey(KeyCode.LeftControl) || UnityEngine.Input.GetKey(KeyCode.RightControl)) && UnityEngine.Input.GetKeyUp(KeyCode.V))
+                Paste();
+            else
             {
-                if (c == '\b') // has backspace/delete been pressed?
+                foreach (char c in UnityEngine.Input.inputString)
                 {
-                    Backspace();
-                }
-                else if ((c == '\n') || (c == '\r')) // enter/return
-                {
-                    confirmButton.onClick?.Invoke();
-                }
-                else if((char.IsLetterOrDigit(c) || c == '.' || c == '-') && !isDigitOnly || char.IsDigit(c) && isDigitOnly)
-                {
-                    Input += c;
+                    if (c == '\b') // has backspace/delete been pressed?
+                    {
+                        Backspace();
+                    }
+                    else if ((c == '\n') || (c == '\r')) // enter/return
+                    {
+                        confirmButton.onClick?.Invoke();
+                    }
+                    else if ((char.IsLetterOrDigit(c) || c == '.' || c == '-') && !isDigitOnly || char.IsDigit(c) && isDigitOnly)
+                    {
+                        Input += c;
+                    }
                 }
             }
+        }
     }
      
     public void ResetInput()
