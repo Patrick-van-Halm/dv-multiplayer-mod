@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.5.8");
+        public override Version Version => new Version("1.5.9");
 
         private List<WorldTrain> worldTrains;
 
@@ -54,11 +54,23 @@ namespace TrainPlugin
                         break;
 
                     case NetworkTags.TRAIN_SWITCH:
-                    case NetworkTags.TRAIN_COUPLE:
-                    case NetworkTags.TRAIN_UNCOUPLE:
-                    case NetworkTags.TRAIN_COUPLE_HOSE:
-                    case NetworkTags.TRAIN_COUPLE_COCK:
                         ReliableSendToOthers(message, e.Client);
+                        break;
+
+                    case NetworkTags.TRAIN_COUPLE:
+                        UpdateCouplingState(message, e.Client, true);
+                        break;
+
+                    case NetworkTags.TRAIN_UNCOUPLE:
+                        UpdateCouplingState(message, e.Client, false);
+                        break;
+
+                    case NetworkTags.TRAIN_COUPLE_HOSE:
+                        UpdateCoupledHoseState(message, e.Client);
+                        break;
+
+                    case NetworkTags.TRAIN_COUPLE_COCK:
+                        UpdateCoupleCockState(message, e.Client);
                         break;
 
                     case NetworkTags.TRAIN_SYNC_ALL:
@@ -74,6 +86,128 @@ namespace TrainPlugin
                         break;
                 }
             }
+        }
+
+        private void UpdateCoupleCockState(Message message, IClient sender)
+        {
+            if (worldTrains != null)
+            {
+                using (DarkRiftReader reader = message.GetReader())
+                {
+                    TrainCouplerCockChange cockStateChanged = reader.ReadSerializable<TrainCouplerCockChange>();
+                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == cockStateChanged.TrainIdCoupler);
+                    if (train == null)
+                    {
+                        Logger.Error($"[{cockStateChanged.TrainIdCoupler}] Train not found");
+                    }
+                    else
+                    {
+                        if (cockStateChanged.IsCouplerFront)
+                            train.IsFrontCouplerHoseConnected = cockStateChanged.IsOpen;
+                        else
+                            train.IsRearCouplerHoseConnected = cockStateChanged.IsOpen;
+                    }
+                }
+            }
+
+            Logger.Trace("[SERVER] > TRAIN_COUPLE_COCK");
+            ReliableSendToOthers(message, sender);
+        }
+
+        private void UpdateCoupledHoseState(Message message, IClient sender)
+        {
+            if (worldTrains != null)
+            {
+                using (DarkRiftReader reader = message.GetReader())
+                {
+                    TrainCouplerHoseChange hoseStateChanged = reader.ReadSerializable<TrainCouplerHoseChange>();
+                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == hoseStateChanged.TrainIdC1);
+                    if (train == null)
+                    {
+                        Logger.Error($"[{hoseStateChanged.TrainIdC1}] Train not found");
+                    }
+                    else
+                    {
+                        if (hoseStateChanged.IsC1Front)
+                            train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
+                        else
+                            train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
+                    }
+                    train = worldTrains.FirstOrDefault(t => t.Guid == hoseStateChanged.TrainIdC2);
+                    if (train == null)
+                    {
+                        Logger.Error($"[{hoseStateChanged.TrainIdC2}] Train not found");
+                    }
+                    else
+                    {
+                        if (hoseStateChanged.IsC2Front)
+                            train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
+                        else
+                            train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
+                    }
+                }
+            }
+
+            Logger.Trace("[SERVER] > TRAIN_COUPLE_HOSE");
+            ReliableSendToOthers(message, sender);
+        }
+
+        private void UpdateCouplingState(Message message, IClient sender, bool isCoupled)
+        {
+            if (worldTrains != null)
+            {
+                using (DarkRiftReader reader = message.GetReader())
+                {
+                    TrainCouplingChange coupledChanged = reader.ReadSerializable<TrainCouplingChange>();
+                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == coupledChanged.TrainIdC1);
+                    if (train == null)
+                    {
+                        Logger.Error($"[{coupledChanged.TrainIdC1}] Train not found");
+                    }
+                    else
+                    {
+                        if (isCoupled)
+                        {
+                            if (coupledChanged.IsC1Front)
+                                train.IsFrontCouplerCoupled = true;
+                            else
+                                train.IsRearCouplerCoupled = true;
+                        }
+                        else
+                        {
+                            if (coupledChanged.IsC1Front)
+                                train.IsFrontCouplerCoupled = false;
+                            else
+                                train.IsRearCouplerCoupled = false;
+                        }
+                    }
+                    train = worldTrains.FirstOrDefault(t => t.Guid == coupledChanged.TrainIdC2);
+                    if (train == null)
+                    {
+                        Logger.Error($"[{coupledChanged.TrainIdC2}] Train not found");
+                    }
+                    else
+                    {
+                        if (isCoupled)
+                        {
+                            if (coupledChanged.IsC2Front)
+                                train.IsFrontCouplerCoupled = true;
+                            else
+                                train.IsRearCouplerCoupled = true;
+                        }
+                        else
+                        {
+                            if (coupledChanged.IsC2Front)
+                                train.IsFrontCouplerCoupled = false;
+                            else
+                                train.IsRearCouplerCoupled = false;
+                        }
+                    }
+                }
+            }
+
+            Logger.Trace($"[SERVER] > {(isCoupled ? "TRAIN_COUPLE" : "TRAIN_UNCOUPLE")}");
+            ReliableSendToOthers(message, sender);
         }
 
         private void SyncTrainDataFromHost(Message message)

@@ -101,8 +101,12 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
                     Bogie1RailTrackName = bogie1.track.name,
                     Bogie2RailTrackName = bogie2.track.name,
-                    IsFrontCouplerCoupled = car.frontCoupler.coupledTo != null,
-                    IsRearCouplerCoupled = car.rearCoupler.coupledTo != null,
+                    IsFrontCouplerCoupled = car.frontCoupler.coupledTo,
+                    IsFrontCouplerCockOpen = car.frontCoupler.IsCockOpen,
+                    IsFrontCouplerHoseConnected = car.frontCoupler.GetAirHoseConnectedTo(),
+                    IsRearCouplerCoupled = car.rearCoupler.coupledTo,
+                    IsRearCouplerCockOpen = car.rearCoupler.IsCockOpen,
+                    IsRearCouplerHoseConnected = car.rearCoupler.GetAirHoseConnectedTo(),
                     IsPlayerSpawned = car.playerSpawnedCar
                 };
 
@@ -368,6 +372,34 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             Main.DebugLog($"Train is not derailed on host so rerail");
             yield return RerailDesynced(train, serverState.Position, serverState.Forward);
         }
+
+        if(serverState.IsFrontCouplerCoupled && !train.frontCoupler.IsCoupled())
+        {
+            if (serverState.IsFrontCouplerCockOpen && serverState.IsFrontCouplerHoseConnected)
+                train.frontCoupler.TryCouple(false);
+            else
+                train.frontCoupler.TryCouple(false, true);
+        }
+
+        if (serverState.IsFrontCouplerCockOpen && !train.frontCoupler.IsCockOpen)
+            train.frontCoupler.IsCockOpen = true;
+
+        if (serverState.IsFrontCouplerHoseConnected && !train.frontCoupler.GetAirHoseConnectedTo() && train.frontCoupler.GetFirstCouplerInRange())
+            train.frontCoupler.ConnectAirHose(train.frontCoupler.GetFirstCouplerInRange(), false);
+
+        if (serverState.IsRearCouplerCoupled && !train.rearCoupler.IsCoupled())
+        {
+            if (serverState.IsRearCouplerCockOpen && serverState.IsRearCouplerHoseConnected)
+                train.rearCoupler.TryCouple(false);
+            else
+                train.rearCoupler.TryCouple(false, true);
+        }
+
+        if (serverState.IsRearCouplerCockOpen && !train.rearCoupler.IsCockOpen)
+            train.rearCoupler.IsCockOpen = true;
+
+        if (serverState.IsRearCouplerHoseConnected && !train.rearCoupler.GetAirHoseConnectedTo() && train.rearCoupler.GetFirstCouplerInRange())
+            train.rearCoupler.ConnectAirHose(train.rearCoupler.GetFirstCouplerInRange(), false);
 
         SyncLocomotiveWithServerStates(train, serverState);
 
