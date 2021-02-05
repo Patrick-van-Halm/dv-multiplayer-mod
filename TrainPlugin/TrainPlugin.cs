@@ -133,17 +133,20 @@ namespace TrainPlugin
                         else
                             train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
                     }
-                    train = worldTrains.FirstOrDefault(t => t.Guid == hoseStateChanged.TrainIdC2);
-                    if (train == null)
+                    if (hoseStateChanged.IsConnected)
                     {
-                        Logger.Error($"[{hoseStateChanged.TrainIdC2}] Train not found");
-                    }
-                    else
-                    {
-                        if (hoseStateChanged.IsC2Front)
-                            train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
+                        train = worldTrains.FirstOrDefault(t => t.Guid == hoseStateChanged.TrainIdC2);
+                        if (train == null)
+                        {
+                            Logger.Error($"[{hoseStateChanged.TrainIdC2}] Train not found");
+                        }
                         else
-                            train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
+                        {
+                            if (hoseStateChanged.IsC2Front)
+                                train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
+                            else
+                                train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
+                        }
                     }
                 }
             }

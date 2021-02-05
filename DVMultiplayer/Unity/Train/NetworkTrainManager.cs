@@ -994,6 +994,43 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
                 if (trainCoupler1 && trainCoupler2)
                 {
+                    WorldTrain train = serverTrainStates.FirstOrDefault(t => t.Guid == trainCoupler1.CarGUID);
+                    if(train != null)
+                    {
+                        if (isCoupled)
+                        {
+                            if (coupled.IsC1Front)
+                                train.IsFrontCouplerCoupled = true;
+                            else
+                                train.IsRearCouplerCoupled = true;
+                        }
+                        else
+                        {
+                            if (coupled.IsC1Front)
+                                train.IsFrontCouplerCoupled = false;
+                            else
+                                train.IsRearCouplerCoupled = false;
+                        }
+                    }
+                    train = serverTrainStates.FirstOrDefault(t => t.Guid == trainCoupler2.CarGUID);
+                    if (train != null)
+                    {
+                        if (isCoupled)
+                        {
+                            if (coupled.IsC2Front)
+                                train.IsFrontCouplerCoupled = true;
+                            else
+                                train.IsRearCouplerCoupled = true;
+                        }
+                        else
+                        {
+                            if (coupled.IsC2Front)
+                                train.IsFrontCouplerCoupled = false;
+                            else
+                                train.IsRearCouplerCoupled = false;
+                        }
+                    }
+
                     Main.DebugLog($"[CLIENT] < TRAIN_COUPLE: Packet size: {reader.Length}, TrainID_C1: {trainCoupler1.ID} (isFront: {coupled.IsC1Front}), TrainID_C2: {trainCoupler2.ID} (isFront: {coupled.IsC2Front})");
                     Coupler C1 = coupled.IsC1Front ? trainCoupler1.frontCoupler : trainCoupler1.rearCoupler;
                     Coupler C2 = coupled.IsC2Front ? trainCoupler2.frontCoupler : trainCoupler2.rearCoupler;
@@ -1037,6 +1074,15 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
                 if (trainCoupler)
                 {
+                    WorldTrain train = serverTrainStates.FirstOrDefault(t => t.Guid == cockChange.TrainIdCoupler);
+                    if(train != null)
+                    {
+                        if (cockChange.IsCouplerFront)
+                            train.IsFrontCouplerHoseConnected = cockChange.IsOpen;
+                        else
+                            train.IsRearCouplerHoseConnected = cockChange.IsOpen;
+                    }
+
                     IsChangeByNetwork = true;
                     Main.DebugLog($"[CLIENT] < TRAIN_COUPLE_COCK: Packet size: {reader.Length}, TrainID: {trainCoupler.ID} (isFront: {cockChange.IsCouplerFront}), isOpen: {cockChange.IsOpen}");
                     Coupler coupler = cockChange.IsCouplerFront ? trainCoupler.frontCoupler : trainCoupler.rearCoupler;
@@ -1068,6 +1114,23 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
                 if (trainCoupler1 && trainCoupler2)
                 {
+                    WorldTrain train = serverTrainStates.FirstOrDefault(t => t.Guid == trainCoupler1.CarGUID);
+                    if (train != null)
+                    {
+                        if (hoseChange.IsC1Front)
+                            train.IsFrontCouplerHoseConnected = hoseChange.IsConnected;
+                        else
+                            train.IsRearCouplerHoseConnected = hoseChange.IsConnected;
+                    }
+                    train = serverTrainStates.FirstOrDefault(t => t.Guid == trainCoupler2.CarGUID);
+                    if (train != null)
+                    {
+                        if (hoseChange.IsC2Front)
+                            train.IsFrontCouplerHoseConnected = hoseChange.IsConnected;
+                        else
+                            train.IsRearCouplerHoseConnected = hoseChange.IsConnected;
+                    }
+
                     Main.DebugLog($"[CLIENT] < TRAIN_COUPLE_HOSE: Packet size: {reader.Length}, TrainID_C1: {trainCoupler1.ID} (isFront: {hoseChange.IsC1Front}), TrainID_C2: {trainCoupler2.ID} (isFront: {hoseChange.IsC2Front}), HoseConnected: {hoseChange.IsConnected}");
                     Coupler C1 = hoseChange.IsC1Front ? trainCoupler1.frontCoupler : trainCoupler1.rearCoupler;
                     Coupler C2 = hoseChange.IsC2Front ? trainCoupler2.frontCoupler : trainCoupler2.rearCoupler;
@@ -1081,6 +1144,16 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 }
                 else if(trainCoupler1 && !hoseChange.IsConnected)
                 {
+                    WorldTrain train = serverTrainStates.FirstOrDefault(t => t.Guid == trainCoupler1.CarGUID);
+                    if (train != null)
+                    {
+                        if (hoseChange.IsC1Front)
+                            train.IsFrontCouplerHoseConnected = hoseChange.IsConnected;
+                        else
+                            train.IsRearCouplerHoseConnected = hoseChange.IsConnected;
+                    }
+
+                    Main.DebugLog($"[CLIENT] < TRAIN_COUPLE_HOSE: TrainID: {trainCoupler1.ID} (isFront: {hoseChange.IsC1Front}), HoseConnected: {hoseChange.IsConnected}");
                     Coupler C1 = hoseChange.IsC1Front ? trainCoupler1.frontCoupler : trainCoupler1.rearCoupler;
                     C1.DisconnectAirHose(true);
                 }
