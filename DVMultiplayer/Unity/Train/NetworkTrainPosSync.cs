@@ -49,7 +49,7 @@ class NetworkTrainPosSync : MonoBehaviour
         yield return new WaitForSeconds(SYNC_CHECKTIME);
         if (NetworkManager.IsHost())
         {
-            yield return new WaitUntil(() => (Vector3.Distance(prevPosition, transform.position) > 2f && GetSpeedKmH() > 0 && GetSpeedKmH() < 25) || (Vector3.Distance(prevPosition, transform.position) > 5f && GetSpeedKmH() > 25));
+            yield return new WaitUntil(() => (Vector3.Distance(prevPosition, transform.position) > 2f && GetSpeedKmH() > 0 && GetSpeedKmH() < 25) || (Vector3.Distance(prevPosition, transform.position) > 5f && GetSpeedKmH() >= 25));
             prevAngularVelocity = trainCar.rb.angularVelocity;
             prevVelocity = trainCar.rb.velocity;
             prevPosition = transform.position;
@@ -86,21 +86,21 @@ class NetworkTrainPosSync : MonoBehaviour
             yield break;
         }
 
-        if (Vector3.Distance(prevPosition, location.Position) > 5f && trainCar.rearCoupler.coupledTo == null)
+        if (Vector3.Distance(prevPosition, location.Position) > 20f && trainCar.rearCoupler.coupledTo == null)
         {
             transform.position = location.Position;
             transform.rotation = location.Rotation;
             transform.forward = location.Forward;
         }
-        else if (trainCar.rearCoupler.coupledTo != null)
+        else
         {
             if (Distance(trainCar.transform, location.Position) > 3f)
             {
-                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * 1.5f, 10 * (Time.deltaTime / 2));
+                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * 1.5f, 15 * (Time.deltaTime / 2));
             }
             else if (Distance(trainCar.transform, location.Position) < 3f && Distance(trainCar.transform, location.Position) > 0.1f)
             {
-                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * 1.2f, 10 * (Time.deltaTime / 2));
+                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * 1.2f, 15 * (Time.deltaTime / 2));
             }
             else if (Distance(trainCar.transform, location.Position) < .1f && Distance(trainCar.transform, location.Position) > -0.1f)
             {
@@ -108,11 +108,11 @@ class NetworkTrainPosSync : MonoBehaviour
             }
             else if (Distance(trainCar.transform, location.Position) < -.1f && Distance(trainCar.transform, location.Position) > -1f)
             {
-                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * .8f, 10 * (Time.deltaTime / 2));
+                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * .8f, 15 * (Time.deltaTime / 2));
             }
             else if (Distance(trainCar.transform, location.Position) < -1f && Distance(trainCar.transform, location.Position) > -3f)
             {
-                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * .5f, 10 * (Time.deltaTime / 2));
+                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * .5f, 15 * (Time.deltaTime / 2));
             }
             trainCar.rb.angularVelocity = location.AngularVelocity;
             trainCar.transform.forward = location.Forward;
