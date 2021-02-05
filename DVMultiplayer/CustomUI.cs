@@ -295,15 +295,20 @@ namespace DVMultiplayer
                 btn.key = key;
             }
 
-            ButtonBuilder builderBtn = new ButtonBuilder($"Backspace", $"Backspace", inputMenu.transform, new Rect(925 - (80 * 9f) + 20, -620, 180, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+            ButtonBuilder builderBtn = new ButtonBuilder($"Backspace", $"Backspace", inputMenu.transform, new Rect(925 - (80 * 9f) - 60, -620, 180, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
             GameObject backspaceBtn = CreateButton(builderBtn);
             InputButton inputbtn = backspaceBtn.AddComponent<InputButton>();
             inputbtn.isBackspace = true;
 
-            builderBtn = new ButtonBuilder($"Casing", $"Uppercase", inputMenu.transform, new Rect(925 - (80 * 9f) + 205, -620, 180, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+            builderBtn = new ButtonBuilder($"Paste", $"Paste", inputMenu.transform, new Rect(925 - (80 * 9f) + 125, -620, 150, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+            GameObject pasteBtn = CreateButton(builderBtn);
+            InputButton inputPastebtn = pasteBtn.AddComponent<InputButton>();
+            inputPastebtn.isPaste = true;
+
+            builderBtn = new ButtonBuilder($"Casing", $"Uppercase", inputMenu.transform, new Rect(925 - (80 * 9f) + 280, -620, 180, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
             GameObject caseBtn = CreateButton(builderBtn);
 
-            builderBtn = new ButtonBuilder($"Confirm", $"Confirm", inputMenu.transform, new Rect(925 - (80 * 9f) + 390, -620, 150, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+            builderBtn = new ButtonBuilder($"Confirm", $"Confirm", inputMenu.transform, new Rect(925 - (80 * 9f) + 465, -620, 150, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
             GameObject confirmBtn = CreateButton(builderBtn);
 
             GameObject menu = Object.Instantiate(inputMenu, canvas.transform);
