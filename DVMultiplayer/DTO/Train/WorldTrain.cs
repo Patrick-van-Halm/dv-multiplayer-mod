@@ -35,6 +35,10 @@ namespace DVMultiplayer.DTO.Train
         // Couplers
         public bool IsFrontCouplerCoupled { get; set; }
         public bool IsRearCouplerCoupled { get; set; }
+        public bool IsFrontCouplerCockOpen { get; set; }
+        public bool IsRearCouplerCockOpen { get; set; }
+        public bool IsFrontCouplerHoseConnected { get; set; }
+        public bool IsRearCouplerHoseConnected { get; set; }
 
         // Player
         public bool IsPlayerSpawned { get; set; }
@@ -71,6 +75,10 @@ namespace DVMultiplayer.DTO.Train
 
             IsFrontCouplerCoupled = e.Reader.ReadBoolean();
             IsRearCouplerCoupled = e.Reader.ReadBoolean();
+            IsFrontCouplerCockOpen = e.Reader.ReadBoolean();
+            IsRearCouplerCockOpen = e.Reader.ReadBoolean();
+            IsFrontCouplerHoseConnected = e.Reader.ReadBoolean();
+            IsRearCouplerHoseConnected = e.Reader.ReadBoolean();
 
             IsPlayerSpawned = e.Reader.ReadBoolean();
 
@@ -113,6 +121,10 @@ namespace DVMultiplayer.DTO.Train
 
             e.Writer.Write(IsFrontCouplerCoupled);
             e.Writer.Write(IsRearCouplerCoupled);
+            e.Writer.Write(IsFrontCouplerCockOpen);
+            e.Writer.Write(IsRearCouplerCockOpen);
+            e.Writer.Write(IsFrontCouplerHoseConnected);
+            e.Writer.Write(IsRearCouplerHoseConnected);
 
             e.Writer.Write(IsPlayerSpawned);
 
