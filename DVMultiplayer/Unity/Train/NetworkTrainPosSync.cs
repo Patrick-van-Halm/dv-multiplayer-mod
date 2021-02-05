@@ -49,13 +49,18 @@ class NetworkTrainPosSync : MonoBehaviour
         yield return new WaitForSeconds(SYNC_CHECKTIME);
         if (NetworkManager.IsHost())
         {
-            yield return new WaitUntil(() => Vector3.Distance(prevPosition, transform.position) > 5f);
+            yield return new WaitUntil(() => (Vector3.Distance(prevPosition, transform.position) > 2f && GetSpeedKmH() > 0 && GetSpeedKmH() < 25) || (Vector3.Distance(prevPosition, transform.position) > 5f && GetSpeedKmH() > 25));
             prevAngularVelocity = trainCar.rb.angularVelocity;
             prevVelocity = trainCar.rb.velocity;
             prevPosition = transform.position;
             SingletonBehaviour<NetworkTrainManager>.Instance.SendTrainLocationUpdate(trainCar);
         }
         yield return UpdateLocation();
+    }
+
+    private float GetSpeedKmH()
+    {
+        return trainCar.rb.velocity.magnitude * 3.6f;
     }
 
     internal IEnumerator UpdateLocation(TrainLocation location)
