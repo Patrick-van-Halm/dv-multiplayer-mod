@@ -135,7 +135,7 @@ namespace DVMultiplayer.Networking
                 UI.transform.Find("Button Connect").GetComponent<Button>().onClick.AddListener(() =>
                 {
                     ConnectUI.transform.Find("TextField IP").GetComponentInChildren<TextMeshProUGUI>().text = "";
-                    ConnectUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text = "";
+                    ConnectUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text = "4296";
                     ConnectUI.transform.Find("TextField Username").GetComponentInChildren<TextMeshProUGUI>().text = "";
                     ConnectUI.transform.Find("Button Save as Favorite").Find("image").GetComponent<Image>().SetSprite("UI_Unfavorited.png");
                     CustomUI.Open(ConnectUI);
@@ -171,6 +171,8 @@ namespace DVMultiplayer.Networking
                 SaveFavoriteUI.transform.Find("Button Accept").GetComponent<Button>().onClick.AddListener(() =>
                 {
                     string favName = SaveFavoriteUI.transform.Find("TextField Name").GetComponentInChildren<TextMeshProUGUI>().text;
+                    if (!string.IsNullOrWhiteSpace(favName))
+                        return;
                     string host = ConnectUI.transform.Find("TextField IP").GetComponentInChildren<TextMeshProUGUI>().text;
                     string portString = ConnectUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text;
                     int.TryParse(portString, out int port);
@@ -189,7 +191,7 @@ namespace DVMultiplayer.Networking
 
                 UI.transform.Find("Button Host").GetComponent<Button>().onClick.AddListener(() =>
                 {
-                    HostUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text = "";
+                    HostUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text = "4296";
                     HostUI.transform.Find("TextField Username").GetComponentInChildren<TextMeshProUGUI>().text = "";
                     CustomUI.Open(HostUI);
                 });

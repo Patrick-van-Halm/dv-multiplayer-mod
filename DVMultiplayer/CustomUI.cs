@@ -171,7 +171,7 @@ namespace DVMultiplayer
             for(int i = 0; i < 4; i++)
             {
                 CreateSection(new Rect(0f, -177 - (100 * i), 650, 91.14999f), RectTransformAnchoring.TopCenter, favoriteConnectMenu.transform);
-                CreateButton(new ButtonBuilder($"Fav{i + 1}", "", favoriteConnectMenu.transform, new Rect(32f, -177.5f - (100 * i), 559, 76), RectTransformAnchoring.TopLeft, new Vector2(0f, .5f), TextAlignmentOptions.MidlineLeft));
+                CreateButton(new ButtonBuilder($"Fav{i + 1}", "", favoriteConnectMenu.transform, new Rect(32f, -177.5f - (100 * i), 559, 76), RectTransformAnchoring.TopLeft, new Vector2(0f, .5f), TextAlignmentOptions.MidlineLeft, fontStyle: FontStyles.Normal));
                 CreateButton(new ButtonBuilder($"Del Fav{i + 1}", "UI_Bin.png", favoriteConnectMenu.transform, new Rect(-32f, -177.5f - (100 * i), 76, 76), RectTransformAnchoring.TopRight, new Vector2(1f, .5f)));
             }
             CreateSection(new Rect(0f, -177 - (100 * 4), 650, 91.14999f), RectTransformAnchoring.TopCenter, favoriteConnectMenu.transform);
@@ -551,6 +551,7 @@ namespace DVMultiplayer
             public readonly Vector2? pivot;
             public readonly string tooltipEnabledText;
             public readonly string tooltipDisabledText;
+            public readonly FontStyles fontStyle;
 
             public ButtonBuilder(string name, string icon, Transform parent, Rect pos, RectTransformAnchoring anchor, Vector2 pivot, string tooltipEnabledText = "", string tooltipDisabledText = "")
             {
@@ -566,9 +567,10 @@ namespace DVMultiplayer
                 this.pivot = pivot;
                 this.tooltipEnabledText = tooltipEnabledText;
                 this.tooltipDisabledText = tooltipDisabledText;
+                fontStyle = FontStyles.UpperCase;
             }
 
-            public ButtonBuilder(string name, string label, Transform parent, Rect pos, RectTransformAnchoring anchor, Vector2 pivot, TextAlignmentOptions textAlignment, string tooltipEnabledText = "", string tooltipDisabledText = "")
+            public ButtonBuilder(string name, string label, Transform parent, Rect pos, RectTransformAnchoring anchor, Vector2 pivot, TextAlignmentOptions textAlignment, string tooltipEnabledText = "", string tooltipDisabledText = "", FontStyles fontStyle = FontStyles.UpperCase)
             {
                 this.name = name;
                 this.type = ButtonType.Text;
@@ -582,6 +584,7 @@ namespace DVMultiplayer
                 this.pivot = pivot;
                 this.tooltipEnabledText = tooltipEnabledText;
                 this.tooltipDisabledText = tooltipDisabledText;
+                this.fontStyle = fontStyle;
             }
 
             public ButtonBuilder(string name, string icon, Transform parent, GameObject btn = null, string tooltipEnabledText = "", string tooltipDisabledText = "")
@@ -598,9 +601,10 @@ namespace DVMultiplayer
                 this.pivot = null;
                 this.tooltipEnabledText = tooltipEnabledText;
                 this.tooltipDisabledText = tooltipDisabledText;
+                fontStyle = FontStyles.UpperCase;
             }
 
-            public ButtonBuilder(string name, string label, Transform parent, TextAlignmentOptions textAlignment, GameObject btn = null, string tooltipEnabledText = "", string tooltipDisabledText = "")
+            public ButtonBuilder(string name, string label, Transform parent, TextAlignmentOptions textAlignment, GameObject btn = null, string tooltipEnabledText = "", string tooltipDisabledText = "", FontStyles fontStyle = FontStyles.UpperCase)
             {
                 this.name = name;
                 this.type = ButtonType.Text;
@@ -614,6 +618,7 @@ namespace DVMultiplayer
                 this.pivot = null;
                 this.tooltipEnabledText = tooltipEnabledText;
                 this.tooltipDisabledText = tooltipDisabledText;
+                this.fontStyle = fontStyle;
             }
         }
 
