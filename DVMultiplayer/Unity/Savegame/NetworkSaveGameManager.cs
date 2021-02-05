@@ -38,6 +38,7 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
                 {
                     SaveDataCars = SaveGameManager.data.GetJObject(SaveGameKeys.Cars).ToString(Formatting.None),
                     SaveDataSwitches = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions).ToString(Formatting.None),
+                    SaveDataTurntables = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables).ToString(Formatting.None),
                 });
                 Main.DebugLog($"[CLIENT] > SAVEGAME_UPDATE {writer.Length}");
 
@@ -92,21 +93,29 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
         PlayerManager.PlayerTransform.position = vector3_1 + WorldMover.currentMove;
         bool carsLoadedSuccessfully = false;
-
-        JObject jobject2 = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
-        if (jobject2 != null)
+        JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
+        if (jObject != null)
         {
-            JunctionsSaveManager.Load(jobject2);
+            TurntableRailTrack.SetSaveData(jObject);
+        }
+        else
+        {
+            Main.DebugLog("[WARNING] Turntables data not found!");
+        }
+        jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
+        if (jObject != null)
+        {
+            JunctionsSaveManager.Load(jObject);
         }
         else
         {
             Main.DebugLog("[WARNING] Junctions save not found!");
         }
 
-        JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
-        if (jobject3 != null)
+        jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
+        if (jObject != null)
         {
-            carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jobject3);
+            carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jObject);
             if (!carsLoadedSuccessfully)
                 Main.DebugLog("[WARNING] Cars not loaded successfully!");
         }
@@ -155,21 +164,30 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
     {
         SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
         bool carsLoadedSuccessfully = false;
-
-        JObject jobject2 = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
-        if (jobject2 != null)
+        
+        JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
+        if (jObject != null)
         {
-            JunctionsSaveManager.Load(jobject2);
+            TurntableRailTrack.SetSaveData(jObject);
+        }
+        else
+        {
+            Main.DebugLog("[WARNING] Turntables data not found!");
+        }
+        jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
+        if (jObject != null)
+        {
+            JunctionsSaveManager.Load(jObject);
         }
         else
         {
             Main.DebugLog("[WARNING] Junctions save not found!");
         }
 
-        JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
-        if (jobject3 != null)
+        jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
+        if (jObject != null)
         {
-            carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jobject3);
+            carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jObject);
             if (!carsLoadedSuccessfully)
                 Debug.LogError((object)"Cars not loaded successfully!");
         }
