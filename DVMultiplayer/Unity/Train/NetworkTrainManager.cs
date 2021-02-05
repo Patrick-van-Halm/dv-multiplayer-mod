@@ -206,13 +206,13 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
 
         NetworkPlayerSync playerSync = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync();
-        if (playerSync.Train)
+        if (playerSync.Train && playerSync.Train.IsLoco)
             playerSync.Train.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = false;
 
         playerSync.Train = trainCar;
         SendPlayerTrainCarChange(trainCar);
 
-        if(trainCar)
+        if(trainCar && trainCar.IsLoco)
             trainCar.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = true;
     }
 
