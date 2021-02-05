@@ -295,10 +295,15 @@ namespace DVMultiplayer
                 btn.key = key;
             }
 
-            ButtonBuilder builderBtn = new ButtonBuilder($"Backspace", $"Backspace", inputMenu.transform, new Rect(925 - (80 * 9f) + 20, -620, 180, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+            ButtonBuilder builderBtn = new ButtonBuilder($"Backspace", $"Backspace", inputMenu.transform, new Rect(925 - (80 * 9f) - 60, -620, 180, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
             GameObject backspaceBtn = CreateButton(builderBtn);
             InputButton inputbtn = backspaceBtn.AddComponent<InputButton>();
             inputbtn.isBackspace = true;
+
+            builderBtn = new ButtonBuilder($"Paste", $"UI_Paste.png", inputMenu.transform, new Rect(925 - (80 * 9f) + 65, -620, 75, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            GameObject pasteBtn = CreateButton(builderBtn);
+            inputbtn = pasteBtn.AddComponent<InputButton>();
+            inputbtn.isPaste = true;
 
             builderBtn = new ButtonBuilder($"Casing", $"Uppercase", inputMenu.transform, new Rect(925 - (80 * 9f) + 205, -620, 180, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
             GameObject caseBtn = CreateButton(builderBtn);

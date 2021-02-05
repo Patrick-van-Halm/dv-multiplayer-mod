@@ -19,6 +19,7 @@ class InputButton : MonoBehaviour
     Image buttonImage;
     Sprite enabledSprite;
     Sprite disabledSprite;
+    internal bool isPaste;
 
     private void Awake()
     {
@@ -33,10 +34,12 @@ class InputButton : MonoBehaviour
 
         button.onClick.AddListener(() =>
         {
-            if (!isBackspace)
-                input.SendKeyPress(key);
-            else
+            if (isBackspace)
                 input.Backspace();
+            else if (isPaste)
+                input.Paste();
+            else
+                input.SendKeyPress(key);
         });
     }
 
@@ -48,7 +51,7 @@ class InputButton : MonoBehaviour
 
     private void CheckCasing()
     {
-        if (input.isUppercase && label.fontStyle == FontStyles.UpperCase || !input.isUppercase && label.fontStyle == FontStyles.LowerCase || isBackspace || !char.IsLetter(key) || input.isDigitOnly)
+        if (input.isUppercase && label.fontStyle == FontStyles.UpperCase || !input.isUppercase && label.fontStyle == FontStyles.LowerCase || isBackspace || isPaste || !char.IsLetter(key) || input.isDigitOnly)
             return;
 
         label.fontStyle = input.isUppercase ? FontStyles.UpperCase : FontStyles.LowerCase;
@@ -56,7 +59,7 @@ class InputButton : MonoBehaviour
 
     private void CheckDigitOnly()
     {
-        if ((input.isDigitOnly && char.IsDigit(key)) || isBackspace)
+        if ((input.isDigitOnly && char.IsDigit(key)) || isBackspace || isPaste)
             button.interactable = true;
         else if (!input.isDigitOnly)
             button.interactable = true;

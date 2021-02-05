@@ -46,6 +46,12 @@ class InputScreen : MonoBehaviour
         ResetInput();
     }
 
+    internal void Paste()
+    {
+        //Implement paste
+        throw new NotImplementedException();
+    }
+
     internal void OnOpen()
     {
         listenToKeyboard = true;
