@@ -17,7 +17,6 @@ namespace DVMultiplayer
     {
         public static ModEntry mod;
         public static event Action OnGameFixedGUI;
-        public static event Action OnGameFixedGUIVR;
         public static event Action OnGameUpdate;
         public static bool isInitialized = false;
         private static bool enabled;

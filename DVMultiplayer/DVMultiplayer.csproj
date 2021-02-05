@@ -220,6 +220,9 @@
     <Content Include="Resources\Textures\UI_Favorited.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\Textures\UI_Multiplayer.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Textures\UI_Unfavorited.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
