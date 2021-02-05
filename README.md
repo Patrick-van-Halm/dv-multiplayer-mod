@@ -28,22 +28,52 @@ When connecting make sure you have the IP of the person you want to connect to. 
 As of currently this mod has no real mod syncing this will maybe be added later but for now this is not the case. So if you use mods with the current save file please back the save file up so there are no game breaking issues that can corrupt your save game. You can test out if mods are compatible but remember to back your normal save up. I'm not reliable for your corrupted saves! [Skip tutorial? Use this save game](https://www.nexusmods.com/derailvalley/mods/88).
 
 ## Features
+Features have been split into sections to show different parts of the game. The state indicates if a feature is currently being worked on or improved and the version introduced column shows which version of the mod that feature was first implemented.
 
-| **Feature**                |      **State**      |
-|--------------------------- |:------------------: |
-| Shunter Synchronization    | :hourglass:         |
-| Coupling                   | :heavy_check_mark:  |
-| Decoupling                 | :heavy_check_mark:  |
-| Junctions                  | :heavy_check_mark:  |
-| Turntable Synchronization  | :x:                 |
-| Player positioning         | :heavy_check_mark:  |
-| Save game Synchronization  | :heavy_check_mark:  |
-| Diesel Synchronization     | :x:                 |
-| Steamer Synchronization    | :x:                 |
-| Multiple Units             | :x:                 |
-| Jobs Synchronization       | :hourglass:         |
-| World Synchronization      | :hourglass:         |
-| Map                        | :x:                 |
+* :x: - This is currently not being worked on, but is planned.
+* :hourglass: - This feature is currently being worked on.
+* :heavy_check_mark: - this feature has been completed and is implemented.
+
+### Server/Client Networking
+
+| **Feature**                  |      **State**     | **Version Introduced** |
+|------------------------------|--------------------|------------------------|
+| Connect/Disconnect to Server | :heavy_check_mark: | 1.0.0                  |
+| Server Save Downloader       | :heavy_check_mark: | 1.1.0                  |
+| Mod Mismatch Checking        | :heavy_check_mark: | *1.3.0* ([#18](https://github.com/Patrick-van-Halm/dv-multiplayer-mod/issues/18)) |
+| Reload Single Player Save    | :hourglass:        | 1.1.0                  |
+
+### Syncronization
+
+| **Feature**                  |      **State**     | **Version Introduced** |
+|------------------------------|--------------------|------------------------|
+| DE2 (Shunter)                | :hourglass:        | 1.0.0                  |
+| DE6 (Diesel)                 | :x:                |                        |
+| SH282 (Steamer)              | :x:                |                        |
+| Coupling                     | :hourglass:        | 1.0.0                  |
+| Decoupling                   | :hourglass:        | 1.0.0                  |
+| Multiple Unit Working        | :x:                |                        |
+| Player                       | :hourglass:        | 1.0.0                  |
+| Turntable                    | :hourglass:        | *1.3.0* ([#16](https://github.com/Patrick-van-Halm/dv-multiplayer-mod/issues/16)) |
+| Junctions                    | :hourglass:        | 1.0.0                  |
+| Jobs                         | :x:                |                        |
+| World                        | :hourglass:        | 1.0.0                  |
+
+### Multiplayer Features
+
+| **Feature**                  |      **State**     | **Version Introduced** |
+|------------------------------|--------------------|------------------------|
+| Name Tags                    | :heavy_check_mark: | 1.2.1                  |
+| Custom UI                    | :heavy_check_mark: | *1.3.0* ([#26](https://github.com/Patrick-van-Halm/dv-multiplayer-mod/pull/26)) |
+| Show Players on Map          | :x:                |                        |
+| SteamAPI Integration         | :x:                |                        |
+
+### Reporting Issues
+If you have found a bug, please open an issue and describe the bug in as much detail as possible and include both the server log which you can find in:
+* Derail Valley Directory -> Mods -> DVMultiplayer -> Logs -> (Date) -> (Time).log
+
+And also the player log, which can be found in:
+* AppData -> LocalLow -> Altfuture -> Derail Valley -> Player.log
 
 ## Contributing
 Pull requests/changes are welcome, please open an issue first to discuss what you would like to change.
