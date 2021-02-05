@@ -61,6 +61,12 @@ class NetworkTrainPosSync : MonoBehaviour
     internal IEnumerator UpdateLocation(TrainLocation location)
     {
         location.Position = location.Position + WorldMover.currentMove;
+        if (trainCar.frontCoupler.IsCoupled())
+        {
+            prevPosition = location.Position;
+            yield break;
+        }
+
         if (trainCar.derailed && !hostDerailed)
         {
             yield return SingletonBehaviour<NetworkTrainManager>.Instance.RerailDesynced(trainCar, location.Position, location.Forward);
@@ -75,43 +81,59 @@ class NetworkTrainPosSync : MonoBehaviour
             yield break;
         }
 
-        if (Vector3.Distance(prevPosition, location.Position) > 5f && trainCar.frontCoupler.coupledTo == null && trainCar.rearCoupler.coupledTo == null)
+        if (Vector3.Distance(prevPosition, location.Position) > 5f && trainCar.rearCoupler.coupledTo == null)
         {
             transform.position = location.Position;
             transform.rotation = location.Rotation;
+            transform.forward = location.Forward;
         }
-
-        if (trainCar.frontCoupler.coupledTo != null || trainCar.rearCoupler.coupledTo != null)
+        else if (trainCar.rearCoupler.coupledTo != null)
         {
-            if (Vector3.Distance(prevPosition, location.Position) > 3f)
+            if (Distance(trainCar.transform, location.Position) > 3f)
             {
                 trainCar.rb.velocity = location.Velocity * 1.5f;
+                trainCar.rb.angularVelocity = location.AngularVelocity * 1.5f;
             }
-            else if (Vector3.Distance(prevPosition, location.Position) < 3f && Vector3.Distance(prevPosition, location.Position) > 0.1f)
+            else if (Distance(trainCar.transform, location.Position) < 3f && Distance(trainCar.transform, location.Position) > 0.1f)
             {
                 trainCar.rb.velocity = location.Velocity * 1.2f;
+                trainCar.rb.angularVelocity = location.AngularVelocity * 1.2f;
             }
-            else if (Vector3.Distance(prevPosition, location.Position) < .1f && Vector3.Distance(prevPosition, location.Position) > -0.1f)
+            else if (Distance(trainCar.transform, location.Position) < .1f && Distance(trainCar.transform, location.Position) > -0.1f)
             {
                 trainCar.rb.velocity = location.Velocity;
+                trainCar.rb.angularVelocity = location.AngularVelocity;
             }
-            else if (Vector3.Distance(prevPosition, location.Position) < -.1f && Vector3.Distance(prevPosition, location.Position) > -1f)
+            else if (Distance(trainCar.transform, location.Position) < -.1f && Distance(trainCar.transform, location.Position) > -1f)
             {
                 trainCar.rb.velocity = location.Velocity * .8f;
+                trainCar.rb.angularVelocity = location.AngularVelocity * .8f;
             }
-            else if (Vector3.Distance(prevPosition, location.Position) < -1f && Vector3.Distance(prevPosition, location.Position) > -3f)
+            else if (Distance(trainCar.transform, location.Position) < -1f && Distance(trainCar.transform, location.Position) > -3f)
             {
                 trainCar.rb.velocity = location.Velocity * .5f;
+                trainCar.rb.angularVelocity = location.AngularVelocity * .5f;
             }
+            trainCar.transform.forward = location.Forward;
         }
         prevPosition = location.Position;
-        trainCar.rb.angularVelocity = location.AngularVelocity;
-        trainCar.transform.forward = location.Forward;
-        
-        //for(int i = 0; i < location.AmountCars; i++)
-        //{
-        //    trainCar.trainset.cars[i].transform.position = location.CarsPositions[i] + WorldMover.currentMove;
-        //    trainCar.trainset.cars[i].transform.rotation = location.CarsRotation[i];
-        //}
+    }
+
+    private float Distance(Transform a, Vector3 b)
+    {
+        Vector3 relativePos = a.InverseTransformPoint(b);
+        return relativePos.z;
+    }
+
+    private TrainCar GetMostFrontCar(TrainCar car)
+    {
+        if(car.frontCoupler.coupledTo != null)
+        {
+            return GetMostFrontCar(car.frontCoupler.coupledTo.train);
+        }
+        else
+        {
+            return car;
+        }
     }
 }
