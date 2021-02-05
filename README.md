@@ -37,7 +37,7 @@ Features have been split into sections to show different parts of the mod. The s
 ### Server/Client Networking
 
 | **Feature**                  |      **State**     | **Version Introduced** |
-|------------------------------|--------------------|------------------------|
+|------------------------------|:------------------:|------------------------|
 | Connect/Disconnect to Server | :heavy_check_mark: | 1.0.0                  |
 | Server Save Downloader       | :heavy_check_mark: | 1.1.0                  |
 | Mod Mismatch Checking        | :heavy_check_mark: | *1.3.0* ([#18](https://github.com/Patrick-van-Halm/dv-multiplayer-mod/issues/18)) |
@@ -46,7 +46,7 @@ Features have been split into sections to show different parts of the mod. The s
 ### Syncronization
 
 | **Feature**                  |      **State**     | **Version Introduced** |
-|------------------------------|--------------------|------------------------|
+|------------------------------|:------------------:|------------------------|
 | DE2 (Shunter)                | :hourglass:        | 1.0.0                  |
 | DE6 (Diesel)                 | :x:                |                        |
 | SH282 (Steamer)              | :x:                |                        |
@@ -62,7 +62,7 @@ Features have been split into sections to show different parts of the mod. The s
 ### Multiplayer Features
 
 | **Feature**                  |      **State**     | **Version Introduced** |
-|------------------------------|--------------------|------------------------|
+|------------------------------|:------------------:|------------------------|
 | Name Tags                    | :heavy_check_mark: | 1.2.1                  |
 | Custom UI                    | :heavy_check_mark: | *1.3.0* ([#26](https://github.com/Patrick-van-Halm/dv-multiplayer-mod/pull/26)) |
 | Show Players on Map          | :x:                |                        |
