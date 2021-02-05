@@ -96,29 +96,25 @@ class NetworkTrainPosSync : MonoBehaviour
         {
             if (Distance(trainCar.transform, location.Position) > 3f)
             {
-                trainCar.rb.velocity = location.Velocity * 1.5f;
-                trainCar.rb.angularVelocity = location.AngularVelocity * 1.5f;
+                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * 1.5f, 10 * (Time.deltaTime / 2));
             }
             else if (Distance(trainCar.transform, location.Position) < 3f && Distance(trainCar.transform, location.Position) > 0.1f)
             {
-                trainCar.rb.velocity = location.Velocity * 1.2f;
-                trainCar.rb.angularVelocity = location.AngularVelocity * 1.2f;
+                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * 1.2f, 10 * (Time.deltaTime / 2));
             }
             else if (Distance(trainCar.transform, location.Position) < .1f && Distance(trainCar.transform, location.Position) > -0.1f)
             {
                 trainCar.rb.velocity = location.Velocity;
-                trainCar.rb.angularVelocity = location.AngularVelocity;
             }
             else if (Distance(trainCar.transform, location.Position) < -.1f && Distance(trainCar.transform, location.Position) > -1f)
             {
-                trainCar.rb.velocity = location.Velocity * .8f;
-                trainCar.rb.angularVelocity = location.AngularVelocity * .8f;
+                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * .8f, 10 * (Time.deltaTime / 2));
             }
             else if (Distance(trainCar.transform, location.Position) < -1f && Distance(trainCar.transform, location.Position) > -3f)
             {
-                trainCar.rb.velocity = location.Velocity * .5f;
-                trainCar.rb.angularVelocity = location.AngularVelocity * .5f;
+                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * .5f, 10 * (Time.deltaTime / 2));
             }
+            trainCar.rb.angularVelocity = location.AngularVelocity;
             trainCar.transform.forward = location.Forward;
         }
         prevPosition = location.Position;
