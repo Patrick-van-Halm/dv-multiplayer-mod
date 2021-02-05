@@ -28,7 +28,7 @@ When connecting make sure you have the IP of the person you want to connect to. 
 As of currently this mod has no real mod syncing this will maybe be added later but for now this is not the case. So if you use mods with the current save file please back the save file up so there are no game breaking issues that can corrupt your save game. You can test out if mods are compatible but remember to back your normal save up. I'm not reliable for your corrupted saves! [Skip tutorial? Use this save game](https://www.nexusmods.com/derailvalley/mods/88).
 
 ## Features
-Features have been split into sections to show different parts of the game. The state indicates if a feature is currently being worked on or improved and the version introduced column shows which version of the mod that feature was first implemented.
+Features have been split into sections to show different parts of the mod. The state indicates if a feature is currently being worked on/improved and the version introduced column shows which version of the mod that feature was first implemented.
 
 * :x: - This is currently not being worked on, but is planned.
 * :hourglass: - This feature is currently being worked on.
