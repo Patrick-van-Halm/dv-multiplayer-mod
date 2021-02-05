@@ -13,13 +13,13 @@ class InputButton : MonoBehaviour
 {
     public char key;
     public bool isBackspace;
+    public bool isPaste;
     Button button;
     TextMeshProUGUI label;
     InputScreen input;
     Image buttonImage;
     Sprite enabledSprite;
     Sprite disabledSprite;
-    internal bool isPaste;
 
     private void Awake()
     {
