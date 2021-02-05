@@ -73,6 +73,21 @@ namespace DVMultiplayer.Utils
                     rt.anchorMax = new Vector2(1, 1);
                     break;
 
+                case (RectTransformAnchoring.MiddleLeft):
+                    rt.anchorMin = new Vector2(0, 0.5f);
+                    rt.anchorMax = new Vector2(0, 0.5f);
+                    break;
+
+                case (RectTransformAnchoring.MiddleCenter):
+                    rt.anchorMin = new Vector2(0.5f, 0.5f);
+                    rt.anchorMax = new Vector2(0.5f, 0.5f);
+                    break;
+
+                case (RectTransformAnchoring.MiddleRight):
+                    rt.anchorMin = new Vector2(1, 0.5f);
+                    rt.anchorMax = new Vector2(1, 0.5f);
+                    break;
+
                 case RectTransformAnchoring.BottomCenter:
                     rt.anchorMin = new Vector2(.5f, 0);
                     rt.anchorMax = new Vector2(.5f, 0);
@@ -97,6 +112,9 @@ namespace DVMultiplayer.Utils
         TopCenter,
         TopRight,
         TopStretch,
+        MiddleRight,
         BottomCenter,
+        MiddleLeft,
+        MiddleCenter,
     }
 }

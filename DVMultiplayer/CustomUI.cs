@@ -30,6 +30,7 @@ namespace DVMultiplayer
         {
             try
             {
+                ReplaceMainMenuButton();
                 GenerateNetworkUI();
                 GenerateConnectUI();
                 GenerateInputScreenUI();
@@ -49,10 +50,27 @@ namespace DVMultiplayer
             readyForCSUpdate = true;
         }
 
+        private static void ReplaceMainMenuButton()
+        {
+            Transform mainMenu = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.transform.Find("Main Menu");
+            GameObject go = CreateButton(new ButtonBuilder("Multiplayer", "UI_Multiplayer.png", mainMenu, mainMenu.Find("Button Altfuture").gameObject, "Multiplayer"));
+            Object.DestroyImmediate(go.GetComponent<MenuSocial>());
+            MenuButtonBase bbase =  go.AddComponent<MenuButtonBase>();
+            MenuButtonBase refBase = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.transform.Find("Main Menu").Find("Button Back to Game").GetComponent<MenuButtonBase>();
+            bbase.hoverAudio = refBase.hoverAudio;
+            bbase.clickAudio = refBase.clickAudio;
+        }
+
         internal static void Open(MenuScreen screen)
         {
             currentScreen = screen;
             SingletonBehaviour<CanvasSpawner>.Instance.Open(screen);
+        }
+
+        internal static void Open()
+        {
+            currentScreen = null;
+            SingletonBehaviour<CanvasSpawner>.Instance.Open();
         }
 
         internal static void Close()
@@ -81,7 +99,7 @@ namespace DVMultiplayer
         private static void GenerateNetworkUI()
         {
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
-            GameObject mpMenuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Main Menu", "DV Multiplayer", 508, 560, true));
+            GameObject mpMenuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Main Menu", "DV Multiplayer", 508, 560, false));
 
             ButtonBuilder connectButtonBuilder = new ButtonBuilder("Connect", "Connect Manually", mpMenuBuilder.transform, new Rect(0f, -177.5f, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center, "Connect to an existing server");
             ButtonBuilder connectFavButtonBuilder = new ButtonBuilder("Connect to Favorite", "Connect to Favorite", mpMenuBuilder.transform, new Rect(0f, -257.5f, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center, "Connect to an favorited server");
@@ -386,8 +404,18 @@ namespace DVMultiplayer
             }
 
             UIElementTooltip tooltip = newButton.GetComponent<UIElementTooltip>();
-            tooltip.tooltipEnabledText = buttonBuilder.tooltipEnabledText;
-            tooltip.tooltipDisabledText = buttonBuilder.tooltipDisabledText;
+            if (buttonBuilder.btn)
+            {
+                tooltip.TooltipInteractableText = buttonBuilder.tooltipEnabledText;
+                tooltip.TooltipNonInteractableText = buttonBuilder.tooltipDisabledText;
+            }
+            else
+            {
+                tooltip.tooltipEnabledText = buttonBuilder.tooltipEnabledText;
+                tooltip.tooltipDisabledText = buttonBuilder.tooltipDisabledText;
+            }
+
+            newButton.GetComponent<Button>().onClick.RemoveAllListeners();
 
             newButton.AddComponent<ButtonFeatures>();
 
