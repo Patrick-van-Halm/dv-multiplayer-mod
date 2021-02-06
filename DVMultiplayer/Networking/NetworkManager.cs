@@ -1,3 +1,4 @@
+using CommandTerminal;
 using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
@@ -25,6 +26,7 @@ namespace DVMultiplayer.Networking
         private static int port;
         internal static string username;
         private static bool scriptsInitialized = false;
+        private static int tries = 1;
 
         /// <summary>
         /// Initializes the NetworkManager by:
@@ -100,7 +102,6 @@ namespace DVMultiplayer.Networking
             if (isClient)
                 return;
 
-            isClient = true;
             Main.DebugLog("[CLIENT] Connecting to server");
             client.ConnectInBackground(host, port, true, OnConnected);
         }
@@ -190,11 +191,21 @@ namespace DVMultiplayer.Networking
             {
                 isClient = false;
                 Main.DebugLog($"[ERROR] {ex.Message}");
-                Main.DebugLog($"Client connecting failed retrying");
-                ClientConnect();
+                Main.mod.Logger.Log($"[CLIENT] Connecting failed retrying..., tries: {tries}/5");
+                if (tries <= 5)
+                {
+                    tries++;
+                    ClientConnect();
+                }
+                else
+                {
+                    Main.mod.Logger.Log($"[CLIENT] Connecting failed stop retries.");
+                    tries = 0;
+                }
             }
             else
             {
+                isClient = true;
                 UI.HideUI();
                 if (!scriptsInitialized)
                 {
