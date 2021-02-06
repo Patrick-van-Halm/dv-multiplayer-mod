@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.5.9");
+        public override Version Version => new Version("1.5.10");
 
         private List<WorldTrain> worldTrains;
 
@@ -37,7 +37,8 @@ namespace TrainPlugin
                 if (!tag.ToString().StartsWith("TRAIN_"))
                     return;
 
-                Logger.Trace($"[SERVER] < {tag.ToString()}");
+                if(tag != NetworkTags.TRAIN_LOCATION_UPDATE)
+                    Logger.Trace($"[SERVER] < {tag.ToString()}");
 
                 switch (tag)
                 {
@@ -388,16 +389,14 @@ namespace TrainPlugin
                         train.Velocity = newLocation.Velocity;
                         train.AngularVelocity = newLocation.AngularVelocity;
                         train.Forward = newLocation.Forward;
-                        train.IsBogie1Derailed = newLocation.IsBogie1Derailed;
                         train.Bogie1PositionAlongTrack = newLocation.Bogie1PositionAlongTrack;
                         train.Bogie1RailTrackName = newLocation.Bogie1TrackName;
-                        train.IsBogie2Derailed = newLocation.IsBogie2Derailed;
                         train.Bogie2PositionAlongTrack = newLocation.Bogie2PositionAlongTrack;
                         train.Bogie2RailTrackName = newLocation.Bogie2TrackName;
                     }
                 }
             }
-            Logger.Trace("[SERVER] > TRAIN_LOCATION_UPDATE");
+            //Logger.Trace("[SERVER] > TRAIN_LOCATION_UPDATE");
             UnreliableSendToOthers(message, sender);
         }
 

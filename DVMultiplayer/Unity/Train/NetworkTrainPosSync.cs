@@ -11,11 +11,12 @@ using UnityEngine;
 
 class NetworkTrainPosSync : MonoBehaviour
 {
-    private Vector3 prevPosition;
-    private const float SYNC_CHECKTIME = .5f;
+    private const float SYNC_CHECKTIME = .05f;
     private TrainCar trainCar;
-    private Vector3 prevVelocity = Vector3.zero;
-    private Vector3 prevAngularVelocity = Vector3.zero;
+    private Vector3? newVelocity = null;
+    private bool isOutOfSync = false;
+    private Coroutine movingCoroutine;
+    private Vector3 hostPos;
     public bool hostDerailed;
 
     private void Awake()
@@ -24,11 +25,22 @@ class NetworkTrainPosSync : MonoBehaviour
         trainCar = GetComponent<TrainCar>();
         Main.DebugLog($"[{trainCar.ID}] NetworkTrainPosSync Awake called");
         Main.DebugLog($"Starting coroutine for location updating");
-        SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
 
         Main.DebugLog($"Listen to derailment events");
         trainCar.OnDerailed += TrainDerail;
         trainCar.OnRerailed += TrainRerail;
+        trainCar.MovementStateChanged += TrainCar_MovementStateChanged;
+    }
+
+    private void TrainCar_MovementStateChanged(bool isMoving)
+    {
+        if (NetworkManager.IsHost())
+        {
+            if (isMoving)
+                movingCoroutine = SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
+            else
+                SingletonBehaviour<CoroutineManager>.Instance.Stop(movingCoroutine);
+        }
     }
 
     private void TrainRerail()
@@ -44,86 +56,130 @@ class NetworkTrainPosSync : MonoBehaviour
         SingletonBehaviour<NetworkTrainManager>.Instance.SendDerailTrainUpdate(trainCar);
     }
 
+    private void Update()
+    {
+        if(!NetworkManager.IsHost() && newVelocity.HasValue)
+        {
+            if(hostPos != null && newVelocity.Value.z == 0 && isOutOfSync)
+            {
+                float distance = Distance(trainCar.transform, hostPos);
+                if (distance < .1f && distance > -.1f)
+                {
+                    isOutOfSync = false;
+                    newVelocity = new Vector3(0, 0, 0);
+                }
+                else if(distance < 0)
+                {
+                    newVelocity = new Vector3(0, 0, -.56f);
+                }
+                else
+                {
+                    newVelocity = new Vector3(0, 0, .56f);
+                }
+            }
+            trainCar.rb.velocity =  new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, newVelocity.Value.z);
+        }
+    }
+
     IEnumerator UpdateLocation()
     {
         yield return new WaitForSeconds(SYNC_CHECKTIME);
-        if (NetworkManager.IsHost())
+        yield return new WaitUntil(() => !trainCar.frontCoupler.IsCoupled());
+        if (NetworkManager.IsHost() && !trainCar.isStationary)
         {
-            yield return new WaitUntil(() => (Vector3.Distance(prevPosition, transform.position) > 2f && GetSpeedKmH() > 0 && GetSpeedKmH() < 25) || (Vector3.Distance(prevPosition, transform.position) > 5f && GetSpeedKmH() >= 25));
-            prevAngularVelocity = trainCar.rb.angularVelocity;
-            prevVelocity = trainCar.rb.velocity;
-            prevPosition = transform.position;
             SingletonBehaviour<NetworkTrainManager>.Instance.SendTrainLocationUpdate(trainCar);
         }
         yield return UpdateLocation();
     }
 
-    private float GetSpeedKmH()
-    {
-        return trainCar.rb.velocity.magnitude * 3.6f;
-    }
-
     internal IEnumerator UpdateLocation(TrainLocation location)
     {
         location.Position = location.Position + WorldMover.currentMove;
-        if (trainCar.frontCoupler.IsCoupled())
-        {
-            prevPosition = location.Position;
-            yield break;
-        }
 
         if (trainCar.derailed && !hostDerailed)
         {
             yield return SingletonBehaviour<NetworkTrainManager>.Instance.RerailDesynced(trainCar, location.Position, location.Forward);
         }
-        else if(trainCar.derailed && hostDerailed)
+        else if (trainCar.derailed && hostDerailed)
         {
             transform.position = location.Position;
             transform.rotation = location.Rotation;
-            prevPosition = location.Position;
             trainCar.rb.angularVelocity = location.AngularVelocity;
             trainCar.transform.forward = location.Forward;
             yield break;
         }
 
-        if (Vector3.Distance(prevPosition, location.Position) > 20f && trainCar.rearCoupler.coupledTo == null)
+        SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(location);
+        
+    }
+
+    private void SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(TrainLocation location)
+    {
+        if (trainCar.frontCoupler.IsCoupled())
         {
-            transform.position = location.Position;
-            transform.rotation = location.Rotation;
-            transform.forward = location.Forward;
+            return;
         }
-        else
+
+        SyncVelocityAndSpeedUpIfDesynced(location);
+    }
+
+    private void SyncVelocityAndSpeedUpIfDesynced(TrainLocation location)
+    {
+        float distance = Distance(trainCar.transform, location.Position);
+        hostPos = location.Position;
+        if (location.Velocity.z == 0)
         {
-            if (Distance(trainCar.transform, location.Position) > 3f)
-            {
-                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * 1.5f, 15 * (Time.deltaTime / 2));
-            }
-            else if (Distance(trainCar.transform, location.Position) < 3f && Distance(trainCar.transform, location.Position) > 0.1f)
-            {
-                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * 1.2f, 15 * (Time.deltaTime / 2));
-            }
-            else if (Distance(trainCar.transform, location.Position) < .1f && Distance(trainCar.transform, location.Position) > -0.1f)
-            {
-                trainCar.rb.velocity = location.Velocity;
-            }
-            else if (Distance(trainCar.transform, location.Position) < -.1f && Distance(trainCar.transform, location.Position) > -1f)
-            {
-                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * .8f, 15 * (Time.deltaTime / 2));
-            }
-            else if (Distance(trainCar.transform, location.Position) < -1f && Distance(trainCar.transform, location.Position) > -3f)
-            {
-                trainCar.rb.velocity = Vector3.Slerp(trainCar.rb.velocity, location.Velocity * .5f, 15 * (Time.deltaTime / 2));
-            }
-            trainCar.rb.angularVelocity = location.AngularVelocity;
-            trainCar.transform.forward = location.Forward;
+            
         }
-        prevPosition = location.Position;
+        if (distance > 3f)
+        {
+            newVelocity = new Vector3(0, 0, location.Velocity.z + .83f);
+            isOutOfSync = true;
+        }
+        else if (distance <= 1f && distance > 0.1f)
+        {
+            newVelocity = new Vector3(0, 0, location.Velocity.z + .28f);
+            isOutOfSync = true;
+        }
+        else if (distance <= .1f && distance > 0.01f)
+        {
+            newVelocity = new Vector3(0, 0, location.Velocity.z + .14f);
+            isOutOfSync = true;
+        }
+        else if (distance < .01f && distance > -.01f)
+        {
+            newVelocity = new Vector3(0, 0, location.Velocity.z);
+            isOutOfSync = false;
+        }
+        else if (distance <= -.01f && distance > -0.1f)
+        {
+            newVelocity = new Vector3(0, 0, location.Velocity.z - .14f);
+            isOutOfSync = true;
+        }
+        else if (distance <= -.1f && distance > -1f)
+        {
+            newVelocity = new Vector3(0, 0, location.Velocity.z - .28f);
+            isOutOfSync = true;
+        }
+        else if (distance <= -1f && distance > -3f)
+        {
+            newVelocity = new Vector3(0, 0, location.Velocity.z - .83f);
+            isOutOfSync = true;
+        }
+        if (isOutOfSync)
+            Main.mod.Logger.Log($"{trainCar.ID} Is out of sync difference is {distance}m");
+        trainCar.rb.angularVelocity = location.AngularVelocity;
+        trainCar.transform.forward = location.Forward;
     }
 
     private float Distance(Transform a, Vector3 b)
     {
-        Vector3 relativePos = a.InverseTransformPoint(b);
-        return relativePos.z;
+        Vector3 forward = a.TransformDirection(a.forward);
+        Vector3 toOther = b - a.position;
+        if (Vector3.Dot(forward, toOther) < 0)
+            return -Vector3.Distance(a.position, b);
+        else
+            return Vector3.Distance(a.position, b);
     }
 
     private TrainCar GetMostFrontCar(TrainCar car)

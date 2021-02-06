@@ -578,8 +578,6 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 Forward = trainCar.transform.forward,
                 Velocity = trainCar.rb.velocity,
                 AngularVelocity = trainCar.rb.angularVelocity,
-                IsBogie1Derailed = bogie1.HasDerailed,
-                IsBogie2Derailed = bogie2.HasDerailed,
                 Position = trainCar.transform.position - WorldMover.currentMove,
                 Rotation = trainCar.transform.rotation,
                 Bogie1TrackName = bogie1.track.name,
@@ -829,10 +827,8 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         serverState.Velocity = location.Velocity;
                         serverState.AngularVelocity = location.AngularVelocity;
                         serverState.Forward = location.Forward;
-                        serverState.IsBogie1Derailed = location.IsBogie1Derailed;
                         serverState.Bogie1PositionAlongTrack = location.Bogie1PositionAlongTrack;
                         serverState.Bogie1RailTrackName = location.Bogie1TrackName;
-                        serverState.IsBogie2Derailed = location.IsBogie2Derailed;
                         serverState.Bogie2PositionAlongTrack = location.Bogie2PositionAlongTrack;
                         serverState.Bogie2RailTrackName = location.Bogie2TrackName;
                     }
