@@ -17,6 +17,8 @@ class NetworkTrainPosSync : MonoBehaviour
     private bool isOutOfSync = false;
     private Coroutine movingCoroutine;
     private Vector3 hostPos;
+    private float prevIndepBrakePos;
+    private float prevBrakePos;
     public bool hostDerailed;
 
     private void Awake()
@@ -62,11 +64,23 @@ class NetworkTrainPosSync : MonoBehaviour
         {
             if(hostPos != null && newVelocity.Value.z == 0 && isOutOfSync)
             {
+                if((trainCar.brakeSystem.hasIndependentBrake && trainCar.brakeSystem.independentBrakePosition > 0) || trainCar.brakeSystem.trainBrakePosition > 0)
+                {
+                    prevIndepBrakePos = trainCar.brakeSystem.hasIndependentBrake ? trainCar.brakeSystem.independentBrakePosition : 0;
+                    prevBrakePos = trainCar.brakeSystem.trainBrakePosition;
+                    if (trainCar.brakeSystem.hasIndependentBrake)
+                        trainCar.brakeSystem.independentBrakePosition = 0;
+                    trainCar.brakeSystem.trainBrakePosition = 0;
+                }
                 float distance = Distance(trainCar.transform, hostPos);
                 if (distance < .1f && distance > -.1f)
                 {
                     isOutOfSync = false;
                     newVelocity = new Vector3(0, 0, 0);
+
+                    if (trainCar.brakeSystem.hasIndependentBrake)
+                        trainCar.brakeSystem.independentBrakePosition = prevIndepBrakePos;
+                    trainCar.brakeSystem.trainBrakePosition = prevBrakePos;
                 }
                 else if(distance < 0)
                 {

@@ -52,6 +52,9 @@
       <HintPath>lib\DarkRift.Server.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="DV.BrakeSystem">
+      <HintPath>lib\DV.BrakeSystem.dll</HintPath>
+    </Reference>
     <Reference Include="DV.TerrainSystem">
       <HintPath>lib\DV.TerrainSystem.dll</HintPath>
       <Private>False</Private>
