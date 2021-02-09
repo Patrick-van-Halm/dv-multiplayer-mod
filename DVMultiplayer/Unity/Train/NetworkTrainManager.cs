@@ -784,16 +784,8 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         serverTrainState.Bogie2PositionAlongTrack = derailed.Bogie2PositionAlongTrack;
                     }
 
-                    Bogie bogie1 = train.Bogies[0];
-                    Bogie bogie2 = train.Bogies[train.Bogies.Length - 1];
-
-                    if (!bogie1.HasDerailed && derailed.IsBogie1Derailed)
-                        bogie1.Derail();
-
-                    if (!bogie2.HasDerailed && derailed.IsBogie2Derailed)
-                        bogie1.Derail();
-
                     train.GetComponent<NetworkTrainPosSync>().hostDerailed = true;
+                    train.Derail();
                 }
                 else
                 {
