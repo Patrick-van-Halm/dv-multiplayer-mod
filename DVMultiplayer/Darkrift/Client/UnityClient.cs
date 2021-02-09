@@ -539,7 +539,6 @@ namespace DarkRift.Client.Unity
             Dispatcher.Dispose();
 
             Client = null;
-            Dispatcher = null;
         }
     }
 }
