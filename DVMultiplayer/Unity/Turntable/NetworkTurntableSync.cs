@@ -15,6 +15,7 @@ class NetworkTurntableSync : MonoBehaviour
     private Transform playerCameraTransform;
     private TurntableControlKeyboardInput keyboardInput;
     private Coroutine coroutineInputLever;
+    private List<TrainCar> trainsOnTurntable = new List<TrainCar>();
     private void Awake()
     {
         turntable = GetComponent<TurntableController>();
