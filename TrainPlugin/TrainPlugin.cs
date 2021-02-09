@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.5.10");
+        public override Version Version => new Version("1.5.11");
 
         private List<WorldTrain> worldTrains;
 
@@ -99,15 +99,17 @@ namespace TrainPlugin
                     WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == cockStateChanged.TrainIdCoupler);
                     if (train == null)
                     {
-                        Logger.Error($"[{cockStateChanged.TrainIdCoupler}] Train not found");
+                        train = new WorldTrain()
+                        {
+                            Guid = cockStateChanged.TrainIdCoupler,
+                        };
+                        worldTrains.Add(train);
                     }
+
+                    if (cockStateChanged.IsCouplerFront)
+                        train.IsFrontCouplerHoseConnected = cockStateChanged.IsOpen;
                     else
-                    {
-                        if (cockStateChanged.IsCouplerFront)
-                            train.IsFrontCouplerHoseConnected = cockStateChanged.IsOpen;
-                        else
-                            train.IsRearCouplerHoseConnected = cockStateChanged.IsOpen;
-                    }
+                        train.IsRearCouplerHoseConnected = cockStateChanged.IsOpen;
                 }
             }
 
@@ -125,29 +127,34 @@ namespace TrainPlugin
                     WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == hoseStateChanged.TrainIdC1);
                     if (train == null)
                     {
-                        Logger.Error($"[{hoseStateChanged.TrainIdC1}] Train not found");
+                        train = new WorldTrain()
+                        {
+                            Guid = hoseStateChanged.TrainIdC1,
+                        };
+                        worldTrains.Add(train);
                     }
+
+                    if (hoseStateChanged.IsC1Front)
+                        train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
                     else
-                    {
-                        if (hoseStateChanged.IsC1Front)
-                            train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
-                        else
-                            train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
-                    }
+                        train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
+                    
                     if (hoseStateChanged.IsConnected)
                     {
                         train = worldTrains.FirstOrDefault(t => t.Guid == hoseStateChanged.TrainIdC2);
                         if (train == null)
                         {
-                            Logger.Error($"[{hoseStateChanged.TrainIdC2}] Train not found");
+                            train = new WorldTrain()
+                            {
+                                Guid = hoseStateChanged.TrainIdC2,
+                            };
+                            worldTrains.Add(train);
                         }
+
+                        if (hoseStateChanged.IsC2Front)
+                            train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
                         else
-                        {
-                            if (hoseStateChanged.IsC2Front)
-                                train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
-                            else
-                                train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
-                        }
+                            train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
                     }
                 }
             }
@@ -166,46 +173,51 @@ namespace TrainPlugin
                     WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == coupledChanged.TrainIdC1);
                     if (train == null)
                     {
-                        Logger.Error($"[{coupledChanged.TrainIdC1}] Train not found");
+                        train = new WorldTrain()
+                        {
+                            Guid = coupledChanged.TrainIdC1,
+                        };
+                        worldTrains.Add(train);
+                    }
+
+                    if (isCoupled)
+                    {
+                        if (coupledChanged.IsC1Front)
+                            train.IsFrontCouplerCoupled = true;
+                        else
+                            train.IsRearCouplerCoupled = true;
                     }
                     else
                     {
-                        if (isCoupled)
-                        {
-                            if (coupledChanged.IsC1Front)
-                                train.IsFrontCouplerCoupled = true;
-                            else
-                                train.IsRearCouplerCoupled = true;
-                        }
+                        if (coupledChanged.IsC1Front)
+                            train.IsFrontCouplerCoupled = false;
                         else
-                        {
-                            if (coupledChanged.IsC1Front)
-                                train.IsFrontCouplerCoupled = false;
-                            else
-                                train.IsRearCouplerCoupled = false;
-                        }
+                            train.IsRearCouplerCoupled = false;
                     }
+
                     train = worldTrains.FirstOrDefault(t => t.Guid == coupledChanged.TrainIdC2);
                     if (train == null)
                     {
-                        Logger.Error($"[{coupledChanged.TrainIdC2}] Train not found");
+                        train = new WorldTrain()
+                        {
+                            Guid = coupledChanged.TrainIdC2,
+                        };
+                        worldTrains.Add(train);
+                    }
+
+                    if (isCoupled)
+                    {
+                        if (coupledChanged.IsC2Front)
+                            train.IsFrontCouplerCoupled = true;
+                        else
+                            train.IsRearCouplerCoupled = true;
                     }
                     else
                     {
-                        if (isCoupled)
-                        {
-                            if (coupledChanged.IsC2Front)
-                                train.IsFrontCouplerCoupled = true;
-                            else
-                                train.IsRearCouplerCoupled = true;
-                        }
+                        if (coupledChanged.IsC2Front)
+                            train.IsFrontCouplerCoupled = false;
                         else
-                        {
-                            if (coupledChanged.IsC2Front)
-                                train.IsFrontCouplerCoupled = false;
-                            else
-                                train.IsRearCouplerCoupled = false;
-                        }
+                            train.IsRearCouplerCoupled = false;
                     }
                 }
             }
@@ -233,17 +245,19 @@ namespace TrainPlugin
                     WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == derailed.TrainId);
                     if (train == null)
                     {
-                        Logger.Error($"[{derailed.TrainId}] Train not found");
+                        train = new WorldTrain()
+                        {
+                            Guid = derailed.TrainId,
+                        };
+                        worldTrains.Add(train);
                     }
-                    else
-                    {
-                        train.IsBogie1Derailed = derailed.IsBogie1Derailed;
-                        train.IsBogie2Derailed = derailed.IsBogie2Derailed;
-                        train.Bogie1RailTrackName = derailed.Bogie1TrackName;
-                        train.Bogie2RailTrackName = derailed.Bogie2TrackName;
-                        train.Bogie1PositionAlongTrack = derailed.Bogie1PositionAlongTrack;
-                        train.Bogie2PositionAlongTrack = derailed.Bogie2PositionAlongTrack;
-                    }
+
+                    train.IsBogie1Derailed = derailed.IsBogie1Derailed;
+                    train.IsBogie2Derailed = derailed.IsBogie2Derailed;
+                    train.Bogie1RailTrackName = derailed.Bogie1TrackName;
+                    train.Bogie2RailTrackName = derailed.Bogie2TrackName;
+                    train.Bogie1PositionAlongTrack = derailed.Bogie1PositionAlongTrack;
+                    train.Bogie2PositionAlongTrack = derailed.Bogie2PositionAlongTrack;
                 }
             }
 
@@ -261,16 +275,18 @@ namespace TrainPlugin
                     WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == rerailed.TrainId);
                     if (train == null)
                     {
-                        Logger.Error($"[{rerailed.TrainId}] Train not found");
+                        train = new WorldTrain()
+                        {
+                            Guid = rerailed.TrainId,
+                        };
+                        worldTrains.Add(train);
                     }
-                    else
-                    {
-                        train.IsBogie1Derailed = false;
-                        train.IsBogie2Derailed = false;
-                        train.Position = rerailed.Position;
-                        train.Forward = rerailed.Forward;
-                        train.Rotation = rerailed.Rotation;
-                    }
+
+                    train.IsBogie1Derailed = false;
+                    train.IsBogie2Derailed = false;
+                    train.Position = rerailed.Position;
+                    train.Forward = rerailed.Forward;
+                    train.Rotation = rerailed.Rotation;
                 }
             }
             Logger.Trace("[SERVER] > TRAIN_RERAIL");
@@ -303,66 +319,68 @@ namespace TrainPlugin
                     WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == lever.TrainId);
                     if (train == null)
                     {
-                        Logger.Error($"[{lever.TrainId}] Train not found");
+                        train = new WorldTrain()
+                        {
+                            Guid = lever.TrainId,
+                        };
+                        worldTrains.Add(train);
                     }
-                    else
+
+                    switch (lever.Lever)
                     {
-                        switch (lever.Lever)
-                        {
-                            case Levers.Throttle:
-                                train.Throttle = lever.Value;
-                                break;
+                        case Levers.Throttle:
+                            train.Throttle = lever.Value;
+                            break;
 
-                            case Levers.Brake:
-                                train.Brake = lever.Value;
-                                break;
+                        case Levers.Brake:
+                            train.Brake = lever.Value;
+                            break;
 
-                            case Levers.IndependentBrake:
-                                train.IndepBrake = lever.Value;
-                                break;
+                        case Levers.IndependentBrake:
+                            train.IndepBrake = lever.Value;
+                            break;
 
-                            case Levers.Sander:
-                                train.Sander = lever.Value;
-                                break;
+                        case Levers.Sander:
+                            train.Sander = lever.Value;
+                            break;
 
-                            case Levers.Reverser:
-                                train.Reverser = lever.Value;
-                                break;
-                        }
+                        case Levers.Reverser:
+                            train.Reverser = lever.Value;
+                            break;
+                    }
 
-                        switch (train.CarType)
-                        {
-                            case TrainCarType.LocoShunter:
-                                Shunter shunter = train.Shunter;
-                                switch (lever.Lever)
-                                {
-                                    case Levers.MainFuse:
-                                        shunter.IsMainFuseOn = lever.Value == 1;
-                                        if (lever.Value == 0)
-                                            shunter.IsEngineOn = false;
-                                        break;
+                    switch (train.CarType)
+                    {
+                        case TrainCarType.LocoShunter:
+                            Shunter shunter = train.Shunter;
+                            switch (lever.Lever)
+                            {
+                                case Levers.MainFuse:
+                                    shunter.IsMainFuseOn = lever.Value == 1;
+                                    if (lever.Value == 0)
+                                        shunter.IsEngineOn = false;
+                                    break;
 
-                                    case Levers.SideFuse_1:
-                                        shunter.IsSideFuse1On = lever.Value == 1;
-                                        if (lever.Value == 0)
-                                            shunter.IsEngineOn = false;
-                                        break;
+                                case Levers.SideFuse_1:
+                                    shunter.IsSideFuse1On = lever.Value == 1;
+                                    if (lever.Value == 0)
+                                        shunter.IsEngineOn = false;
+                                    break;
 
-                                    case Levers.SideFuse_2:
-                                        shunter.IsSideFuse2On = lever.Value == 1;
-                                        if (lever.Value == 0)
-                                            shunter.IsEngineOn = false;
-                                        break;
+                                case Levers.SideFuse_2:
+                                    shunter.IsSideFuse2On = lever.Value == 1;
+                                    if (lever.Value == 0)
+                                        shunter.IsEngineOn = false;
+                                    break;
 
-                                    case Levers.FusePowerStarter:
-                                        if(shunter.IsSideFuse1On && shunter.IsSideFuse2On && shunter.IsMainFuseOn && lever.Value == 1)
-                                            shunter.IsEngineOn = true;
-                                        else if (lever.Value == 0)
-                                            shunter.IsEngineOn = false;
-                                        break;
-                                }
-                                break;
-                        }
+                                case Levers.FusePowerStarter:
+                                    if(shunter.IsSideFuse1On && shunter.IsSideFuse2On && shunter.IsMainFuseOn && lever.Value == 1)
+                                        shunter.IsEngineOn = true;
+                                    else if (lever.Value == 0)
+                                        shunter.IsEngineOn = false;
+                                    break;
+                            }
+                            break;
                     }
                 }
             }
@@ -380,20 +398,22 @@ namespace TrainPlugin
                     WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == newLocation.TrainId);
                     if (train == null)
                     {
-                        Logger.Error($"[{newLocation.TrainId}] Train not found");
+                        train = new WorldTrain()
+                        {
+                            Guid = newLocation.TrainId,                            
+                        };
+                        worldTrains.Add(train);
                     }
-                    else
-                    {
-                        train.Position = newLocation.Position;
-                        train.Rotation = newLocation.Rotation;
-                        train.Velocity = newLocation.Velocity;
-                        train.AngularVelocity = newLocation.AngularVelocity;
-                        train.Forward = newLocation.Forward;
-                        train.Bogie1PositionAlongTrack = newLocation.Bogie1PositionAlongTrack;
-                        train.Bogie1RailTrackName = newLocation.Bogie1TrackName;
-                        train.Bogie2PositionAlongTrack = newLocation.Bogie2PositionAlongTrack;
-                        train.Bogie2RailTrackName = newLocation.Bogie2TrackName;
-                    }
+
+                    train.Position = newLocation.Position;
+                    train.Rotation = newLocation.Rotation;
+                    train.Velocity = newLocation.Velocity;
+                    train.AngularVelocity = newLocation.AngularVelocity;
+                    train.Forward = newLocation.Forward;
+                    train.Bogie1PositionAlongTrack = newLocation.Bogie1PositionAlongTrack;
+                    train.Bogie1RailTrackName = newLocation.Bogie1TrackName;
+                    train.Bogie2PositionAlongTrack = newLocation.Bogie2PositionAlongTrack;
+                    train.Bogie2RailTrackName = newLocation.Bogie2TrackName;
                 }
             }
             //Logger.Trace("[SERVER] > TRAIN_LOCATION_UPDATE");
