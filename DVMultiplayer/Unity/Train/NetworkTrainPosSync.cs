@@ -13,14 +13,14 @@ class NetworkTrainPosSync : MonoBehaviour
 {
     private const float SYNC_CHECKTIME = .05f;
     private TrainCar trainCar;
-    private Vector3? newVelocity = null;
+    private float? newExtraForce = null;
+    private float prevExtraForce;
     private bool isOutOfSync = false;
     private Coroutine movingCoroutine;
     private Vector3 hostPos;
     private float prevIndepBrakePos;
     private float prevBrakePos;
     public bool hostDerailed;
-    internal bool onTurntable;
 
     private void Awake()
     {
@@ -61,13 +61,18 @@ class NetworkTrainPosSync : MonoBehaviour
 
     private void Update()
     {
-        if(!NetworkManager.IsHost() && newVelocity.HasValue)
+        if(!NetworkManager.IsHost() && newExtraForce.HasValue && prevExtraForce != newExtraForce.Value)
         {
             if(hostPos != null && trainCar.isStationary && isOutOfSync && !trainCar.derailed)
             {
                 SingletonBehaviour<CoroutineManager>.Instance.Run(SyncToHostPos());
             }
-            trainCar.rb.velocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, newVelocity.Value.z);
+            if(prevExtraForce != 0)
+                trainCar.Bogies[0].ApplyForce(-prevExtraForce);
+            trainCar.Bogies[0].ApplyForce(newExtraForce.Value);
+            prevExtraForce = newExtraForce.Value;
+            if (newExtraForce == 0)
+                newExtraForce = null;
         }
     }
 
@@ -85,7 +90,7 @@ class NetworkTrainPosSync : MonoBehaviour
         if (distance < .1f && distance > -.1f)
         {
             isOutOfSync = false;
-            newVelocity = new Vector3(0, 0, 0);
+            newExtraForce = 0;
 
             if (trainCar.brakeSystem.hasIndependentBrake)
                 trainCar.brakeSystem.independentBrakePosition = prevIndepBrakePos;
@@ -94,11 +99,11 @@ class NetworkTrainPosSync : MonoBehaviour
         }
         else if (distance < 0)
         {
-            newVelocity = new Vector3(0, 0, -.56f);
+            newExtraForce = -2000;
         }
         else
         {
-            newVelocity = new Vector3(0, 0, .56f);
+            newExtraForce = 2000;
         }
         yield return new WaitForEndOfFrame();
         yield return SyncToHostPos();
@@ -153,37 +158,37 @@ class NetworkTrainPosSync : MonoBehaviour
         hostPos = location.Position;
         if (distance > 3f)
         {
-            newVelocity = new Vector3(0, 0, location.Velocity.z + .83f);
+            newExtraForce = 3000;
             isOutOfSync = true;
         }
         else if (distance <= 1f && distance > 0.1f)
         {
-            newVelocity = new Vector3(0, 0, location.Velocity.z + .28f);
+            newExtraForce = 1500;
             isOutOfSync = true;
         }
         else if (distance <= .1f && distance > 0.01f)
         {
-            newVelocity = new Vector3(0, 0, location.Velocity.z + .14f);
+            newExtraForce = 750;
             isOutOfSync = true;
         }
         else if (distance < .01f && distance > -.01f)
         {
-            newVelocity = new Vector3(0, 0, location.Velocity.z);
+            newExtraForce = 0;
             isOutOfSync = false;
         }
         else if (distance <= -.01f && distance > -0.1f)
         {
-            newVelocity = new Vector3(0, 0, location.Velocity.z - .14f);
+            newExtraForce = -750;
             isOutOfSync = true;
         }
         else if (distance <= -.1f && distance > -1f)
         {
-            newVelocity = new Vector3(0, 0, location.Velocity.z - .28f);
+            newExtraForce = -1500;
             isOutOfSync = true;
         }
         else if (distance <= -1f && distance > -3f)
         {
-            newVelocity = new Vector3(0, 0, location.Velocity.z - .83f);
+            newExtraForce = -3000;
             isOutOfSync = true;
         }
 
