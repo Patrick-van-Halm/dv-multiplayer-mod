@@ -447,7 +447,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     }
                 }
 
-                foreach (WorldTrain selectedTrain in serverTrainStates.Where(t => t.IsFrontCouplerCoupled || t.IsRearCouplerCoupled))
+                foreach (WorldTrain selectedTrain in serverTrainStates.Where(t => (t.IsFrontCouplerCoupled.HasValue && t.IsFrontCouplerCoupled.Value) || (t.IsRearCouplerCoupled.HasValue && t.IsRearCouplerCoupled.Value)))
                 {
                     Main.DebugLog($"Synching train: {selectedTrain.Guid}.");
 
@@ -464,35 +464,41 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void ResyncCoupling(TrainCar train, WorldTrain serverState)
     {
-        if (serverState.IsFrontCouplerCoupled && !train.frontCoupler.IsCoupled())
+        if (serverState.IsFrontCouplerCoupled.HasValue && serverState.IsFrontCouplerCoupled.Value && !train.frontCoupler.IsCoupled())
         {
-            if (serverState.IsFrontCouplerCockOpen && serverState.IsFrontCouplerHoseConnected)
-                train.frontCoupler.TryCouple(false);
-            else
-                train.frontCoupler.TryCouple(false, true);
+            if (serverState.IsFrontCouplerCockOpen.HasValue && serverState.IsFrontCouplerHoseConnected.HasValue)
+            {
+                if (serverState.IsFrontCouplerCockOpen.Value && serverState.IsFrontCouplerHoseConnected.Value)
+                    train.frontCoupler.TryCouple(false);
+                else
+                    train.frontCoupler.TryCouple(false, true);
+            }
         }
         else
         { 
-            if (serverState.IsFrontCouplerCockOpen && !train.frontCoupler.IsCockOpen)
+            if (serverState.IsFrontCouplerCockOpen.HasValue && serverState.IsFrontCouplerCockOpen.Value && !train.frontCoupler.IsCockOpen)
                 train.frontCoupler.IsCockOpen = true;
 
-            if (serverState.IsFrontCouplerHoseConnected && !train.frontCoupler.GetAirHoseConnectedTo() && train.frontCoupler.GetFirstCouplerInRange())
+            if (serverState.IsFrontCouplerHoseConnected.HasValue && serverState.IsFrontCouplerHoseConnected.Value && !train.frontCoupler.GetAirHoseConnectedTo() && train.frontCoupler.GetFirstCouplerInRange())
                 train.frontCoupler.ConnectAirHose(train.frontCoupler.GetFirstCouplerInRange(), false);
         }
 
-        if (serverState.IsRearCouplerCoupled && !train.rearCoupler.IsCoupled())
+        if (serverState.IsRearCouplerCoupled.HasValue && serverState.IsRearCouplerCoupled.Value && !train.rearCoupler.IsCoupled())
         {
-            if (serverState.IsRearCouplerCockOpen && serverState.IsRearCouplerHoseConnected)
-                train.rearCoupler.TryCouple(false);
-            else
-                train.rearCoupler.TryCouple(false, true);
+            if (serverState.IsRearCouplerCockOpen.HasValue && serverState.IsRearCouplerHoseConnected.HasValue)
+            {
+                if (serverState.IsRearCouplerCockOpen.Value && serverState.IsRearCouplerHoseConnected.Value)
+                    train.rearCoupler.TryCouple(false);
+                else
+                    train.rearCoupler.TryCouple(false, true);
+            }
         }
         else
         {
-            if (serverState.IsRearCouplerCockOpen && !train.rearCoupler.IsCockOpen)
+            if (serverState.IsRearCouplerCockOpen.HasValue && serverState.IsRearCouplerCockOpen.Value && !train.rearCoupler.IsCockOpen)
                 train.rearCoupler.IsCockOpen = true;
 
-            if (serverState.IsRearCouplerHoseConnected && !train.rearCoupler.GetAirHoseConnectedTo() && train.rearCoupler.GetFirstCouplerInRange())
+            if (serverState.IsRearCouplerHoseConnected.HasValue && serverState.IsRearCouplerHoseConnected.Value && !train.rearCoupler.GetAirHoseConnectedTo() && train.rearCoupler.GetFirstCouplerInRange())
                 train.rearCoupler.ConnectAirHose(train.rearCoupler.GetFirstCouplerInRange(), false);
         }
     }
@@ -657,7 +663,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         TrainCar newTrain = CarSpawner.SpawnLoadedCar(carPrefab, train.Id, train.Guid, train.IsPlayerSpawned, train.Position, train.Rotation, 
             train.IsBogie1Derailed, RailTrackRegistry.GetTrackWithName(train.Bogie1RailTrackName), train.Bogie1PositionAlongTrack,
             train.IsBogie2Derailed, RailTrackRegistry.GetTrackWithName(train.Bogie2RailTrackName), train.Bogie2PositionAlongTrack,
-            train.IsFrontCouplerCoupled, train.IsRearCouplerCoupled);
+            false, false);
 
         newTrain.LoadInterior();
         newTrain.keepInteriorLoaded = true;
@@ -791,11 +797,40 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
-            writer.Write<TrainCarChange>(new TrainCarChange()
+            TrainCarChange val = null;
+            if (train)
             {
-                PlayerId = SingletonBehaviour<UnityClient>.Instance.ID,
-                TrainId = train ? train.CarGUID : "",
-            });
+                Bogie bogie1 = train.Bogies[0];
+                Bogie bogie2 = train.Bogies[train.Bogies.Length - 1];
+                val = new TrainCarChange()
+                {
+                    PlayerId = SingletonBehaviour<UnityClient>.Instance.ID,
+                    TrainId = train.CarGUID,
+                    CarId = train.ID,
+                    Type = train.carType,
+                    IsLoco = train.IsLoco,
+                    IsPlayerSpawned = train.playerSpawnedCar,
+                    Position = train.transform.position - WorldMover.currentMove,
+                    Forward = train.transform.forward,
+                    Rotation = train.transform.rotation,
+                    IsBogie1Derailed = bogie1.HasDerailed,
+                    Bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
+                    Bogie1RailTrackName = bogie1.track.name,
+                    IsBogie2Derailed = bogie2.HasDerailed,
+                    Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
+                    Bogie2RailTrackName = bogie2.track.name
+                };
+            }
+            else
+            {
+                val = new TrainCarChange()
+                {
+                    PlayerId = SingletonBehaviour<UnityClient>.Instance.ID,
+                    TrainId = ""
+                };
+            }
+
+            writer.Write<TrainCarChange>(val);
 
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_SWITCH, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);

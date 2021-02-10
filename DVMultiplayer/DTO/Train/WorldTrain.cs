@@ -16,13 +16,16 @@ namespace DVMultiplayer.DTO.Train
         public string Id { get; set; } = "";
         public TrainCarType CarType { get; set; } = TrainCarType.NotSet;
         public bool IsLoco { get; set; }
+        
+        // Player
+        public bool IsPlayerSpawned { get; set; }
 
         // Position and physics
         public Vector3 Position { get; set; }
         public Vector3 Forward { get; set; }
         public Quaternion Rotation { get; set; }
-        public Vector3 Velocity { get; set; }
-        public Vector3 AngularVelocity { get; set; }
+        public Vector3 Velocity { get; set; } = new Vector3();
+        public Vector3 AngularVelocity { get; set; } = new Vector3();
 
         // Bogies
         public bool IsBogie1Derailed { get; set; }
@@ -33,15 +36,12 @@ namespace DVMultiplayer.DTO.Train
         public string Bogie2RailTrackName { get; set; } = "";
 
         // Couplers
-        public bool IsFrontCouplerCoupled { get; set; }
-        public bool IsRearCouplerCoupled { get; set; }
-        public bool IsFrontCouplerCockOpen { get; set; }
-        public bool IsRearCouplerCockOpen { get; set; }
-        public bool IsFrontCouplerHoseConnected { get; set; }
-        public bool IsRearCouplerHoseConnected { get; set; }
-
-        // Player
-        public bool IsPlayerSpawned { get; set; }
+        public bool? IsFrontCouplerCoupled { get; set; } = null;
+        public bool? IsRearCouplerCoupled { get; set; } = null;
+        public bool? IsFrontCouplerCockOpen { get; set; } = null;
+        public bool? IsRearCouplerCockOpen { get; set; } = null;
+        public bool? IsFrontCouplerHoseConnected { get; set; } = null;
+        public bool? IsRearCouplerHoseConnected { get; set; } = null;
 
         // Locomotive (Only set if item is locomotive)
         public float Throttle { get; set; } = 0;
@@ -73,12 +73,12 @@ namespace DVMultiplayer.DTO.Train
             Bogie2RailTrackName = e.Reader.ReadString();
             Bogie2PositionAlongTrack = e.Reader.ReadDouble();
 
-            IsFrontCouplerCoupled = e.Reader.ReadBoolean();
-            IsRearCouplerCoupled = e.Reader.ReadBoolean();
-            IsFrontCouplerCockOpen = e.Reader.ReadBoolean();
-            IsRearCouplerCockOpen = e.Reader.ReadBoolean();
-            IsFrontCouplerHoseConnected = e.Reader.ReadBoolean();
-            IsRearCouplerHoseConnected = e.Reader.ReadBoolean();
+            IsFrontCouplerCoupled = e.Reader.ReadNullableBoolean();
+            IsRearCouplerCoupled = e.Reader.ReadNullableBoolean();
+            IsFrontCouplerCockOpen = e.Reader.ReadNullableBoolean();
+            IsRearCouplerCockOpen = e.Reader.ReadNullableBoolean();
+            IsFrontCouplerHoseConnected = e.Reader.ReadNullableBoolean();
+            IsRearCouplerHoseConnected = e.Reader.ReadNullableBoolean();
 
             IsPlayerSpawned = e.Reader.ReadBoolean();
 

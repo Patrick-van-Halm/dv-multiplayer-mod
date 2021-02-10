@@ -1,12 +1,10 @@
 ﻿using DarkRift;
 using DarkRift.Server;
-using DVMultiplayer.Networking;
 using DVMultiplayer.DTO.Train;
+using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TrainPlugin
 {
@@ -14,9 +12,9 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.5.13");
+        public override Version Version => new Version("1.5.14");
 
-        private List<WorldTrain> worldTrains;
+        private readonly List<WorldTrain> worldTrains;
 
         public TrainPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -37,7 +35,7 @@ namespace TrainPlugin
                 if (!tag.ToString().StartsWith("TRAIN_"))
                     return;
 
-                if(tag != NetworkTags.TRAIN_LOCATION_UPDATE)
+                if (tag != NetworkTags.TRAIN_LOCATION_UPDATE)
                     Logger.Trace($"[SERVER] < {tag.ToString()}");
 
                 switch (tag)
@@ -55,7 +53,7 @@ namespace TrainPlugin
                         break;
 
                     case NetworkTags.TRAIN_SWITCH:
-                        ReliableSendToOthers(message, e.Client);
+                        UpdateTrainSwitch(message, e.Client);
                         break;
 
                     case NetworkTags.TRAIN_COUPLE:
@@ -91,6 +89,46 @@ namespace TrainPlugin
                         break;
                 }
             }
+        }
+
+        private void UpdateTrainSwitch(Message message, IClient sender)
+        {
+            if (worldTrains != null)
+            {
+                using (DarkRiftReader reader = message.GetReader())
+                {
+                    TrainCarChange carChange = reader.ReadSerializable<TrainCarChange>();
+                    if (carChange.TrainId != "")
+                    {
+                        WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == carChange.TrainId);
+                        if (train == null)
+                        {
+                            train = new WorldTrain()
+                            {
+                                Guid = carChange.TrainId
+                            };
+                            worldTrains.Add(train);
+                        }
+
+                        train.Id = carChange.CarId;
+                        train.CarType = (TrainCarType)carChange.Type;
+                        train.IsLoco = carChange.IsLoco;
+                        train.IsPlayerSpawned = carChange.IsPlayerSpawned;
+                        train.Position = carChange.Position;
+                        train.Forward = carChange.Forward;
+                        train.Rotation = carChange.Rotation;
+                        train.IsBogie1Derailed = carChange.IsBogie1Derailed;
+                        train.Bogie1PositionAlongTrack = carChange.Bogie1PositionAlongTrack;
+                        train.Bogie1RailTrackName = carChange.Bogie1RailTrackName;
+                        train.IsBogie2Derailed = carChange.IsBogie2Derailed;
+                        train.Bogie2PositionAlongTrack = carChange.Bogie2PositionAlongTrack;
+                        train.Bogie2RailTrackName = carChange.Bogie2RailTrackName;
+                    }
+                }
+            }
+
+            Logger.Trace("[SERVER] > TRAIN_SWITCH");
+            ReliableSendToOthers(message, sender);
         }
 
         private void UpdateCoupleCockState(Message message, IClient sender)
@@ -142,7 +180,7 @@ namespace TrainPlugin
                         train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
                     else
                         train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
-                    
+
                     if (hoseStateChanged.IsConnected)
                     {
                         train = worldTrains.FirstOrDefault(t => t.Guid == hoseStateChanged.TrainIdC2);
@@ -251,7 +289,7 @@ namespace TrainPlugin
 
         private void UpdateTrainDerailed(Message message, IClient sender)
         {
-            if(worldTrains != null)
+            if (worldTrains != null)
             {
                 using (DarkRiftReader reader = message.GetReader())
                 {
@@ -388,7 +426,7 @@ namespace TrainPlugin
                                     break;
 
                                 case Levers.FusePowerStarter:
-                                    if(shunter.IsSideFuse1On && shunter.IsSideFuse2On && shunter.IsMainFuseOn && lever.Value == 1)
+                                    if (shunter.IsSideFuse1On && shunter.IsSideFuse2On && shunter.IsMainFuseOn && lever.Value == 1)
                                         shunter.IsEngineOn = true;
                                     else if (lever.Value == 0)
                                         shunter.IsEngineOn = false;
@@ -414,7 +452,7 @@ namespace TrainPlugin
                     {
                         train = new WorldTrain()
                         {
-                            Guid = newLocation.TrainId,                            
+                            Guid = newLocation.TrainId,
                         };
                         worldTrains.Add(train);
                     }
