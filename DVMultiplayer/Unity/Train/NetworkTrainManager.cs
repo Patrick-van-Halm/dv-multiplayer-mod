@@ -69,6 +69,8 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void OnCarSpawned(TrainCar car)
     {
+        if (IsChangeByNetwork)
+            return;
         if(SingletonBehaviour<NetworkPlayerManager>.Instance.IsAnyoneInLocalPlayerRegion())
         {
             CarSpawner.DeleteCar(car);
@@ -272,10 +274,11 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             writer.Write(new TrainRerail()
             {
-                 TrainId = trainCar.CarGUID,
-                 Position = trainCar.transform.position - WorldMover.currentMove,
-                 Forward = trainCar.transform.forward,
-                 Rotation = trainCar.transform.rotation
+                TrainId = trainCar.CarGUID,
+                Position = trainCar.transform.position - WorldMover.currentMove,
+                Forward = trainCar.transform.forward,
+                Rotation = trainCar.transform.rotation,
+                TrackName = trainCar.Bogies[0].track.name
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_RERAIL, writer))
@@ -390,10 +393,12 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             while (reader.Position < reader.Length)
             {
+                IsChangeByNetwork = true;
                 WorldTrain train = reader.ReadSerializable<WorldTrain>();
                 Main.DebugLog($"[CLIENT] < TRAIN_INIT: {train.Guid}");
                 serverTrainStates.Add(train);
                 InitializeNewTrainCar(train);
+                IsChangeByNetwork = false;
             }
         }
     }
@@ -657,16 +662,17 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         newTrain.LoadInterior();
         newTrain.keepInteriorLoaded = true;
 
-        TeleportTrainToTrack(newTrain, train.Position, train.Forward);
-
-        ResyncCoupling(newTrain, train);
-
         newTrain.gameObject.AddComponent<NetworkTrainPosSync>();
         if (newTrain.IsLoco)
             newTrain.gameObject.AddComponent<NetworkTrainSync>();
 
         newTrain.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
         newTrain.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+
+        TeleportTrainToTrack(newTrain, train.Position, train.Forward);
+
+        ResyncCoupling(newTrain, train);
+        trainCars.Add(newTrain);
         return newTrain;
     }
 
