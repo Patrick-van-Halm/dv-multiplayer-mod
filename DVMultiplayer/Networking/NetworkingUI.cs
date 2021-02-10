@@ -160,7 +160,7 @@ namespace DVMultiplayer.Networking
             SaveFavoriteUI.transform.Find("Button Accept").GetComponent<Button>().onClick.AddListener(() =>
             {
                 string favName = SaveFavoriteUI.transform.Find("TextField Name").GetComponentInChildren<TextMeshProUGUI>().text;
-                if (!string.IsNullOrWhiteSpace(favName))
+                if (string.IsNullOrWhiteSpace(favName))
                     return;
                 string host = ConnectUI.transform.Find("TextField IP").GetComponentInChildren<TextMeshProUGUI>().text;
                 string portString = ConnectUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text;
@@ -208,12 +208,12 @@ namespace DVMultiplayer.Networking
 
             ClientConnectedMenuUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
             {
-                HideUI();
+                CustomUI.Open();
             });
 
             HostConnectedMenuUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
             {
-                HideUI();
+                CustomUI.Open();
             });
 
             HostConnectedMenuUI.transform.Find("Button Stop Server").GetComponent<Button>().onClick.AddListener(() =>

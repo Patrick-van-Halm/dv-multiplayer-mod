@@ -18,7 +18,7 @@ namespace PlayerPlugin
 
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("2.6.6");
+        public override Version Version => new Version("2.6.7");
 
         public PlayerPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -71,8 +71,24 @@ namespace PlayerPlugin
                     case NetworkTags.PLAYER_SPAWN_SET:
                         SetSpawn(message);
                         break;
+
+                    case NetworkTags.PLAYER_LOADED:
+                        SetPlayerLoaded(message, e.Client);
+                        break;
                 }
             }
+        }
+
+        private void SetPlayerLoaded(Message message, IClient sender)
+        {
+            if (players.TryGetValue(sender, out Player player))
+            {
+                player.isLoaded = true;
+                foreach (IClient client in ClientManager.GetAllClients().Where(client => client != sender))
+                    client.SendMessage(message, SendMode.Reliable);
+            }
+            else
+                Logger.Error($"Client with ID {sender.ID} not found");
         }
 
         private void ServerPlayerInitializer(Message message, IClient sender)
@@ -138,7 +154,8 @@ namespace PlayerPlugin
                                 {
                                     Id = p.id,
                                     Username = p.username,
-                                    Mods = p.mods
+                                    Mods = p.mods,
+                                    IsLoaded = p.isLoaded
                                 });
 
                                 writer.Write(new Location()
@@ -209,6 +226,7 @@ namespace PlayerPlugin
         public readonly string[] mods;
         public Vector3 position;
         public Quaternion rotation;
+        internal bool isLoaded;
 
         public Player(ushort id, string username, string[] mods)
         {
@@ -216,6 +234,7 @@ namespace PlayerPlugin
             this.username = username;
             this.mods = mods;
 
+            isLoaded = false;
             position = new Vector3();
             rotation = new Quaternion();
         }

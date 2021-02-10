@@ -1,6 +1,7 @@
 ﻿using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
+using DV;
 using DV.TerrainSystem;
 using DVMultiplayer;
 using DVMultiplayer.DTO;
@@ -20,6 +21,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 {
     Dictionary<ushort, GameObject> networkPlayers = new Dictionary<ushort, GameObject>();
     private SetSpawn spawnData;
+    private Coroutine playersLoaded;
     private bool modMismatched = false;
 
     public bool IsSynced { get; private set; }
@@ -109,6 +111,32 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                 case NetworkTags.PLAYER_SPAWN_SET:
                     SetSpawnPosition(message);
                     break;
+
+                case NetworkTags.PLAYER_LOADED:
+                    SetPlayerLoaded(message);
+                    break;
+            }
+        }
+    }
+
+    private void SetPlayerLoaded(Message message)
+    {
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            while (reader.Position < reader.Length)
+            {
+                PlayerLoaded player = reader.ReadSerializable<PlayerLoaded>();
+                if (player.Id != SingletonBehaviour<UnityClient>.Instance.ID)
+                {
+                    if (networkPlayers.TryGetValue(player.Id, out GameObject playerObject))
+                    {
+                        playerObject.GetComponent<NetworkPlayerSync>().IsLoaded = true;
+                    }
+                    else
+                    {
+                        Main.mod.Logger.Critical($"Player with ID: {player.Id} not found");
+                    }
+                }
             }
         }
     }
@@ -205,11 +233,12 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
     private IEnumerator WaitForInit()
     {
-        SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = true;
         UUI.UnlockMouse(true);
         TutorialController.movementAllowed = false;
         if (!NetworkManager.IsHost())
         {
+            AppUtil.Instance.PauseGame();
+            CustomUI.OpenPopup("Connecting", "Loading savegame");
             Main.DebugLog($"[CLIENT] Receiving savegame");
             // Check if host is connected if so the savegame should be available to receive
             SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
@@ -217,7 +246,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             if (modMismatched)
             {
                 Main.DebugLog($"Mods Mismatched so disconnecting player");
-                SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = false;
                 UUI.UnlockMouse(false);
                 TutorialController.movementAllowed = true;
                 NetworkManager.Disconnect();
@@ -226,9 +254,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
             // Wait till spawn is set
             yield return new WaitUntil(() => spawnData != null);
-            // Move to spawn
-            PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
-
+           
             // Get the online save game
             Main.DebugLog($"Syncing Save");
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
@@ -266,6 +292,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             Main.DebugLog($"Syncing traincars");
             SingletonBehaviour<NetworkTrainManager>.Instance.SyncTrainCars();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced);
+            CustomUI.Close();
+            AppUtil.Instance.UnpauseGame();
         }
         else
         {
@@ -275,11 +303,26 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             Main.DebugLog($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
             SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
         }
-
-        SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave = false;
+        SendIsLoaded();
         Main.DebugLog($"Finished loading everything. Unlocking mouse and allow movement");
         UUI.UnlockMouse(false);
         TutorialController.movementAllowed = true;
+        // Move to spawn
+        PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
+    }
+
+    private void SendIsLoaded()
+    {
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write<PlayerLoaded>(new PlayerLoaded()
+            {
+                Id = SingletonBehaviour<UnityClient>.Instance.ID
+            });
+
+            using (Message message = Message.Create((ushort)NetworkTags.PLAYER_LOADED, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
     }
 
     /// <summary>
@@ -304,10 +347,10 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             while (reader.Position < reader.Length)
             {
                 NPlayer player = reader.ReadSerializable<NPlayer>();
-                Location playerPos = reader.ReadSerializable<Location>();
 
                 if (player.Id != SingletonBehaviour<UnityClient>.Instance.ID)
                 {
+                    Location playerPos = reader.ReadSerializable<Location>();
                     Main.DebugLog($"[CLIENT] < PLAYER_SPAWN: Username: {player.Username} ");
 
                     Vector3 pos = playerPos.Position;
@@ -322,11 +365,32 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                     playerSync.Id = player.Id;
                     playerSync.Username = player.Username;
                     playerSync.Mods = player.Mods;
+                    playerSync.IsLoaded = player.IsLoaded;
 
                     networkPlayers.Add(player.Id, playerObject);
+                    if(!player.IsLoaded)
+                        WaitForPlayerLoaded();
                 }
             }
         }
+    }
+
+    private void WaitForPlayerLoaded()
+    {
+        if(playersLoaded == null)
+        {
+            playersLoaded = SingletonBehaviour<CoroutineManager>.Instance.Run(WaitForAllPlayersLoaded());
+        }
+    }
+
+    private IEnumerator WaitForAllPlayersLoaded()
+    {
+        CustomUI.OpenPopup("Player is connecting", "A new player is connecting");
+        AppUtil.Instance.PauseGame();
+        yield return new WaitUntil(() => networkPlayers.All(p => p.Value.GetComponent<NetworkPlayerSync>().IsLoaded));
+        AppUtil.Instance.UnpauseGame();
+        playersLoaded = null;
+        CustomUI.Close();
     }
 
     /// <summary>
@@ -336,6 +400,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     /// <param name="rotation">The players rotation</param>
     public void UpdateLocalPositionAndRotation(Vector3 position, Quaternion rotation)
     {
+        if (AppUtil.IsPaused)
+            return;
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write<Location>(new Location()
@@ -352,9 +418,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
     private void UpdateNetworkPositionAndRotation(Message message)
     {
-        if (SingletonBehaviour<NetworkSaveGameManager>.Instance.isLoadingSave)
-            return;
-
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)
@@ -444,5 +507,17 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     internal GameObject[] GetPlayersInTrain(TrainCar train)
     {
         return networkPlayers.Values.Where(p => p.GetComponent<NetworkPlayerSync>().Train?.CarGUID == train.CarGUID).ToArray();
+    }
+
+    internal bool IsAnyoneInLocalPlayerRegion()
+    {
+        foreach(GameObject playerObject in networkPlayers.Values)
+        {
+            if(SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(playerObject.transform.position - WorldMover.currentMove))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

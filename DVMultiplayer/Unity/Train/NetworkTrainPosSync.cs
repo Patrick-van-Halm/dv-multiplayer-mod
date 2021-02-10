@@ -63,37 +63,45 @@ class NetworkTrainPosSync : MonoBehaviour
     {
         if(!NetworkManager.IsHost() && newVelocity.HasValue)
         {
-            if(hostPos != null && Mathf.Abs(newVelocity.Value.magnitude) < 0.01f && isOutOfSync && !trainCar.derailed)
+            if(hostPos != null && trainCar.isStationary && isOutOfSync && !trainCar.derailed)
             {
-                if((trainCar.brakeSystem.hasIndependentBrake && trainCar.brakeSystem.independentBrakePosition > 0) || trainCar.brakeSystem.trainBrakePosition > 0)
-                {
-                    prevIndepBrakePos = trainCar.brakeSystem.hasIndependentBrake ? trainCar.brakeSystem.independentBrakePosition : 0;
-                    prevBrakePos = trainCar.brakeSystem.trainBrakePosition;
-                    if (trainCar.brakeSystem.hasIndependentBrake)
-                        trainCar.brakeSystem.independentBrakePosition = 0;
-                    trainCar.brakeSystem.trainBrakePosition = 0;
-                }
-                float distance = Distance(trainCar.transform, hostPos);
-                if (distance < .1f && distance > -.1f)
-                {
-                    isOutOfSync = false;
-                    newVelocity = new Vector3(0, 0, 0);
-
-                    if (trainCar.brakeSystem.hasIndependentBrake)
-                        trainCar.brakeSystem.independentBrakePosition = prevIndepBrakePos;
-                    trainCar.brakeSystem.trainBrakePosition = prevBrakePos;
-                }
-                else if(distance < 0)
-                {
-                    newVelocity = trainCar.transform.forward * 56;
-                }
-                else
-                {
-                    newVelocity = -trainCar.transform.forward * .56f;
-                }
+                SingletonBehaviour<CoroutineManager>.Instance.Run(SyncToHostPos());
             }
-            trainCar.rb.velocity = newVelocity.Value;
+            trainCar.rb.velocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, newVelocity.Value.z);
         }
+    }
+
+    private IEnumerator SyncToHostPos()
+    {
+        if ((trainCar.brakeSystem.hasIndependentBrake && trainCar.brakeSystem.independentBrakePosition > 0) || trainCar.brakeSystem.trainBrakePosition > 0)
+        {
+            prevIndepBrakePos = trainCar.brakeSystem.hasIndependentBrake ? trainCar.brakeSystem.independentBrakePosition : 0;
+            prevBrakePos = trainCar.brakeSystem.trainBrakePosition;
+            if (trainCar.brakeSystem.hasIndependentBrake)
+                trainCar.brakeSystem.independentBrakePosition = 0;
+            trainCar.brakeSystem.trainBrakePosition = 0;
+        }
+        float distance = Distance(trainCar.transform, hostPos);
+        if (distance < .1f && distance > -.1f)
+        {
+            isOutOfSync = false;
+            newVelocity = new Vector3(0, 0, 0);
+
+            if (trainCar.brakeSystem.hasIndependentBrake)
+                trainCar.brakeSystem.independentBrakePosition = prevIndepBrakePos;
+            trainCar.brakeSystem.trainBrakePosition = prevBrakePos;
+            yield break;
+        }
+        else if (distance < 0)
+        {
+            newVelocity = new Vector3(0, 0, -.56f);
+        }
+        else
+        {
+            newVelocity = new Vector3(0, 0, .56f);
+        }
+        yield return new WaitForEndOfFrame();
+        yield return SyncToHostPos();
     }
 
     IEnumerator UpdateLocation()
@@ -145,38 +153,40 @@ class NetworkTrainPosSync : MonoBehaviour
         hostPos = location.Position;
         if (distance > 3f)
         {
-            newVelocity = trainCar.rb.velocity + trainCar.transform.forward * .83f;
+            newVelocity = new Vector3(0, 0, location.Velocity.z + .83f);
             isOutOfSync = true;
         }
         else if (distance <= 1f && distance > 0.1f)
         {
-            newVelocity = trainCar.rb.velocity + trainCar.transform.forward * .28f;
+            newVelocity = new Vector3(0, 0, location.Velocity.z + .28f);
             isOutOfSync = true;
         }
         else if (distance <= .1f && distance > 0.01f)
         {
-            newVelocity = trainCar.rb.velocity + trainCar.transform.forward * .14f;
+            newVelocity = new Vector3(0, 0, location.Velocity.z + .14f);
             isOutOfSync = true;
         }
         else if (distance < .01f && distance > -.01f)
         {
+            newVelocity = new Vector3(0, 0, location.Velocity.z);
             isOutOfSync = false;
         }
         else if (distance <= -.01f && distance > -0.1f)
         {
-            newVelocity = trainCar.rb.velocity - trainCar.transform.forward * .14f;
+            newVelocity = new Vector3(0, 0, location.Velocity.z - .14f);
             isOutOfSync = true;
         }
         else if (distance <= -.1f && distance > -1f)
         {
-            newVelocity = trainCar.rb.velocity - trainCar.transform.forward * .28f;
+            newVelocity = new Vector3(0, 0, location.Velocity.z - .28f);
             isOutOfSync = true;
         }
         else if (distance <= -1f && distance > -3f)
         {
-            newVelocity = trainCar.rb.velocity - trainCar.transform.forward * .83f;
+            newVelocity = new Vector3(0, 0, location.Velocity.z - .83f);
             isOutOfSync = true;
         }
+
         if (isOutOfSync)
             Main.mod.Logger.Log($"{trainCar.ID} Is out of sync difference is {distance}m");
     }

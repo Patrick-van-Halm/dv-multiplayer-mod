@@ -16,6 +16,7 @@ class NetworkPlayerSync : MonoBehaviour
     private Vector3 prevPosition;
     private Vector3 newPosition;
     private Vector3 absPosition;
+    internal bool IsLoaded;
     private const float SYNC_THRESHOLD = 0.1f;
 
     private void Start()

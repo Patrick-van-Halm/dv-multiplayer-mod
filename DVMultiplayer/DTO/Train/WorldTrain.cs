@@ -13,7 +13,7 @@ namespace DVMultiplayer.DTO.Train
     {
         // Positioning and Physics
         public string Guid { get; set; }
-        public string Id { get; set; }
+        public string Id { get; set; } = "";
         public TrainCarType CarType { get; set; } = TrainCarType.NotSet;
         public bool IsLoco { get; set; }
 

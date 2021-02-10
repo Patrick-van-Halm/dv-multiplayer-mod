@@ -21,6 +21,7 @@ namespace DVMultiplayer
         internal static MenuScreen HostConnectedMenuUI;
         internal static MenuScreen ClientConnectedMenuUI;
         internal static MenuScreen ModMismatchScreen;
+        internal static MenuScreen PopupUI;
         internal static MenuScreen currentScreen;
         internal static bool readyForCSUpdate = false;
         internal static bool CSUpdateFinished = false;
@@ -41,6 +42,7 @@ namespace DVMultiplayer
                 GenerateHostNetworkUI();
                 GenerateClientNetworkUI();
                 GenerateModMismatchScreenUI();
+                GeneratePopUp();
             }
             catch (Exception ex)
             {
@@ -76,6 +78,15 @@ namespace DVMultiplayer
         {
             currentScreen = null;
             SingletonBehaviour<CanvasSpawner>.Instance.Close();
+            SingletonBehaviour<CanvasSpawner>.Instance.AllowOutsideClickClose = true;
+        }
+
+        internal static void OpenPopup(string title, string message)
+        {
+            SingletonBehaviour<CanvasSpawner>.Instance.AllowOutsideClickClose = false;
+            PopupUI.transform.Find("Title").GetComponent<TextMeshProUGUI>().text = title;
+            PopupUI.transform.Find("Label Message").GetComponent<TextMeshProUGUI>().text = message;
+            Open(PopupUI);
         }
 
         private static void GenerateModMismatchScreenUI()
@@ -85,7 +96,7 @@ namespace DVMultiplayer
 
             CreateSection(new Rect(0f, -245, 750, 255), RectTransformAnchoring.TopCenter, menuBuilder.transform);
             //Max 11 mods or if mod amount > 10 show "and {amount} more"
-            CreateLabel("ModsMismatched", "Your mods and the mods of the host mismatched.\n[MISSING] Mod1\n[MISSING] Mod2\n[MISSING] Mod3\n[MISSING] Mod4\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]", menuBuilder.transform, new Rect(32f, -125, 740, 250), FontStyles.Normal, TextAlignmentOptions.TopLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 1f), Color.white, 18);
+            CreateLabel("Mismatched", "Your mods and the mods of the host mismatched.\n[MISSING] Mod1\n[MISSING] Mod2\n[MISSING] Mod3\n[MISSING] Mod4\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]", menuBuilder.transform, new Rect(32f, -125, 740, 250), FontStyles.Normal, TextAlignmentOptions.TopLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 1f), Color.white, 18);
             CreateSection(new Rect(0f, 115, 750, 91f), RectTransformAnchoring.BottomCenter, menuBuilder.transform, new Vector2(.5f, 1));
             ButtonBuilder buttonBuilder = new ButtonBuilder("Ok", "OK", menuBuilder.transform, new Rect(0f, 107, 608, 76), RectTransformAnchoring.BottomCenter, new Vector2(.5f, 1f), TextAlignmentOptions.Center);
             CreateButton(buttonBuilder);
@@ -115,10 +126,23 @@ namespace DVMultiplayer
             NetworkUI = menu.GetComponent<MenuScreen>();
         }
 
+        private static void GeneratePopUp()
+        {
+            GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
+            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Popup", "Popup", 800, 300));
+
+            GameObject connectSection = CreateSection(new Rect(30f, -270, 740, 150), RectTransformAnchoring.TopLeft, menuBuilder.transform, new Vector2(0, 0));
+            GameObject labelMessage = CreateLabel("Message", "TEST", menuBuilder.transform, new Rect(32, -270, 738, 145), FontStyles.UpperCase, TextAlignmentOptions.Center, RectTransformAnchoring.TopLeft, new Vector2(0, 0), Color.white);
+
+            GameObject menu = Object.Instantiate(menuBuilder, canvas.transform);
+            Object.DestroyImmediate(menuBuilder);
+            PopupUI = menu.GetComponent<MenuScreen>();
+        }
+
         private static void GenerateHostNetworkUI()
         {
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
-            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Hosting", "Hosting", 668, 418, true, false));
+            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Hosting", "Hosting", 668, 418, false, false));
 
             ButtonBuilder stopServerButtonBuilder = new ButtonBuilder("Stop Server", "Stop Server", menuBuilder.transform, new Rect(0f, -318.5f, 608, 91f), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center);
 
@@ -135,7 +159,7 @@ namespace DVMultiplayer
         private static void GenerateClientNetworkUI()
         {
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
-            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Hosting", "Connected To Server", 668, 418, true, false));
+            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Client", "Connected To Server", 668, 418, false, false));
 
             ButtonBuilder stopServerButtonBuilder = new ButtonBuilder("Disconnect", "Disconnect", menuBuilder.transform, new Rect(0f, -318.5f, 608, 91f), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center);
 
@@ -350,8 +374,11 @@ namespace DVMultiplayer
             transform = section.GetComponent<RectTransform>();
             transform.sizeDelta = new Vector2(menuBuilder.widthAndHeight.x - 50, transform.sizeDelta.y);
 
-            ButtonBuilder closeButtonBuilder = new ButtonBuilder("Close", (menuBuilder.isClose ? "UI_Close.png" : "UI_ArrowLeft.png"), newMenu.transform, new Rect(65, -64.5f, 76, 76), RectTransformAnchoring.TopLeft, new Vector2(.5f, .5f), "Close menu");
-            GameObject closeBtn = CreateButton(closeButtonBuilder);
+            if (menuBuilder.withButton)
+            {
+                ButtonBuilder closeButtonBuilder = new ButtonBuilder("Close", (menuBuilder.isClose ? "UI_Close.png" : "UI_ArrowLeft.png"), newMenu.transform, new Rect(65, -64.5f, 76, 76), RectTransformAnchoring.TopLeft, new Vector2(.5f, .5f), "Close menu");
+                GameObject closeBtn = CreateButton(closeButtonBuilder);
+            }
 
             GameObject refTitle = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.transform.Find("Main Menu").Find("title").gameObject;
             GameObject title = Object.Instantiate(refTitle, newMenu.transform);
@@ -400,6 +427,7 @@ namespace DVMultiplayer
                 TextMeshProUGUI text = newButton.transform.Find("label").GetComponent<TextMeshProUGUI>();
                 text.text = buttonBuilder.label;
                 text.alignment = buttonBuilder.textAlignment;
+                text.fontStyle = buttonBuilder.fontStyle;
             }
 
             UIElementTooltip tooltip = newButton.GetComponent<UIElementTooltip>();
@@ -543,6 +571,7 @@ namespace DVMultiplayer
             public readonly string title;
             public readonly Vector2 widthAndHeight;
             public readonly bool withTooltip;
+            public readonly bool withButton;
             public readonly bool isClose;
 
             public MenuBuilder(string name, string title, float width, float height, bool isClose)
@@ -551,6 +580,7 @@ namespace DVMultiplayer
                 this.title = title;
                 this.widthAndHeight = new Vector2(width, height);
                 withTooltip = true;
+                withButton = true;
                 this.isClose = isClose;
             }
 
@@ -560,7 +590,18 @@ namespace DVMultiplayer
                 this.title = title;
                 this.widthAndHeight = new Vector2(width, height);
                 withTooltip = tooltip;
+                withButton = true;
                 this.isClose = isClose;
+            }
+
+            public MenuBuilder(string name, string title, float width, float height)
+            {
+                this.name = name;
+                this.title = title;
+                this.widthAndHeight = new Vector2(width, height);
+                withTooltip = false;
+                this.isClose = false;
+                withButton = false;
             }
         }
 

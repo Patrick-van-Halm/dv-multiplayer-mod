@@ -216,9 +216,11 @@ namespace DVMultiplayer.Networking
 
                 Main.DebugLog($"Disabling autosave");
                 SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = true;
+                CarSpawner.useCarPooling = false;
 
                 Main.DebugLog($"Everything should be initialized running PlayerConnect method");
                 SingletonBehaviour<NetworkPlayerManager>.Instance.PlayerConnect();
+                SingletonBehaviour<NetworkTrainManager>.Instance.PlayerConnect();
                 Main.DebugLog($"Connecting finished");
             }
         }

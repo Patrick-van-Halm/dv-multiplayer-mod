@@ -15,7 +15,6 @@ using Newtonsoft.Json;
 class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 {
     private SaveGameData offlineSave;
-    public bool isLoadingSave;
     public bool IsHostSaveReceived { get; private set; }
     public bool IsHostSaveLoaded { get; private set; }
     public bool IsHostSaveLoadedFailed { get; private set; }
@@ -75,7 +74,6 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
     {
         if(offlineSave != null && !NetworkManager.IsHost())
         {
-            isLoadingSave = true;
             SaveGameData onlineSave = SaveGameManager.data;
             SaveGameManager.data = offlineSave;
             offlineSave = null;
@@ -90,6 +88,7 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
         SingletonBehaviour<NetworkJobsManager>.Instance.PlayerDisconnect();
         UUI.UnlockMouse(true);
         TutorialController.movementAllowed = false;
+        CarSpawner.useCarPooling = true;
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
         PlayerManager.PlayerTransform.position = vector3_1 + WorldMover.currentMove;
         bool carsLoadedSuccessfully = false;
@@ -138,8 +137,8 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
         yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
         UUI.UnlockMouse(false);
         TutorialController.movementAllowed = true;
+       
         SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
-        isLoadingSave = false;
     }
 
     private void OnSaveGameReceived(Message message)
@@ -197,14 +196,5 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
         
         IsHostSaveLoadedFailed = !carsLoadedSuccessfully;
         IsHostSaveLoaded = carsLoadedSuccessfully;
-    }
-
-    private void OnGUI()
-    {
-        if (isLoadingSave)
-        {
-            GUI.Box(new Rect(0, 0, Screen.width, Screen.height), "DV Multiplayer");
-            GUI.Label(new Rect(10, Screen.height / 2 - 20, Screen.width - 20, 40), "Loading SaveGame", UUI.GenerateStyle(fontSize: 40, allignment: TextAnchor.MiddleCenter));
-        }
     }
 }

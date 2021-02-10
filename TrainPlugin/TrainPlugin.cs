@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.5.11");
+        public override Version Version => new Version("1.5.13");
 
         private List<WorldTrain> worldTrains;
 
@@ -84,6 +84,10 @@ namespace TrainPlugin
 
                     case NetworkTags.TRAIN_LOCATION_UPDATE:
                         UpdateTrainPosition(message, e.Client);
+                        break;
+
+                    case NetworkTags.TRAIN_INIT:
+                        NewTrainInitialized(message, e.Client);
                         break;
                 }
             }
@@ -233,6 +237,16 @@ namespace TrainPlugin
                 worldTrains.Clear();
                 worldTrains.AddRange(reader.ReadSerializables<WorldTrain>());
             }
+        }
+
+        private void NewTrainInitialized(Message message, IClient sender)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                worldTrains.Add(reader.ReadSerializable<WorldTrain>());
+            }
+
+            ReliableSendToOthers(message, sender);
         }
 
         private void UpdateTrainDerailed(Message message, IClient sender)
