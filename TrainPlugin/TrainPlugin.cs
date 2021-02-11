@@ -12,7 +12,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.5.14");
+        public override Version Version => new Version("1.5.19");
 
         private readonly List<WorldTrain> worldTrains;
 
@@ -36,7 +36,7 @@ namespace TrainPlugin
                     return;
 
                 if (tag != NetworkTags.TRAIN_LOCATION_UPDATE)
-                    Logger.Trace($"[SERVER] < {tag.ToString()}");
+                    Logger.Trace($"[SERVER] < {tag}");
 
                 switch (tag)
                 {
@@ -310,6 +310,9 @@ namespace TrainPlugin
                     train.Bogie2RailTrackName = derailed.Bogie2TrackName;
                     train.Bogie1PositionAlongTrack = derailed.Bogie1PositionAlongTrack;
                     train.Bogie2PositionAlongTrack = derailed.Bogie2PositionAlongTrack;
+
+                    if (train.CarType == TrainCarType.LocoShunter)
+                        train.Shunter.IsEngineOn = false;
                 }
             }
 
@@ -368,14 +371,17 @@ namespace TrainPlugin
                 using (DarkRiftReader reader = message.GetReader())
                 {
                     TrainLever lever = reader.ReadSerializable<TrainLever>();
+                    Logger.Trace($"Setting serverTrainState lever: [{lever.TrainId}] {lever.Lever}: {lever.Value}");
                     WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == lever.TrainId);
                     if (train == null)
                     {
                         train = new WorldTrain()
                         {
                             Guid = lever.TrainId,
+                            IsLoco = true
                         };
                         worldTrains.Add(train);
+                        Logger.Trace($"Train not found adding new one");
                     }
 
                     switch (lever.Lever)
@@ -389,6 +395,7 @@ namespace TrainPlugin
                             break;
 
                         case Levers.IndependentBrake:
+                            Logger.Trace($"Changed independent brake of {train.Guid}");
                             train.IndepBrake = lever.Value;
                             break;
 
@@ -404,6 +411,9 @@ namespace TrainPlugin
                     switch (train.CarType)
                     {
                         case TrainCarType.LocoShunter:
+                            if (train.Shunter == null)
+                                train.Shunter = new Shunter();
+
                             Shunter shunter = train.Shunter;
                             switch (lever.Lever)
                             {

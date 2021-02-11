@@ -162,7 +162,7 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
     public void LoadMultiplayerData()
     {
         SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
-        bool carsLoadedSuccessfully = false;
+        bool carsLoadedSuccessfully = true;
         
         JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
         if (jObject != null)
@@ -183,15 +183,15 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
             Main.DebugLog("[WARNING] Junctions save not found!");
         }
 
-        jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
-        if (jObject != null)
-        {
-            carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jObject);
-            if (!carsLoadedSuccessfully)
-                Debug.LogError((object)"Cars not loaded successfully!");
-        }
-        else
-            Main.DebugLog("[WARNING] Cars save not found!");
+        //jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
+        //if (jObject != null)
+        //{
+        //    carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jObject);
+        //    if (!carsLoadedSuccessfully)
+        //        Debug.LogError((object)"Cars not loaded successfully!");
+        //}
+        //else
+        //    Main.DebugLog("[WARNING] Cars save not found!");
 
         
         IsHostSaveLoadedFailed = !carsLoadedSuccessfully;

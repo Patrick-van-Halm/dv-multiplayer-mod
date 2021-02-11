@@ -288,12 +288,18 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             SingletonBehaviour<NetworkTurntableManager>.Instance.SyncTurntables();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTurntableManager>.Instance.IsSynced);
 
+           
             // Load Train data from server that changed since uptime
             Main.DebugLog($"Syncing traincars");
             SingletonBehaviour<NetworkTrainManager>.Instance.SyncTrainCars();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced);
-            CustomUI.Close();
+
+            PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
+            SingletonBehaviour<NetworkTrainManager>.Instance.SyncLocomotives();
             AppUtil.Instance.UnpauseGame();
+            yield return new WaitUntil(() => !AppUtil.IsPaused);
+            yield return new WaitForEndOfFrame();
+            CustomUI.Close();
         }
         else
         {
@@ -303,12 +309,12 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             Main.DebugLog($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
             SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
         }
+       
         SendIsLoaded();
         Main.DebugLog($"Finished loading everything. Unlocking mouse and allow movement");
         UUI.UnlockMouse(false);
         TutorialController.movementAllowed = true;
         // Move to spawn
-        PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
     }
 
     private void SendIsLoaded()

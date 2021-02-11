@@ -20,6 +20,7 @@ class NetworkTrainPosSync : MonoBehaviour
     private Vector3 hostPos;
     private float prevIndepBrakePos;
     private float prevBrakePos;
+    private Vector3 prevPos;
     public bool hostDerailed;
 
     private void Awake()
@@ -61,6 +62,9 @@ class NetworkTrainPosSync : MonoBehaviour
 
     private void Update()
     {
+        if (!SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced && hostDerailed)
+            return;
+
         if(!NetworkManager.IsHost() && newExtraForce.HasValue && prevExtraForce != newExtraForce.Value)
         {
             if(hostPos != null && trainCar.isStationary && isOutOfSync && !trainCar.derailed)
@@ -113,9 +117,10 @@ class NetworkTrainPosSync : MonoBehaviour
     {
         yield return new WaitForSeconds(SYNC_CHECKTIME);
         yield return new WaitUntil(() => !trainCar.frontCoupler.IsCoupled());
-        if (NetworkManager.IsHost() && !trainCar.isStationary)
+        if (NetworkManager.IsHost() && (!trainCar.isStationary || (trainCar.derailed && Vector3.Distance(trainCar.transform.position, prevPos) > .1f)))
         {
             SingletonBehaviour<NetworkTrainManager>.Instance.SendTrainLocationUpdate(trainCar);
+            prevPos = trainCar.transform.position;
         }
         yield return UpdateLocation();
     }
@@ -130,8 +135,8 @@ class NetworkTrainPosSync : MonoBehaviour
         }
         else if (trainCar.derailed && hostDerailed)
         {
-            transform.position = location.Position;
-            transform.rotation = location.Rotation;
+            trainCar.transform.position = location.Position;
+            trainCar.transform.rotation = location.Rotation;
             trainCar.rb.velocity = location.Velocity;
             trainCar.rb.angularVelocity = location.AngularVelocity;
             trainCar.transform.forward = location.Forward;
