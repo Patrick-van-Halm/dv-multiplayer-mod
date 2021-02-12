@@ -1,7 +1,5 @@
 ﻿using DVMultiplayer.Utils;
 using System;
-using System.IO;
-using System.Reflection;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -56,7 +54,7 @@ namespace DVMultiplayer
             Transform mainMenu = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.transform.Find("Main Menu");
             GameObject go = CreateButton(new ButtonBuilder("Multiplayer", "UI_Multiplayer.png", mainMenu, mainMenu.Find("Button Altfuture").gameObject, "Multiplayer"));
             Object.DestroyImmediate(go.GetComponent<MenuSocial>());
-            MenuButtonBase bbase =  go.AddComponent<MenuButtonBase>();
+            MenuButtonBase bbase = go.AddComponent<MenuButtonBase>();
             MenuButtonBase refBase = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.transform.Find("Main Menu").Find("Button Back to Game").GetComponent<MenuButtonBase>();
             bbase.hoverAudio = refBase.hoverAudio;
             bbase.clickAudio = refBase.clickAudio;
@@ -109,20 +107,20 @@ namespace DVMultiplayer
         private static void GenerateNetworkUI()
         {
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
-            GameObject mpMenuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Main Menu", "DV Multiplayer", 508, 560, false));
+            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Main Menu", "DV Multiplayer", 508, 560, false));
 
-            ButtonBuilder connectButtonBuilder = new ButtonBuilder("Connect", "Connect Manually", mpMenuBuilder.transform, new Rect(0f, -177.5f, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center, "Connect to an existing server");
-            ButtonBuilder connectFavButtonBuilder = new ButtonBuilder("Connect to Favorite", "Connect to Favorite", mpMenuBuilder.transform, new Rect(0f, -257.5f, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center, "Connect to an favorited server");
-            ButtonBuilder hostButtonBuilder = new ButtonBuilder("Host", "Host server", mpMenuBuilder.transform, new Rect(0f, -377.5f, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center, "Host a new server");
+            ButtonBuilder connectButtonBuilder = new ButtonBuilder("Connect", "Connect Manually", menuBuilder.transform, new Rect(0f, -177.5f, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center, "Connect to an existing server");
+            ButtonBuilder connectFavButtonBuilder = new ButtonBuilder("Connect to Favorite", "Connect to Favorite", menuBuilder.transform, new Rect(0f, -257.5f, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center, "Connect to an favorited server");
+            ButtonBuilder hostButtonBuilder = new ButtonBuilder("Host", "Host server", menuBuilder.transform, new Rect(0f, -377.5f, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center, "Host a new server");
 
-            GameObject connectSection = CreateSection(new Rect(0f, -218, 458, 168), RectTransformAnchoring.TopCenter, mpMenuBuilder.transform);
-            GameObject connectBtn = CreateButton(connectButtonBuilder);
-            GameObject connectFavBtn = CreateButton(connectFavButtonBuilder);
-            GameObject hostSection = CreateSection(new Rect(0f, -377, 458, 91f), RectTransformAnchoring.TopCenter, mpMenuBuilder.transform);
-            GameObject hostBtn = CreateButton(hostButtonBuilder);
+            CreateSection(new Rect(0f, -218, 458, 168), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateButton(connectButtonBuilder);
+            CreateButton(connectFavButtonBuilder);
+            CreateSection(new Rect(0f, -377, 458, 91f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateButton(hostButtonBuilder);
 
-            GameObject menu = Object.Instantiate(mpMenuBuilder, canvas.transform);
-            Object.DestroyImmediate(mpMenuBuilder);
+            GameObject menu = Object.Instantiate(menuBuilder, canvas.transform);
+            Object.DestroyImmediate(menuBuilder);
             NetworkUI = menu.GetComponent<MenuScreen>();
         }
 
@@ -131,8 +129,8 @@ namespace DVMultiplayer
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
             GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Popup", "Popup", 800, 300));
 
-            GameObject connectSection = CreateSection(new Rect(30f, -270, 740, 150), RectTransformAnchoring.TopLeft, menuBuilder.transform, new Vector2(0, 0));
-            GameObject labelMessage = CreateLabel("Message", "TEST", menuBuilder.transform, new Rect(32, -270, 738, 145), FontStyles.UpperCase, TextAlignmentOptions.Center, RectTransformAnchoring.TopLeft, new Vector2(0, 0), Color.white);
+            CreateSection(new Rect(30f, -270, 740, 150), RectTransformAnchoring.TopLeft, menuBuilder.transform, new Vector2(0, 0));
+            CreateLabel("Message", "TEST", menuBuilder.transform, new Rect(32, -270, 738, 145), FontStyles.UpperCase, TextAlignmentOptions.Center, RectTransformAnchoring.TopLeft, new Vector2(0, 0), Color.white);
 
             GameObject menu = Object.Instantiate(menuBuilder, canvas.transform);
             Object.DestroyImmediate(menuBuilder);
@@ -146,10 +144,10 @@ namespace DVMultiplayer
 
             ButtonBuilder stopServerButtonBuilder = new ButtonBuilder("Stop Server", "Stop Server", menuBuilder.transform, new Rect(0f, -318.5f, 608, 91f), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center);
 
-            GameObject usernameSection = CreateSection(new Rect(0f, -177, 618, 91), RectTransformAnchoring.TopCenter, menuBuilder.transform);
-            GameObject usernameLbl = CreateLabel("Username", "Connected as: ", menuBuilder.transform, new Rect(0f, -177.5f, 608, 76), FontStyles.Normal, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f));
-            GameObject hostSection = CreateSection(new Rect(0f, -318, 618, 91f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
-            GameObject hostBtn = CreateButton(stopServerButtonBuilder);
+            CreateSection(new Rect(0f, -177, 618, 91), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateLabel("Username", "Connected as: ", menuBuilder.transform, new Rect(0f, -177.5f, 608, 76), FontStyles.Normal, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f));
+            CreateSection(new Rect(0f, -318, 618, 91f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateButton(stopServerButtonBuilder);
 
             GameObject menu = Object.Instantiate(menuBuilder, canvas.transform);
             Object.DestroyImmediate(menuBuilder);
@@ -163,10 +161,10 @@ namespace DVMultiplayer
 
             ButtonBuilder stopServerButtonBuilder = new ButtonBuilder("Disconnect", "Disconnect", menuBuilder.transform, new Rect(0f, -318.5f, 608, 91f), RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f), TextAlignmentOptions.Center);
 
-            GameObject usernameSection = CreateSection(new Rect(0f, -177, 618, 91), RectTransformAnchoring.TopCenter, menuBuilder.transform);
-            GameObject usernameLbl = CreateLabel("Username", "Connected as: ", menuBuilder.transform, new Rect(0f, -177.5f, 608, 76), FontStyles.Normal, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f));
-            GameObject hostSection = CreateSection(new Rect(0f, -318, 618, 91f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
-            GameObject hostBtn = CreateButton(stopServerButtonBuilder);
+            CreateSection(new Rect(0f, -177, 618, 91), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateLabel("Username", "Connected as: ", menuBuilder.transform, new Rect(0f, -177.5f, 608, 76), FontStyles.Normal, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopCenter, new Vector2(.5f, .5f));
+            CreateSection(new Rect(0f, -318, 618, 91f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateButton(stopServerButtonBuilder);
 
             GameObject menu = Object.Instantiate(menuBuilder, canvas.transform);
             Object.DestroyImmediate(menuBuilder);
@@ -176,184 +174,184 @@ namespace DVMultiplayer
         private static void GenerateConnectUI()
         {
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
-            GameObject connectMenu = CreateMenu(new MenuBuilder("DVMultiplayer Connect", "Connect to server", 975, 540f, false, false));
+            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Connect", "Connect to server", 975, 540f, false, false));
 
-            TextFieldBuilder inputIpField = new TextFieldBuilder("IP", connectMenu.transform, new Rect(-32f, -215, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
-            TextFieldBuilder inputPortField = new TextFieldBuilder("Port", connectMenu.transform, new Rect(-32f, -315, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f), true);
-            TextFieldBuilder inputUsernameField = new TextFieldBuilder("Username", connectMenu.transform, new Rect(-32f, -415, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
-            ButtonBuilder connectButtonBuilder = new ButtonBuilder("Connect", "Connect", connectMenu.transform, new Rect(0f, -515, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f), TextAlignmentOptions.Center);
-            ButtonBuilder favoriteButtonBuilder = new ButtonBuilder("Save as Favorite", "UI_Unfavorited.png", connectMenu.transform, new Rect(280f, -515, 76, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f));
+            TextFieldBuilder inputIpField = new TextFieldBuilder("IP", menuBuilder.transform, new Rect(-32f, -215, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
+            TextFieldBuilder inputPortField = new TextFieldBuilder("Port", menuBuilder.transform, new Rect(-32f, -315, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f), true);
+            TextFieldBuilder inputUsernameField = new TextFieldBuilder("Username", menuBuilder.transform, new Rect(-32f, -415, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
+            ButtonBuilder connectButtonBuilder = new ButtonBuilder("Connect", "Connect", menuBuilder.transform, new Rect(0f, -515, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f), TextAlignmentOptions.Center);
+            ButtonBuilder favoriteButtonBuilder = new ButtonBuilder("Save as Favorite", "UI_Unfavorited.png", menuBuilder.transform, new Rect(280f, -515, 76, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f));
 
-            GameObject ipSection = CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, connectMenu.transform);
-            GameObject inputFieldIPLabel = CreateLabel("IP", "IP:", connectMenu.transform, new Rect(32, -215, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
-            GameObject inputFieldIP = CreateTextField(inputIpField);
+            CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateLabel("IP", "IP:", menuBuilder.transform, new Rect(32, -215, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            CreateTextField(inputIpField);
 
-            GameObject portSection = CreateSection(new Rect(0f, -277, 925, 91.14999f), RectTransformAnchoring.TopCenter, connectMenu.transform);
-            GameObject inputFieldPortLabel = CreateLabel("Port", "Port:", connectMenu.transform, new Rect(32, -315, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
-            GameObject inputFieldPort = CreateTextField(inputPortField);
+            CreateSection(new Rect(0f, -277, 925, 91.14999f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateLabel("Port", "Port:", menuBuilder.transform, new Rect(32, -315, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            CreateTextField(inputPortField);
 
-            GameObject usernameSection = CreateSection(new Rect(0f, -377, 925, 91.14999f), RectTransformAnchoring.TopCenter, connectMenu.transform);
-            GameObject inputFieldUsernameLabel = CreateLabel("Username", "Username:", connectMenu.transform, new Rect(32, -415, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
-            GameObject inputFieldUsername = CreateTextField(inputUsernameField);
+            CreateSection(new Rect(0f, -377, 925, 91.14999f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateLabel("Username", "Username:", menuBuilder.transform, new Rect(32, -415, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            CreateTextField(inputUsernameField);
 
-            GameObject connectBtn = CreateButton(connectButtonBuilder);
-            GameObject favorited = CreateButton(favoriteButtonBuilder);
+            CreateButton(connectButtonBuilder);
+            CreateButton(favoriteButtonBuilder);
 
-            GameObject menu = Object.Instantiate(connectMenu, canvas.transform);
-            Object.DestroyImmediate(connectMenu);
+            GameObject menu = Object.Instantiate(menuBuilder, canvas.transform);
+            Object.DestroyImmediate(menuBuilder);
             ConnectMenuUI = menu.GetComponent<MenuScreen>();
         }
 
         private static void GenerateFavoriteListUI()
         {
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
-            GameObject favoriteConnectMenu = CreateMenu(new MenuBuilder("DVMultiplayer Favorite Connector", "Connect to Favorite", 700, 640, false, false));
+            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Favorite Connector", "Connect to Favorite", 700, 640, false, false));
 
-            for(int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++)
             {
-                CreateSection(new Rect(0f, -177 - (100 * i), 650, 91.14999f), RectTransformAnchoring.TopCenter, favoriteConnectMenu.transform);
-                CreateButton(new ButtonBuilder($"Fav{i + 1}", "", favoriteConnectMenu.transform, new Rect(32f, -177.5f - (100 * i), 559, 76), RectTransformAnchoring.TopLeft, new Vector2(0f, .5f), TextAlignmentOptions.MidlineLeft, fontStyle: FontStyles.Normal));
-                CreateButton(new ButtonBuilder($"Del Fav{i + 1}", "UI_Bin.png", favoriteConnectMenu.transform, new Rect(-32f, -177.5f - (100 * i), 76, 76), RectTransformAnchoring.TopRight, new Vector2(1f, .5f)));
+                CreateSection(new Rect(0f, -177 - (100 * i), 650, 91.14999f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+                CreateButton(new ButtonBuilder($"Fav{i + 1}", "", menuBuilder.transform, new Rect(32f, -177.5f - (100 * i), 559, 76), RectTransformAnchoring.TopLeft, new Vector2(0f, .5f), TextAlignmentOptions.MidlineLeft, fontStyle: FontStyles.Normal));
+                CreateButton(new ButtonBuilder($"Del Fav{i + 1}", "UI_Bin.png", menuBuilder.transform, new Rect(-32f, -177.5f - (100 * i), 76, 76), RectTransformAnchoring.TopRight, new Vector2(1f, .5f)));
             }
-            CreateSection(new Rect(0f, -177 - (100 * 4), 650, 91.14999f), RectTransformAnchoring.TopCenter, favoriteConnectMenu.transform);
-            CreateButton(new ButtonBuilder($"NextPage", ">", favoriteConnectMenu.transform, new Rect(-30, -177.5f - (100 * 4), 76, 76), RectTransformAnchoring.TopRight, new Vector2(1f, .5f), TextAlignmentOptions.Center));
-            CreateButton(new ButtonBuilder($"PrevPage", "<", favoriteConnectMenu.transform, new Rect(30, -177.5f - (100 * 4), 76, 76), RectTransformAnchoring.TopLeft, new Vector2(0f, .5f), TextAlignmentOptions.Center));
+            CreateSection(new Rect(0f, -177 - (100 * 4), 650, 91.14999f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateButton(new ButtonBuilder($"NextPage", ">", menuBuilder.transform, new Rect(-30, -177.5f - (100 * 4), 76, 76), RectTransformAnchoring.TopRight, new Vector2(1f, .5f), TextAlignmentOptions.Center));
+            CreateButton(new ButtonBuilder($"PrevPage", "<", menuBuilder.transform, new Rect(30, -177.5f - (100 * 4), 76, 76), RectTransformAnchoring.TopLeft, new Vector2(0f, .5f), TextAlignmentOptions.Center));
 
-            GameObject menu = Object.Instantiate(favoriteConnectMenu, canvas.transform);
-            Object.DestroyImmediate(favoriteConnectMenu);
+            GameObject menu = Object.Instantiate(menuBuilder, canvas.transform);
+            Object.DestroyImmediate(menuBuilder);
             FavoriteConnectMenuUI = menu.GetComponent<MenuScreen>();
         }
 
         private static void GenerateFavoriteUI()
         {
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
-            GameObject favoriteMenu = CreateMenu(new MenuBuilder("DVMultiplayer Favorite", "Favorite Server", 975, 345f, false, false));
+            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Favorite", "Favorite Server", 975, 345f, false, false));
 
-            TextFieldBuilder inputNameField = new TextFieldBuilder("Name", favoriteMenu.transform, new Rect(-32f, -215, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
-            ButtonBuilder acceptButtonBuilder = new ButtonBuilder("Accept", "Save as Favorite", favoriteMenu.transform, new Rect(0, -320, 975 / 3, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f), TextAlignmentOptions.Center);
+            TextFieldBuilder inputNameField = new TextFieldBuilder("Name", menuBuilder.transform, new Rect(-32f, -215, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
+            ButtonBuilder acceptButtonBuilder = new ButtonBuilder("Accept", "Save as Favorite", menuBuilder.transform, new Rect(0, -320, 975 / 3, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f), TextAlignmentOptions.Center);
 
-            GameObject ipSection = CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, favoriteMenu.transform);
-            GameObject inputFieldNameLabel = CreateLabel("Name", "Name:", favoriteMenu.transform, new Rect(32, -215, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
-            GameObject inputFieldErrorLabel = CreateLabel("Error", "", favoriteMenu.transform, new Rect(0, -240f, 920, 16), FontStyles.Normal, TextAlignmentOptions.MidlineRight, RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f), Color.red, 16);
-            GameObject inputFieldIP = CreateTextField(inputNameField);
+            CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateLabel("Name", "Name:", menuBuilder.transform, new Rect(32, -215, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            CreateLabel("Error", "", menuBuilder.transform, new Rect(0, -240f, 920, 16), FontStyles.Normal, TextAlignmentOptions.MidlineRight, RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f), Color.red, 16);
+            CreateTextField(inputNameField);
 
-            GameObject favorited = CreateButton(acceptButtonBuilder);
+            CreateButton(acceptButtonBuilder);
 
-            GameObject menu = Object.Instantiate(favoriteMenu, canvas.transform);
-            Object.DestroyImmediate(favoriteMenu);
+            GameObject menu = Object.Instantiate(menuBuilder, canvas.transform);
+            Object.DestroyImmediate(menuBuilder);
             SaveFavoriteMenuUI = menu.GetComponent<MenuScreen>();
         }
 
         private static void GenerateRequestUsernameUI()
         {
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
-            GameObject usernameMenu = CreateMenu(new MenuBuilder("DVMultiplayer Username Request", "Enter username please", 975, 345f, false, false));
+            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Username Request", "Enter username please", 975, 345f, false, false));
 
-            TextFieldBuilder inputNameField = new TextFieldBuilder("Username", usernameMenu.transform, new Rect(-32f, -215, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
-            ButtonBuilder acceptButtonBuilder = new ButtonBuilder("Accept", "Connect", usernameMenu.transform, new Rect(0, -320, 975 / 3, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f), TextAlignmentOptions.Center);
+            TextFieldBuilder inputNameField = new TextFieldBuilder("Username", menuBuilder.transform, new Rect(-32f, -215, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
+            ButtonBuilder acceptButtonBuilder = new ButtonBuilder("Accept", "Connect", menuBuilder.transform, new Rect(0, -320, 975 / 3, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f), TextAlignmentOptions.Center);
 
-            GameObject ipSection = CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, usernameMenu.transform);
-            GameObject inputFieldNameLabel = CreateLabel("Username", "Username:", usernameMenu.transform, new Rect(32, -215, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
-            GameObject inputFieldIP = CreateTextField(inputNameField);
+            CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateLabel("Username", "Username:", menuBuilder.transform, new Rect(32, -215, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            CreateTextField(inputNameField);
 
-            GameObject favorited = CreateButton(acceptButtonBuilder);
+            CreateButton(acceptButtonBuilder);
 
-            GameObject menu = Object.Instantiate(usernameMenu, canvas.transform);
-            Object.DestroyImmediate(usernameMenu);
+            GameObject menu = Object.Instantiate(menuBuilder, canvas.transform);
+            Object.DestroyImmediate(menuBuilder);
             UsernameRequestMenuUI = menu.GetComponent<MenuScreen>();
         }
 
         private static void GenerateHostUI()
         {
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
-            GameObject hostMenu = CreateMenu(new MenuBuilder("DVMultiplayer Host", "Host", 975, 440f, false, false));
+            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer Host", "Host", 975, 440f, false, false));
 
-            TextFieldBuilder inputPortField = new TextFieldBuilder("Port", hostMenu.transform, new Rect(-32f, -215, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f), true);
-            TextFieldBuilder inputUsernameField = new TextFieldBuilder("Username", hostMenu.transform, new Rect(-32f, -315, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
-            ButtonBuilder connectButtonBuilder = new ButtonBuilder("Host", "Host", hostMenu.transform, new Rect(0f, -415, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f), TextAlignmentOptions.Center);
+            TextFieldBuilder inputPortField = new TextFieldBuilder("Port", menuBuilder.transform, new Rect(-32f, -215, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f), true);
+            TextFieldBuilder inputUsernameField = new TextFieldBuilder("Username", menuBuilder.transform, new Rect(-32f, -315, 695, 76), TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopRight, new Vector2(1f, 0f));
+            ButtonBuilder connectButtonBuilder = new ButtonBuilder("Host", "Host", menuBuilder.transform, new Rect(0f, -415, 448, 76), RectTransformAnchoring.TopCenter, new Vector2(.5f, 0f), TextAlignmentOptions.Center);
 
-            GameObject portSection = CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, hostMenu.transform);
-            GameObject inputFieldPortLabel = CreateLabel("Port", "Port:", hostMenu.transform, new Rect(32, -215, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
-            GameObject inputFieldPort = CreateTextField(inputPortField);
+            CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateLabel("Port", "Port:", menuBuilder.transform, new Rect(32, -215, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            CreateTextField(inputPortField);
 
-            GameObject usernameSection = CreateSection(new Rect(0f, -277, 925, 91.14999f), RectTransformAnchoring.TopCenter, hostMenu.transform);
-            GameObject inputFieldUsernameLabel = CreateLabel("Username", "Username:", hostMenu.transform, new Rect(32, -315, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
-            GameObject inputFieldUsername = CreateTextField(inputUsernameField);
+            CreateSection(new Rect(0f, -277, 925, 91.14999f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateLabel("Username", "Username:", menuBuilder.transform, new Rect(32, -315, 218, 76), FontStyles.UpperCase, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            CreateTextField(inputUsernameField);
 
-            GameObject hostBtn = CreateButton(connectButtonBuilder);
+            CreateButton(connectButtonBuilder);
 
-            GameObject menu = Object.Instantiate(hostMenu, canvas.transform);
-            Object.DestroyImmediate(hostMenu);
+            GameObject menu = Object.Instantiate(menuBuilder, canvas.transform);
+            Object.DestroyImmediate(menuBuilder);
             HostMenuUI = menu.GetComponent<MenuScreen>();
         }
 
         private static void GenerateInputScreenUI()
         {
             GameObject canvas = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO;
-            GameObject inputMenu = CreateMenu(new MenuBuilder("DVMultiplayer InputMenu", "Input", 975, 672.6f, false, false));
-            InputScreen input = inputMenu.AddComponent<InputScreen>();
+            GameObject menuBuilder = CreateMenu(new MenuBuilder("DVMultiplayer InputMenu", "Input", 975, 672.6f, false, false));
+            menuBuilder.AddComponent<InputScreen>();
 
-            GameObject inputSection = CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, inputMenu.transform);
-            GameObject currentInput = CreateLabel("Input", "", inputMenu.transform, new Rect(32, -215, 861, 76), FontStyles.Normal, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
+            CreateSection(new Rect(0f, -177, 925, 91.14999f), RectTransformAnchoring.TopCenter, menuBuilder.transform);
+            CreateLabel("Input", "", menuBuilder.transform, new Rect(32, -215, 861, 76), FontStyles.Normal, TextAlignmentOptions.MidlineLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 0f));
 
             char[] row = new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-' };
-            for(int i = 0; i < row.Length; i++)
+            for (int i = 0; i < row.Length; i++)
             {
                 char key = row[i];
-                ButtonBuilder builder = new ButtonBuilder($"Key {key}", $"{key}", inputMenu.transform, new Rect(925 - (80 * 11) + (80 * i), -300, 75, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+                ButtonBuilder builder = new ButtonBuilder($"Key {key}", $"{key}", menuBuilder.transform, new Rect(925 - (80 * 11) + (80 * i), -300, 75, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
                 GameObject keyInputBtn = CreateButton(builder);
                 InputButton btn = keyInputBtn.AddComponent<InputButton>();
                 btn.key = key;
             }
 
-            row = new char[] { 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'};
+            row = new char[] { 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p' };
             for (int i = 0; i < row.Length; i++)
             {
                 char key = row[i];
-                ButtonBuilder builder = new ButtonBuilder($"Key {key}", $"{key}", inputMenu.transform, new Rect(925 - (80 * 10.5f) + (80 * i), -380, 75, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
-                GameObject keyInputBtn = CreateButton(builder);
-                InputButton btn = keyInputBtn.AddComponent<InputButton>();
-                btn.key = key;
-            }
-            
-            row = new char[] { 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'};
-            for (int i = 0; i < row.Length; i++)
-            {
-                char key = row[i];
-                ButtonBuilder builder = new ButtonBuilder($"Key {key}", $"{key}", inputMenu.transform, new Rect(925 - (80 * 10) + (80 * i), -460, 75, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+                ButtonBuilder builder = new ButtonBuilder($"Key {key}", $"{key}", menuBuilder.transform, new Rect(925 - (80 * 10.5f) + (80 * i), -380, 75, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
                 GameObject keyInputBtn = CreateButton(builder);
                 InputButton btn = keyInputBtn.AddComponent<InputButton>();
                 btn.key = key;
             }
 
-            row = new char[] { 'z', 'x', 'c', 'v', 'b', 'n', 'm', '.'};
+            row = new char[] { 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l' };
             for (int i = 0; i < row.Length; i++)
             {
                 char key = row[i];
-                ButtonBuilder builder = new ButtonBuilder($"Key {key}", $"{key}", inputMenu.transform, new Rect(925 - (80 * 9.5f) + (80 * i), -540, 75, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+                ButtonBuilder builder = new ButtonBuilder($"Key {key}", $"{key}", menuBuilder.transform, new Rect(925 - (80 * 10) + (80 * i), -460, 75, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
                 GameObject keyInputBtn = CreateButton(builder);
                 InputButton btn = keyInputBtn.AddComponent<InputButton>();
                 btn.key = key;
             }
 
-            ButtonBuilder builderBtn = new ButtonBuilder($"Backspace", $"Backspace", inputMenu.transform, new Rect(925 - (80 * 9f) - 60, -620, 180, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+            row = new char[] { 'z', 'x', 'c', 'v', 'b', 'n', 'm', '.' };
+            for (int i = 0; i < row.Length; i++)
+            {
+                char key = row[i];
+                ButtonBuilder builder = new ButtonBuilder($"Key {key}", $"{key}", menuBuilder.transform, new Rect(925 - (80 * 9.5f) + (80 * i), -540, 75, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+                GameObject keyInputBtn = CreateButton(builder);
+                InputButton btn = keyInputBtn.AddComponent<InputButton>();
+                btn.key = key;
+            }
+
+            ButtonBuilder builderBtn = new ButtonBuilder($"Backspace", $"Backspace", menuBuilder.transform, new Rect(925 - (80 * 9f) - 60, -620, 180, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
             GameObject backspaceBtn = CreateButton(builderBtn);
             InputButton inputbtn = backspaceBtn.AddComponent<InputButton>();
             inputbtn.isBackspace = true;
 
-            builderBtn = new ButtonBuilder($"Paste", $"Paste", inputMenu.transform, new Rect(925 - (80 * 9f) + 125, -620, 150, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+            builderBtn = new ButtonBuilder($"Paste", $"Paste", menuBuilder.transform, new Rect(925 - (80 * 9f) + 125, -620, 150, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
             GameObject pasteBtn = CreateButton(builderBtn);
             InputButton inputPastebtn = pasteBtn.AddComponent<InputButton>();
             inputPastebtn.isPaste = true;
 
-            builderBtn = new ButtonBuilder($"Casing", $"Uppercase", inputMenu.transform, new Rect(925 - (80 * 9f) + 280, -620, 180, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
-            GameObject caseBtn = CreateButton(builderBtn);
+            builderBtn = new ButtonBuilder($"Casing", $"Uppercase", menuBuilder.transform, new Rect(925 - (80 * 9f) + 280, -620, 180, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+            CreateButton(builderBtn);
 
-            builderBtn = new ButtonBuilder($"Confirm", $"Confirm", inputMenu.transform, new Rect(925 - (80 * 9f) + 465, -620, 150, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
-            GameObject confirmBtn = CreateButton(builderBtn);
+            builderBtn = new ButtonBuilder($"Confirm", $"Confirm", menuBuilder.transform, new Rect(925 - (80 * 9f) + 465, -620, 150, 75), RectTransformAnchoring.TopLeft, new Vector2(0f, 0f), TextAlignmentOptions.Center);
+            CreateButton(builderBtn);
 
-            GameObject menu = Object.Instantiate(inputMenu, canvas.transform);
-            Object.DestroyImmediate(inputMenu);
+            GameObject menu = Object.Instantiate(menuBuilder, canvas.transform);
+            Object.DestroyImmediate(menuBuilder);
             InputScreenUI = menu.GetComponent<MenuScreen>();
         }
 
@@ -377,7 +375,7 @@ namespace DVMultiplayer
             if (menuBuilder.withButton)
             {
                 ButtonBuilder closeButtonBuilder = new ButtonBuilder("Close", (menuBuilder.isClose ? "UI_Close.png" : "UI_ArrowLeft.png"), newMenu.transform, new Rect(65, -64.5f, 76, 76), RectTransformAnchoring.TopLeft, new Vector2(.5f, .5f), "Close menu");
-                GameObject closeBtn = CreateButton(closeButtonBuilder);
+                CreateButton(closeButtonBuilder);
             }
 
             GameObject refTitle = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.transform.Find("Main Menu").Find("title").gameObject;
@@ -409,7 +407,7 @@ namespace DVMultiplayer
                 GameObject refButton = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.transform.Find("Fast Travel Menu").Find("Button teleport with loco").gameObject;
                 newButton = Object.Instantiate(refButton, buttonBuilder.parent);
             }
-            else if(!newButton && buttonBuilder.type == ButtonType.Icon)
+            else if (!newButton && buttonBuilder.type == ButtonType.Icon)
             {
                 GameObject refSpriteButton = SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.transform.Find("Main Menu").Find("Button Back to Game").gameObject;
                 newButton = Object.Instantiate(refSpriteButton, buttonBuilder.parent);
@@ -418,7 +416,7 @@ namespace DVMultiplayer
             UpdateButtonTransform(newButton, buttonBuilder);
 
             newButton.name = $"Button {buttonBuilder.name}";
-            if(buttonBuilder.type == ButtonType.Icon)
+            if (buttonBuilder.type == ButtonType.Icon)
             {
                 newButton.transform.Find("image").GetComponent<Image>().SetSprite(buttonBuilder.icon);
             }
@@ -488,7 +486,7 @@ namespace DVMultiplayer
             TextField field = newTextField.AddComponent<TextField>();
             field.title = textFieldBuilder.name;
             field.isDigitOnly = textFieldBuilder.isDigitOnly;
-            
+
             return newTextField;
         }
 
@@ -539,7 +537,7 @@ namespace DVMultiplayer
                 transform.Find("image hover").GetComponent<RectTransform>().ChangeRect(new Rect(0, 0, buttonBuilder.rect.Value.width, buttonBuilder.rect.Value.height));
                 transform.Find("image click").GetComponent<RectTransform>().ChangeRect(new Rect(0, 0, buttonBuilder.rect.Value.width, buttonBuilder.rect.Value.height));
                 if (buttonBuilder.type == ButtonType.Icon)
-                    transform.Find("image").GetComponent<RectTransform>().ChangeRect(new Rect(0,0, buttonBuilder.rect.Value.width, buttonBuilder.rect.Value.height));
+                    transform.Find("image").GetComponent<RectTransform>().ChangeRect(new Rect(0, 0, buttonBuilder.rect.Value.width, buttonBuilder.rect.Value.height));
             }
         }
 
@@ -565,7 +563,7 @@ namespace DVMultiplayer
             }
         }
 
-        struct MenuBuilder
+        private struct MenuBuilder
         {
             public readonly string name;
             public readonly string title;
@@ -605,7 +603,7 @@ namespace DVMultiplayer
             }
         }
 
-        struct ButtonBuilder
+        private struct ButtonBuilder
         {
             public readonly string name;
             public readonly ButtonType type;
@@ -690,7 +688,7 @@ namespace DVMultiplayer
             }
         }
 
-        struct TextFieldBuilder
+        private struct TextFieldBuilder
         {
             public readonly string name;
             public readonly Transform parent;
@@ -712,7 +710,7 @@ namespace DVMultiplayer
             }
         }
 
-        enum ButtonType
+        private enum ButtonType
         {
             Icon,
             Text
@@ -724,7 +722,7 @@ namespace DVMultiplayer
             {
                 for (int i = gameObject.transform.childCount - 1; i >= 0; i--)
                 {
-                    if(gameObject.transform.GetChild(i).gameObject.name.StartsWith(prefixToDelete))
+                    if (gameObject.transform.GetChild(i).gameObject.name.StartsWith(prefixToDelete))
                         Object.DestroyImmediate(gameObject.transform.GetChild(i).gameObject);
                 }
             }
@@ -735,11 +733,6 @@ namespace DVMultiplayer
                     Object.DestroyImmediate(gameObject.transform.GetChild(i).gameObject);
                 }
             }
-        }
-
-        private static void DestroyChildWithName(GameObject gameObject, string name)
-        {
-            Object.DestroyImmediate(gameObject.transform.Find(name).gameObject);
         }
     }
 }

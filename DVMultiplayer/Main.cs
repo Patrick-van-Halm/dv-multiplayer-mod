@@ -1,15 +1,9 @@
-﻿using HarmonyLib;
-using UnityModManagerNet;
-using static UnityModManagerNet.UnityModManager;
-using System.Reflection;
-using UnityEngine;
-using DVMultiplayer.Utils;
-using DarkRift.Client.Unity;
-using DVMultiplayer.Networking;
-using System.Collections.Generic;
+﻿using DVMultiplayer.Networking;
+using HarmonyLib;
 using System;
-using System.Collections;
 using System.Linq;
+using System.Reflection;
+using static UnityModManagerNet.UnityModManager;
 
 namespace DVMultiplayer
 {
@@ -23,7 +17,7 @@ namespace DVMultiplayer
 
         private static Harmony harmony;
 
-        static bool Load(ModEntry entry)
+        private static bool Load(ModEntry entry)
         {
             isInitialized = false;
             harmony = new Harmony(entry.Info.Id);
@@ -35,7 +29,7 @@ namespace DVMultiplayer
             return true;
         }
 
-        static bool OnToggle(ModEntry entry, bool enabled)
+        private static bool OnToggle(ModEntry entry, bool enabled)
         {
             Main.enabled = enabled;
             return true;
@@ -46,9 +40,9 @@ namespace DVMultiplayer
             return modEntries.Where(m => m.Active && m.Loaded).Select(m => m.Info.Id).Where(m => m != "UnencryptedSaveGameMod").ToArray();
         }
 
-        static void OnUpdate(ModEntry entry, float time)
+        private static void OnUpdate(ModEntry entry, float time)
         {
-            if(!isInitialized && enabled && PlayerManager.PlayerTransform && !LoadingScreenManager.IsLoading && SingletonBehaviour<CanvasSpawner>.Instance)
+            if (!isInitialized && enabled && PlayerManager.PlayerTransform && !LoadingScreenManager.IsLoading && SingletonBehaviour<CanvasSpawner>.Instance)
             {
                 Initialize();
             }
@@ -62,7 +56,7 @@ namespace DVMultiplayer
             }
         }
 
-        static void OnFixedGUI(ModEntry entry)
+        private static void OnFixedGUI(ModEntry entry)
         {
             if (enabled && isInitialized)
             {
@@ -73,7 +67,7 @@ namespace DVMultiplayer
             }
         }
 
-        static void Initialize()
+        private static void Initialize()
         {
             DebugLog("Initializing...");
             CustomUI.Initialize();

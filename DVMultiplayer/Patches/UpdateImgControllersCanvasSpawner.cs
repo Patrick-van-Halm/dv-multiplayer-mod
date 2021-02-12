@@ -1,25 +1,22 @@
-﻿using DVMultiplayer.Networking;
-using HarmonyLib;
-using System;
-using System.Collections.Generic;
+﻿using HarmonyLib;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine.UI;
 
 namespace DVMultiplayer.Patches
 {
+#pragma warning disable IDE0060 // Remove unused parameter
+#pragma warning disable IDE0051 // Remove unused private members
     [HarmonyPatch(typeof(CanvasSpawner), "Update")]
-    class UpdateImgControllersCanvasSpawner
+    internal class UpdateImgControllersCanvasSpawner
     {
-        static void Prefix(ref Image[] ___imageComponents)
+        private static void Prefix(ref Image[] ___imageComponents)
         {
-            if(Main.isInitialized && CustomUI.readyForCSUpdate && !CustomUI.CSUpdateFinished)
+            if (Main.isInitialized && CustomUI.readyForCSUpdate && !CustomUI.CSUpdateFinished)
             {
                 Main.DebugLog("Updating image components");
                 ___imageComponents = (from img in SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.GetComponentsInChildren<Image>(true)
-                                   where img.transform.name != "VRTK_UICANVAS_DRAGGABLE_PANEL"
-                                   select img).ToArray<Image>();
+                                      where img.transform.name != "VRTK_UICANVAS_DRAGGABLE_PANEL"
+                                      select img).ToArray<Image>();
 
                 CustomUI.CSUpdateFinished = true;
             }

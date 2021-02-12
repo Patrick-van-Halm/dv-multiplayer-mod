@@ -4,22 +4,18 @@ using DarkRift.Client.Unity;
 using DV;
 using DV.TerrainSystem;
 using DVMultiplayer;
-using DVMultiplayer.DTO;
 using DVMultiplayer.DTO.Player;
-using DVMultiplayer.DTO.Savegame;
 using DVMultiplayer.Networking;
 using DVMultiplayer.Utils;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 {
-    Dictionary<ushort, GameObject> networkPlayers = new Dictionary<ushort, GameObject>();
+    private Dictionary<ushort, GameObject> networkPlayers = new Dictionary<ushort, GameObject>();
     private SetSpawn spawnData;
     private Coroutine playersLoaded;
     private bool modMismatched = false;
@@ -162,8 +158,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             {
                 string[] missingMods = reader.ReadStrings();
                 string[] extraMods = reader.ReadStrings();
-                
-                if(missingMods.Length > 0)
+
+                if (missingMods.Length > 0)
                     Main.mod.Logger.Error($"[MOD MISMATCH] You are missing the following mods: {string.Join(", ", missingMods)}");
 
                 if (extraMods.Length > 0)
@@ -226,7 +222,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             using (Message message = Message.Create((ushort)NetworkTags.PLAYER_INIT, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
-        
+
         Main.DebugLog($"Wait for connection initializiation is finished");
         SingletonBehaviour<CoroutineManager>.Instance.Run(WaitForInit());
     }
@@ -254,7 +250,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
             // Wait till spawn is set
             yield return new WaitUntil(() => spawnData != null);
-           
+
             // Get the online save game
             Main.DebugLog($"Syncing Save");
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
@@ -288,7 +284,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             SingletonBehaviour<NetworkTurntableManager>.Instance.SyncTurntables();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTurntableManager>.Instance.IsSynced);
 
-           
+
             // Load Train data from server that changed since uptime
             Main.DebugLog($"Syncing traincars");
             SingletonBehaviour<NetworkTrainManager>.Instance.SendInitCarsRequest();
@@ -309,7 +305,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             Main.DebugLog($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
             SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
         }
-       
+
         SendIsLoaded();
         Main.DebugLog($"Finished loading everything. Unlocking mouse and allow movement");
         UUI.UnlockMouse(false);
@@ -337,7 +333,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     public void PlayerDisconnect()
     {
         base.OnDestroy();
-        foreach(GameObject player in networkPlayers.Values)
+        foreach (GameObject player in networkPlayers.Values)
         {
             Destroy(player);
         }
@@ -374,7 +370,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                     playerSync.IsLoaded = player.IsLoaded;
 
                     networkPlayers.Add(player.Id, playerObject);
-                    if(!player.IsLoaded)
+                    if (!player.IsLoaded)
                         WaitForPlayerLoaded();
                 }
             }
@@ -383,7 +379,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
     private void WaitForPlayerLoaded()
     {
-        if(playersLoaded == null)
+        if (playersLoaded == null)
         {
             playersLoaded = SingletonBehaviour<CoroutineManager>.Instance.Run(WaitForAllPlayersLoaded());
         }
@@ -430,8 +426,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             {
                 Location location = reader.ReadSerializable<Location>();
 
-                GameObject playerObject = null;
-                if (location.Id != SingletonBehaviour<UnityClient>.Instance.ID && networkPlayers.TryGetValue(location.Id, out playerObject))
+                if (location.Id != SingletonBehaviour<UnityClient>.Instance.ID && networkPlayers.TryGetValue(location.Id, out GameObject playerObject))
                 {
                     Vector3 pos = location.Position;
                     pos = new Vector3(pos.x, pos.y + 1, pos.z);
@@ -487,10 +482,10 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     internal IReadOnlyList<NetworkPlayerSync> GetAllNonLocalPlayerSync()
     {
         List<NetworkPlayerSync> networkPlayerSyncs = new List<NetworkPlayerSync>();
-        foreach(GameObject playerObject in networkPlayers.Values)
+        foreach (GameObject playerObject in networkPlayers.Values)
         {
             NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
-            if(playerSync != null)
+            if (playerSync != null)
                 networkPlayerSyncs.Add(playerSync);
         }
         return networkPlayerSyncs;
@@ -517,9 +512,9 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
     internal bool IsAnyoneInLocalPlayerRegion()
     {
-        foreach(GameObject playerObject in networkPlayers.Values)
+        foreach (GameObject playerObject in networkPlayers.Values)
         {
-            if(SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(playerObject.transform.position - WorldMover.currentMove))
+            if (SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(playerObject.transform.position - WorldMover.currentMove))
             {
                 return true;
             }

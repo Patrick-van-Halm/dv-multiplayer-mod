@@ -3,10 +3,12 @@ using HarmonyLib;
 
 namespace DVMultiplayer.Patches
 {
+#pragma warning disable IDE0060 // Remove unused parameter
+#pragma warning disable IDE0051 // Remove unused private members
     [HarmonyPatch(typeof(CanvasSpawner), "Close")]
-    class EnableMovementOutsidePauseMenus
+    internal class EnableMovementOutsidePauseMenus
     {
-        static void Postfix()
+        private static void Postfix()
         {
             if (!TutorialController.movementAllowed && NetworkManager.IsClient())
                 TutorialController.movementAllowed = true;

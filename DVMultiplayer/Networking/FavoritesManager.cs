@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DVMultiplayer.Networking
 {
@@ -27,7 +25,7 @@ namespace DVMultiplayer.Networking
         }
 
         internal static void SaveAsFavorite(string name, string hostname, int port)
-        {            
+        {
             string json = File.ReadAllText(path);
             List<Favorite> favorites;
             if (!string.IsNullOrWhiteSpace(json))
@@ -63,7 +61,7 @@ namespace DVMultiplayer.Networking
         }
     }
 
-    class Favorite
+    internal class Favorite
     {
         public string Name { get; set; }
         public string Hostname { get; set; }

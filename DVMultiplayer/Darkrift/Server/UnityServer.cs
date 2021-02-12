@@ -1,19 +1,14 @@
-﻿using UnityEngine;
-using System.Collections;
-
-using DarkRift.Server;
-using DarkRift;
-using System;
-using System.IO;
-using System.Net;
+﻿using System;
 using System.Collections.Generic;
+using System.Net;
+using UnityEngine;
 
 namespace DarkRift.Server.Unity
 {
     [AddComponentMenu("DarkRift/Server (Legacy)")]
     [Obsolete("The UnityServer component is deprecated in favour of the XmlUnityServer due to better configuration options.")]
-	public sealed class UnityServer : MonoBehaviour
-	{
+    public sealed class UnityServer : MonoBehaviour
+    {
         #region Server settings
 
         /// <summary>
@@ -56,7 +51,7 @@ namespace DarkRift.Server.Unity
         private byte maxStrikes = 3;
 
         #endregion
-        
+
         #region Data settings
 
         /// <summary>
@@ -67,7 +62,7 @@ namespace DarkRift.Server.Unity
             get { return dataDirectory; }
             set { dataDirectory = value; }
         }
-            
+
         [SerializeField]
         [Tooltip("The location DarkRift will store persistant data.")]
         private string dataDirectory = "Data/";
@@ -152,10 +147,10 @@ namespace DarkRift.Server.Unity
         {
             get { return plugins; }
         }
-        
+
         [HideInInspector]
         private readonly List<ServerSpawnData.PluginsSettings.PluginSettings> plugins = new List<ServerSpawnData.PluginsSettings.PluginSettings>();
-        
+
         #endregion
 
         #region Database settings
@@ -339,7 +334,8 @@ namespace DarkRift.Server.Unity
 
             if (logToFile)
             {
-                ServerSpawnData.LoggingSettings.LogWriterSettings fileWriter = new ServerSpawnData.LoggingSettings.LogWriterSettings {
+                ServerSpawnData.LoggingSettings.LogWriterSettings fileWriter = new ServerSpawnData.LoggingSettings.LogWriterSettings
+                {
                     Name = "FileWriter1",
                     Type = "FileWriter",
                     LogLevels = new LogType[] { LogType.Trace, LogType.Info, LogType.Warning, LogType.Error, LogType.Fatal }
@@ -350,7 +346,8 @@ namespace DarkRift.Server.Unity
 
             if (logToUnityConsole)
             {
-                ServerSpawnData.LoggingSettings.LogWriterSettings consoleWriter = new ServerSpawnData.LoggingSettings.LogWriterSettings {
+                ServerSpawnData.LoggingSettings.LogWriterSettings consoleWriter = new ServerSpawnData.LoggingSettings.LogWriterSettings
+                {
                     Name = "UnityConsoleWriter1",
                     Type = "UnityConsoleWriter",
                     LogLevels = new LogType[] { LogType.Info, LogType.Warning, LogType.Error, LogType.Fatal }
@@ -360,7 +357,8 @@ namespace DarkRift.Server.Unity
 
             if (logToDebug)
             {
-                ServerSpawnData.LoggingSettings.LogWriterSettings debugWriter = new ServerSpawnData.LoggingSettings.LogWriterSettings {
+                ServerSpawnData.LoggingSettings.LogWriterSettings debugWriter = new ServerSpawnData.LoggingSettings.LogWriterSettings
+                {
                     Name = "DebugWriter1",
                     Type = "DebugWriter",
                     LogLevels = new LogType[] { LogType.Warning, LogType.Error, LogType.Fatal }

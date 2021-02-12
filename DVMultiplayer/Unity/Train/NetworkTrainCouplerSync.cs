@@ -1,15 +1,10 @@
-﻿using DV.CabControls;
-using DVMultiplayer;
-using DVMultiplayer.DTO.Train;
-using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using DVMultiplayer;
 using UnityEngine;
 
-class NetworkTrainCouplerSync : MonoBehaviour
+internal class NetworkTrainCouplerSync : MonoBehaviour
 {
     private Coupler coupler;
-
+#pragma warning disable IDE0051 // Remove unused private members
     private void Awake()
     {
         Main.DebugLog($"NetworkTrainCouplerSync.Awake()");
@@ -24,6 +19,7 @@ class NetworkTrainCouplerSync : MonoBehaviour
         Main.DebugLog($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to cock changed event");
         coupler.CockChanged += CouplerCockChanged;
     }
+#pragma warning restore IDE0051 // Remove unused private members
 
     private void CouplerUncoupled(object sender, UncoupleEventArgs e)
     {

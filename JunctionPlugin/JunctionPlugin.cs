@@ -5,8 +5,6 @@ using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace JunctionPlugin
 {
@@ -16,7 +14,7 @@ namespace JunctionPlugin
 
         public override Version Version => new Version("1.0.4");
 
-        private List<Switch> switchStates;
+        private readonly List<Switch> switchStates;
 
         public JunctionPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {

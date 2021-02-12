@@ -1,18 +1,17 @@
 ﻿using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
+using DV.TerrainSystem;
+using DVMultiplayer;
 using DVMultiplayer.DTO.Savegame;
 using DVMultiplayer.Networking;
 using DVMultiplayer.Utils;
-using DVMultiplayer;
-using UnityEngine;
-using System;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections;
-using DV.TerrainSystem;
-using Newtonsoft.Json;
+using UnityEngine;
 
-class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
+internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 {
     private SaveGameData offlineSave;
     public bool IsHostSaveReceived { get; private set; }
@@ -72,7 +71,7 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 
     public void PlayerDisconnect()
     {
-        if(offlineSave != null && !NetworkManager.IsHost())
+        if (offlineSave != null && !NetworkManager.IsHost())
         {
             SaveGameData onlineSave = SaveGameManager.data;
             SaveGameManager.data = offlineSave;
@@ -137,7 +136,7 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
         yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
         UUI.UnlockMouse(false);
         TutorialController.movementAllowed = true;
-       
+
         SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
     }
 
@@ -163,7 +162,7 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
     {
         SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
         bool carsLoadedSuccessfully = true;
-        
+
         JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
         if (jObject != null)
         {
@@ -193,7 +192,7 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
         //else
         //    Main.DebugLog("[WARNING] Cars save not found!");
 
-        
+
         IsHostSaveLoadedFailed = !carsLoadedSuccessfully;
         IsHostSaveLoaded = carsLoadedSuccessfully;
     }

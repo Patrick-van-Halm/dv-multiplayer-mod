@@ -1,11 +1,6 @@
 ﻿using DarkRift;
 using DV.Logic.Job;
 using DVMultiplayer.Darkrift;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace DVMultiplayer.DTO.Train
@@ -18,7 +13,7 @@ namespace DVMultiplayer.DTO.Train
         public TrainCarType CarType { get; set; } = TrainCarType.NotSet;
         public bool IsLoco { get; set; }
         public bool IsRemoved { get; set; } = false;
-        
+
         // Player
         public bool IsPlayerSpawned { get; set; }
 

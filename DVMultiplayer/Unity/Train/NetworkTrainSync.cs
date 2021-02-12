@@ -3,14 +3,13 @@ using DVMultiplayer;
 using DVMultiplayer.DTO.Train;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-class NetworkTrainSync : MonoBehaviour
+internal class NetworkTrainSync : MonoBehaviour
 {
-    private TrainCar loco;
+    public TrainCar loco;
     public bool listenToLocalPlayerInputs = false;
-    LocoControllerBase baseController;
+    private LocoControllerBase baseController;
     private bool sanderCoroutineActive;
 
     public void ListenToTrainInputEvents()
@@ -137,7 +136,7 @@ class NetworkTrainSync : MonoBehaviour
             loco.UnloadInterior();
     }
 
-    IEnumerator RotaryAmplitudeCheckerStartListen(FuseBoxPowerController fuseBox)
+    private IEnumerator RotaryAmplitudeCheckerStartListen(FuseBoxPowerController fuseBox)
     {
         yield return new WaitUntil(() => fuseBox.powerRotaryObj.GetComponent<RotaryAmplitudeChecker>() != null);
         fuseBox.powerRotaryObj.GetComponent<RotaryAmplitudeChecker>().RotaryStateChanged += OnTrainFusePowerStarterStateChanged;
@@ -152,7 +151,7 @@ class NetworkTrainSync : MonoBehaviour
         if (val < .7f && val > .3f)
             val = 0;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.Horn, val);
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.Horn, val);
     }
 
     private void OnTrainFusePowerStarterStateChanged(int state)
@@ -160,20 +159,12 @@ class NetworkTrainSync : MonoBehaviour
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
 
-        if(state == -1)
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.FusePowerStarter, 0);
+        if (state == -1)
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.FusePowerStarter, 0);
         else if (state == 0)
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.FusePowerStarter, 0.5f);
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.FusePowerStarter, 0.5f);
         else if (state == 1)
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.FusePowerStarter, 1);
-    }
-
-    private void OnTrainFusePowerStarterChanged(ValueChangedEventArgs e)
-    {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
-            return;
-
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.FusePowerStarter, e.newValue);
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.FusePowerStarter, 1);
     }
 
     private void OnTrainSideFuse_2Changed(ValueChangedEventArgs e)
@@ -181,7 +172,7 @@ class NetworkTrainSync : MonoBehaviour
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.SideFuse_2, e.newValue);
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.SideFuse_2, e.newValue);
     }
 
     private void OnTrainSideFuse_1Changed(ValueChangedEventArgs e)
@@ -189,7 +180,7 @@ class NetworkTrainSync : MonoBehaviour
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.SideFuse_1, e.newValue);
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.SideFuse_1, e.newValue);
     }
 
     private void OnTrainMainFuseChanged(ValueChangedEventArgs e)
@@ -197,7 +188,7 @@ class NetworkTrainSync : MonoBehaviour
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.MainFuse, e.newValue);
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.MainFuse, e.newValue);
     }
 
     private void OnTrainSanderChanged(float value)
@@ -212,9 +203,9 @@ class NetworkTrainSync : MonoBehaviour
         sanderCoroutineActive = true;
         if (baseController.IsSandOn())
         {
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.Sander, 1);
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.Sander, 1);
             yield return new WaitUntil(() => !baseController.IsSandOn());
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.Sander, 0);
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.Sander, 0);
         }
         sanderCoroutineActive = false;
     }
@@ -224,7 +215,7 @@ class NetworkTrainSync : MonoBehaviour
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.Reverser, value);
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.Reverser, value);
     }
 
     private void OnTrainIndependentBrakeChanged(float value)
@@ -232,7 +223,7 @@ class NetworkTrainSync : MonoBehaviour
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.IndependentBrake, value);
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.IndependentBrake, value);
     }
 
     private void OnTrainBrakeChanged(float value)
@@ -240,7 +231,7 @@ class NetworkTrainSync : MonoBehaviour
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.Brake, value);
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.Brake, value);
     }
 
     private void OnTrainThrottleChanged(float newThrottle)
@@ -248,6 +239,6 @@ class NetworkTrainSync : MonoBehaviour
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(this, Levers.Throttle, newThrottle);
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.Throttle, newThrottle);
     }
 }

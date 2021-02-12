@@ -6,35 +6,31 @@ using DVMultiplayer;
 using DVMultiplayer.Darkrift;
 using DVMultiplayer.DTO.Turntable;
 using DVMultiplayer.Networking;
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
-class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableManager>
+internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableManager>
 {
     private TurntableController[] turntables;
 
     public bool IsChangeByNetwork { get; internal set; }
     public bool IsSynced { get; set; }
-    private BufferQueue buffer = new BufferQueue();
+    private readonly BufferQueue buffer = new BufferQueue();
 
     protected override void Awake()
     {
         base.Awake();
 
         turntables = GameObject.FindObjectsOfType<TurntableController>();
-        foreach(TurntableController turntable in turntables)
+        foreach (TurntableController turntable in turntables)
         {
             turntable.gameObject.AddComponent<NetworkTurntableSync>();
         }
 
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
 
-        if(NetworkManager.IsHost())
+        if (NetworkManager.IsHost())
             IsSynced = true;
     }
 
@@ -83,7 +79,7 @@ class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableManager>
             {
                 Turntable[] turntableInfos = reader.ReadSerializables<Turntable>();
 
-                foreach(Turntable turntable in turntableInfos)
+                foreach (Turntable turntable in turntableInfos)
                 {
                     TurntableController turntableController = turntables.FirstOrDefault(j => j.transform.position == turntable.Position + WorldMover.currentMove);
                     if (turntableController)
@@ -166,7 +162,7 @@ class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableManager>
 
         foreach (TurntableController turntable in turntables)
         {
-            if(turntable.gameObject.GetComponent<NetworkTurntableSync>())
+            if (turntable.gameObject.GetComponent<NetworkTurntableSync>())
                 DestroyImmediate(turntable.gameObject.GetComponent<NetworkTurntableSync>());
         }
     }
@@ -188,7 +184,7 @@ class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableManager>
                 if (turntable && turntableInfo.Rotation.HasValue)
                 {
                     turntable.leverGO.GetComponent<LeverBase>().SetValue(.5f);
-                    if(Mathf.Abs(turntable.turntable.currentYRotation - turntableInfo.Rotation.Value) < .01f)
+                    if (Mathf.Abs(turntable.turntable.currentYRotation - turntableInfo.Rotation.Value) < .01f)
                     {
                         SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo));
                     }

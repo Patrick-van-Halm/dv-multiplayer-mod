@@ -1,15 +1,10 @@
 ﻿using DVMultiplayer;
 using DVMultiplayer.DTO.Train;
 using DVMultiplayer.Networking;
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
-class NetworkTrainPosSync : MonoBehaviour
+internal class NetworkTrainPosSync : MonoBehaviour
 {
     private const float SYNC_CHECKTIME = .05f;
     private TrainCar trainCar;
@@ -23,6 +18,7 @@ class NetworkTrainPosSync : MonoBehaviour
     private Vector3 prevPos;
     public bool hostDerailed;
 
+#pragma warning disable IDE0051 // Remove unused private members
     private void Awake()
     {
         Main.DebugLog($"NetworkTrainPosSync.Awake()");
@@ -36,6 +32,26 @@ class NetworkTrainPosSync : MonoBehaviour
         trainCar.MovementStateChanged += TrainCar_MovementStateChanged;
     }
 
+    private void Update()
+    {
+        if (!SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced && hostDerailed)
+            return;
+
+        if (!NetworkManager.IsHost() && newExtraForce.HasValue && prevExtraForce != newExtraForce.Value)
+        {
+            if (hostPos != null && trainCar.isStationary && isOutOfSync && !trainCar.derailed)
+            {
+                SingletonBehaviour<CoroutineManager>.Instance.Run(SyncToHostPos());
+            }
+            if (prevExtraForce != 0)
+                trainCar.Bogies[0].ApplyForce(-prevExtraForce);
+            trainCar.Bogies[0].ApplyForce(newExtraForce.Value);
+            prevExtraForce = newExtraForce.Value;
+            if (newExtraForce == 0)
+                newExtraForce = null;
+        }
+    }
+#pragma warning restore IDE0051 // Remove unused private members
     private void TrainCar_MovementStateChanged(bool isMoving)
     {
         if (NetworkManager.IsHost())
@@ -58,26 +74,6 @@ class NetworkTrainPosSync : MonoBehaviour
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendDerailCarUpdate(trainCar);
-    }
-
-    private void Update()
-    {
-        if (!SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced && hostDerailed)
-            return;
-
-        if(!NetworkManager.IsHost() && newExtraForce.HasValue && prevExtraForce != newExtraForce.Value)
-        {
-            if(hostPos != null && trainCar.isStationary && isOutOfSync && !trainCar.derailed)
-            {
-                SingletonBehaviour<CoroutineManager>.Instance.Run(SyncToHostPos());
-            }
-            if(prevExtraForce != 0)
-                trainCar.Bogies[0].ApplyForce(-prevExtraForce);
-            trainCar.Bogies[0].ApplyForce(newExtraForce.Value);
-            prevExtraForce = newExtraForce.Value;
-            if (newExtraForce == 0)
-                newExtraForce = null;
-        }
     }
 
     private IEnumerator SyncToHostPos()
@@ -113,7 +109,7 @@ class NetworkTrainPosSync : MonoBehaviour
         yield return SyncToHostPos();
     }
 
-    IEnumerator UpdateLocation()
+    private IEnumerator UpdateLocation()
     {
         yield return new WaitForSeconds(SYNC_CHECKTIME);
         yield return new WaitUntil(() => !trainCar.frontCoupler.IsCoupled());
@@ -127,7 +123,7 @@ class NetworkTrainPosSync : MonoBehaviour
 
     internal IEnumerator UpdateLocation(TrainLocation location)
     {
-        location.Position = location.Position + WorldMover.currentMove;
+        location.Position += WorldMover.currentMove;
 
         if (trainCar.derailed && !hostDerailed)
         {
@@ -144,7 +140,7 @@ class NetworkTrainPosSync : MonoBehaviour
         }
 
         SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(location);
-        
+
     }
 
     private void SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(TrainLocation location)
@@ -153,7 +149,7 @@ class NetworkTrainPosSync : MonoBehaviour
         {
             return;
         }
-        
+
         SyncVelocityAndSpeedUpIfDesynced(location);
     }
 
@@ -213,7 +209,7 @@ class NetworkTrainPosSync : MonoBehaviour
 
     private TrainCar GetMostFrontCar(TrainCar car)
     {
-        if(car.frontCoupler.coupledTo != null)
+        if (car.frontCoupler.coupledTo != null)
         {
             return GetMostFrontCar(car.frontCoupler.coupledTo.train);
         }

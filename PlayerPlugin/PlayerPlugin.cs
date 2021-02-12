@@ -1,20 +1,18 @@
 ﻿using DarkRift;
 using DarkRift.Server;
-using DVMultiplayer.Networking;
 using DVMultiplayer.DTO.Player;
+using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace PlayerPlugin
 {
-    class PlayerPlugin : Plugin
+    internal class PlayerPlugin : Plugin
     {
-        Dictionary<IClient, Player> players = new Dictionary<IClient, Player>();
-        SetSpawn playerSpawn;
+        private readonly Dictionary<IClient, Player> players = new Dictionary<IClient, Player>();
+        private SetSpawn playerSpawn;
 
         public override bool ThreadSafe => false;
 
@@ -55,7 +53,7 @@ namespace PlayerPlugin
                 if (!tag.ToString().StartsWith("PLAYER_"))
                     return;
 
-                if(tag != NetworkTags.PLAYER_LOCATION_UPDATE)
+                if (tag != NetworkTags.PLAYER_LOCATION_UPDATE)
                     Logger.Trace($"[SERVER] < {tag.ToString()}");
 
                 switch (tag)
@@ -116,7 +114,7 @@ namespace PlayerPlugin
                     }
                     else
                     {
-                        if(playerSpawn != null)
+                        if (playerSpawn != null)
                         {
                             using (DarkRiftWriter writer = DarkRiftWriter.Create())
                             {
@@ -170,7 +168,7 @@ namespace PlayerPlugin
                         }
                     }
                 }
-                if(succesfullyConnected)
+                if (succesfullyConnected)
                     players.Add(sender, new Player(player.Id, player.Username, player.Mods));
             }
         }
@@ -192,7 +190,7 @@ namespace PlayerPlugin
                 {
                     newLocation = reader.ReadSerializable<Location>();
                     player.position = newLocation.Position;
-                    if(newLocation.Rotation.HasValue)
+                    if (newLocation.Rotation.HasValue)
                         player.rotation = newLocation.Rotation.Value;
                 }
 
@@ -210,7 +208,7 @@ namespace PlayerPlugin
         private List<string> GetMissingMods(string[] modList1, string[] modList2)
         {
             List<string> missingMods = new List<string>();
-            foreach(string mod in modList1)
+            foreach (string mod in modList1)
             {
                 if (!modList2.Contains(mod))
                     missingMods.Add(mod);
@@ -219,7 +217,7 @@ namespace PlayerPlugin
         }
     }
 
-    class Player
+    internal class Player
     {
         public readonly ushort id;
         public readonly string username;

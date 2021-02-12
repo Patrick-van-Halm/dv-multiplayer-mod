@@ -1,12 +1,6 @@
-﻿using DVMultiplayer;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 
-class NetworkPlayerSync : MonoBehaviour
+internal class NetworkPlayerSync : MonoBehaviour
 {
     public TrainCar Train { get; set; }
     public bool IsLocal { get; set; } = false;
@@ -19,6 +13,7 @@ class NetworkPlayerSync : MonoBehaviour
     internal bool IsLoaded;
     private const float SYNC_THRESHOLD = 0.1f;
 
+#pragma warning disable IDE0051 // Remove unused private members
     private void Start()
     {
         absPosition = transform.position;
@@ -33,13 +28,14 @@ class NetworkPlayerSync : MonoBehaviour
             return;
         }
 
-        if(prevPosition == null || Vector3.Distance(prevPosition, transform.position) > SYNC_THRESHOLD)
+        if (prevPosition == null || Vector3.Distance(prevPosition, transform.position) > SYNC_THRESHOLD)
         {
-           // Main.DebugLog("Player location changed sending new location");
+            // Main.DebugLog("Player location changed sending new location");
             SingletonBehaviour<NetworkPlayerManager>.Instance.UpdateLocalPositionAndRotation(transform.position, transform.rotation);
             prevPosition = transform.position;
         }
     }
+#pragma warning restore IDE0051 // Remove unused private members
 
     public void UpdateLocation(Vector3 pos, Quaternion? rot = null)
     {

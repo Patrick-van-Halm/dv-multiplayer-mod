@@ -5,8 +5,6 @@ using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TurntablePlugin
 {
@@ -16,7 +14,7 @@ namespace TurntablePlugin
 
         public override Version Version => new Version("1.0.4");
 
-        private List<Turntable> turntableStates = new List<Turntable>();
+        private readonly List<Turntable> turntableStates = new List<Turntable>();
 
         public TurntablePlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {

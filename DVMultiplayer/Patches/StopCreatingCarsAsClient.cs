@@ -1,17 +1,14 @@
 ﻿using DVMultiplayer.Networking;
 using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DVMultiplayer.Patches
 {
+#pragma warning disable IDE0060 // Remove unused parameter
+#pragma warning disable IDE0051 // Remove unused private members
     [HarmonyPatch(typeof(GarageCarSpawner), "Update")]
-    class StopCreatingCarsAsClient
+    internal class StopCreatingCarsAsClient
     {
-        static bool Prefix()
+        private static bool Prefix()
         {
             if (NetworkManager.IsClient() && !NetworkManager.IsHost())
                 return false;

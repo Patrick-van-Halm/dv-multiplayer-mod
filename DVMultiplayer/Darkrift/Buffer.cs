@@ -2,14 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DVMultiplayer.Darkrift
 {
-    class BufferQueue
+    internal class BufferQueue
     {
-        private List<BufferItem> bufferList = new List<BufferItem>();
+        private readonly List<BufferItem> bufferList = new List<BufferItem>();
         public bool NotSyncedAddToBuffer(bool synced, Action<Message> action, Message message)
         {
             if (!synced)
@@ -26,13 +24,13 @@ namespace DVMultiplayer.Darkrift
 
         public void RunBuffer()
         {
-            foreach(BufferItem item in bufferList.ToList())
+            foreach (BufferItem item in bufferList.ToList())
             {
                 try
                 {
                     item.RunAction();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     throw ex;
                 }
@@ -41,12 +39,12 @@ namespace DVMultiplayer.Darkrift
         }
     }
 
-    class BufferItem
+    internal class BufferItem
     {
-        Action<Message> bufferAction;
-        Action<Message, bool> bufferAction2;
-        Message message;
-        bool var;
+        private readonly Action<Message> bufferAction;
+        private readonly Action<Message, bool> bufferAction2;
+        private readonly Message message;
+        private readonly bool var;
 
         public BufferItem(Action<Message> bufferAction, Message message)
         {
@@ -68,7 +66,7 @@ namespace DVMultiplayer.Darkrift
                 bufferAction?.Invoke(message);
                 bufferAction2?.Invoke(message, var);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw ex;
             }

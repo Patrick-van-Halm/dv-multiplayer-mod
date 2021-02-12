@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 
-class RotateTowardsPlayer : MonoBehaviour
+internal class RotateTowardsPlayer : MonoBehaviour
 {
     private Camera camera;
 

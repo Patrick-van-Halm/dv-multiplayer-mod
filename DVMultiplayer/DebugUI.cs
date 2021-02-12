@@ -1,15 +1,10 @@
 ﻿using DVMultiplayer.Networking;
 using DVMultiplayer.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace DVMultiplayer
 {
-    static class DebugUI
+    internal static class DebugUI
     {
         private static bool showGUI = false;
 
@@ -44,7 +39,7 @@ namespace DVMultiplayer
 
             // Connection Status
             GUI.Label(new Rect(Screen.width - 245, ypos, 117, 20), $"Connection State:");
-            if(!NetworkManager.IsClient() && !NetworkManager.IsHost())
+            if (!NetworkManager.IsClient() && !NetworkManager.IsHost())
                 GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"Disconnected", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight, textColor: Color.red));
             else if (!NetworkManager.IsClient() && NetworkManager.IsHost())
                 GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"Server UP", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight, textColor: Color.yellow));
@@ -55,12 +50,12 @@ namespace DVMultiplayer
             ypos += 20;
 
             // Connected Players Train
-            if(NetworkManager.IsClient() && SingletonBehaviour<NetworkPlayerManager>.Instance && SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayerCount() > 0)
+            if (NetworkManager.IsClient() && SingletonBehaviour<NetworkPlayerManager>.Instance && SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayerCount() > 0)
             {
-                foreach(NetworkPlayerSync playerSync in SingletonBehaviour<NetworkPlayerManager>.Instance.GetAllNonLocalPlayerSync()) 
+                foreach (NetworkPlayerSync playerSync in SingletonBehaviour<NetworkPlayerManager>.Instance.GetAllNonLocalPlayerSync())
                 {
                     GUI.Label(new Rect(Screen.width - 245, ypos, 117, 20), $"Player [{playerSync.Id}] train:");
-                    if(playerSync.Train)
+                    if (playerSync.Train)
                         GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"{playerSync.Train.ID}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
                     else
                         GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"None", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));

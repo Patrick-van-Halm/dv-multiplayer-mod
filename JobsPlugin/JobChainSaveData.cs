@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace JobsPlugin
+﻿namespace JobsPlugin
 {
-    class JobChainSaveData
+    internal class JobChainSaveData
     {
         public JobDefinitionDataBase[] jobChainData;
         public string[] TrainCarGuids { get; set; }

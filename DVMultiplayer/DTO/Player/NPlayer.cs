@@ -1,5 +1,4 @@
 ﻿using DarkRift;
-using UnityEngine;
 
 namespace DVMultiplayer.DTO.Player
 {

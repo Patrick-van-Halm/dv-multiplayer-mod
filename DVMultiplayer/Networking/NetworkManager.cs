@@ -1,10 +1,6 @@
-using CommandTerminal;
-using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DarkRift.Server.Unity;
-using DVMultiplayer.DTO.Player;
-using DVMultiplayer.DTO.Savegame;
 using DVMultiplayer.Utils;
 using System;
 using System.Collections;
@@ -169,7 +165,7 @@ namespace DVMultiplayer.Networking
             SingletonBehaviour<CoroutineManager>.Instance.Run(StopHosting());
         }
 
-        static IEnumerator StopHosting()
+        private static IEnumerator StopHosting()
         {
             Disconnect();
             yield return new WaitUntil(() => !isClient);

@@ -5,21 +5,16 @@ using DVMultiplayer;
 using DVMultiplayer.Darkrift;
 using DVMultiplayer.DTO.Junction;
 using DVMultiplayer.Networking;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
-class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
+internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
 {
     public bool IsChangeByNetwork { get; internal set; }
     public bool IsSynced { get; internal set; }
 
     private VisualSwitch[] switches;
-    private BufferQueue buffer = new BufferQueue();
+    private readonly BufferQueue buffer = new BufferQueue();
 
     protected override void Awake()
     {
@@ -45,7 +40,7 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
 
         foreach (VisualSwitch @switch in switches)
         {
-            if(@switch.junction.gameObject.GetComponent<NetworkJunctionSync>())
+            if (@switch.junction.gameObject.GetComponent<NetworkJunctionSync>())
                 Destroy(@switch.junction.gameObject.GetComponent<NetworkJunctionSync>());
         }
     }
@@ -77,7 +72,7 @@ class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManager>
             {
                 Switch[] switchesServer = reader.ReadSerializables<Switch>();
 
-                foreach(Switch switchInfo in switchesServer)
+                foreach (Switch switchInfo in switchesServer)
                 {
                     VisualSwitch junction = switches.FirstOrDefault(j => j.junction.position == switchInfo.Position + WorldMover.currentMove);
                     if (junction)

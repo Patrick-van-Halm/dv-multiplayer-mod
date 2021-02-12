@@ -1,19 +1,13 @@
 ﻿using DarkRift.Client;
-using DarkRift.Client.Unity;
 using DVMultiplayer;
 using DVMultiplayer.Networking;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
-using DV.Logic.Job;
 
-class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
+internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
 {
-    StationController[] allStations;
-    bool jobGenerationTurnedOff = false;
+    private StationController[] allStations;
+    private bool jobGenerationTurnedOff = false;
 
     protected override void Awake()
     {
@@ -31,7 +25,7 @@ class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
             return;
         jobGenerationTurnedOff = true;
 
-        foreach(StationController station in allStations)
+        foreach (StationController station in allStations)
         {
             station.ExpireAllAvailableJobsInStation();
         }

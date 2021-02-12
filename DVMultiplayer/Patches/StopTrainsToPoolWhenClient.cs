@@ -1,18 +1,14 @@
 ﻿using DVMultiplayer.Networking;
 using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
 
 namespace DVMultiplayer.Patches
 {
+#pragma warning disable IDE0060 // Remove unused parameter
+#pragma warning disable IDE0051 // Remove unused private members
     [HarmonyPatch(typeof(TrainCar), "ReturnCarToPool")]
-    class StopTrainsToPoolWhenClient
+    internal class StopTrainsToPoolWhenClient
     {
-        static bool Prefix()
+        private static bool Prefix()
         {
             if (NetworkManager.IsClient())
                 return false;

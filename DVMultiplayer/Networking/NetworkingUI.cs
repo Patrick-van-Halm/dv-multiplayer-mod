@@ -2,13 +2,9 @@ using DVMultiplayer.Utils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using VRTK;
 using Object = UnityEngine.Object;
 
 namespace DVMultiplayer.Networking
@@ -287,7 +283,7 @@ namespace DVMultiplayer.Networking
                     FavoritesListUI.transform.Find($"Button Del Fav{i + 1}").gameObject.SetActive(false);
                 }
             }
-            
+
             FavoritesListUI.transform.Find($"Button NextPage").gameObject.SetActive(favorites.Count > 5 + (pagination * 4));
             FavoritesListUI.transform.Find($"Button PrevPage").gameObject.SetActive(pagination > 0);
         }

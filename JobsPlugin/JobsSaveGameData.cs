@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace JobsPlugin
+﻿namespace JobsPlugin
 {
-    class JobsSaveGameData
+    internal class JobsSaveGameData
     {
         public JobChainSaveData[] JobChains { get; set; }
         public float LogicTimer { get; set; }

@@ -1,8 +1,6 @@
 ﻿using DarkRift;
 using DarkRift.Client;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -87,7 +85,8 @@ public sealed class SerializableObjectCacheSettings
 
     public ClientObjectCacheSettings ToClientObjectCacheSettings()
     {
-        return new ClientObjectCacheSettings {
+        return new ClientObjectCacheSettings
+        {
             MaxWriters = maxWriters,
             MaxReaders = maxReaders,
             MaxMessages = maxMessages,

@@ -1,17 +1,14 @@
 ﻿using DVMultiplayer.Networking;
 using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DVMultiplayer.Patches
 {
+    #pragma warning disable IDE0060 // Remove unused parameter
+    #pragma warning disable IDE0051 // Remove unused private members
     [HarmonyPatch(typeof(SaveGameManager), "Load")]
-    class DontLoadSaveFileIfDataIsSet
+    internal class DontLoadSaveFileIfDataIsSet
     {
-        static bool Prefix(bool loadBackup = false)
+        private static bool Prefix(bool loadBackup = false)
         {
             if (SaveGameManager.data != null && NetworkManager.IsClient())
                 return false;

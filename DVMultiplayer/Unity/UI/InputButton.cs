@@ -1,25 +1,19 @@
-﻿using DVMultiplayer;
-using DVMultiplayer.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using DVMultiplayer.Utils;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-class InputButton : MonoBehaviour
+internal class InputButton : MonoBehaviour
 {
     public char key;
     public bool isBackspace;
     public bool isPaste;
-    Button button;
-    TextMeshProUGUI label;
-    InputScreen input;
-    Image buttonImage;
-    Sprite enabledSprite;
-    Sprite disabledSprite;
+    private Button button;
+    private TextMeshProUGUI label;
+    private InputScreen input;
+    private Image buttonImage;
+    private Sprite enabledSprite;
+    private Sprite disabledSprite;
 
     private void Awake()
     {

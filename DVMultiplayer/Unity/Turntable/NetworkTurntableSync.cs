@@ -1,13 +1,9 @@
 ﻿using DV.CabControls;
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
-class NetworkTurntableSync : MonoBehaviour
+internal class NetworkTurntableSync : MonoBehaviour
 {
     private TurntableController turntable;
     private LeverBase lever;
@@ -15,7 +11,7 @@ class NetworkTurntableSync : MonoBehaviour
     private Transform playerCameraTransform;
     private TurntableControlKeyboardInput keyboardInput;
     private Coroutine coroutineInputLever;
-    private List<TrainCar> trainsOnTurntable = new List<TrainCar>();
+    private readonly List<TrainCar> trainsOnTurntable = new List<TrainCar>();
     private void Awake()
     {
         turntable = GetComponent<TurntableController>();
@@ -28,7 +24,8 @@ class NetworkTurntableSync : MonoBehaviour
 
     private IEnumerator DisableKeyboardInput()
     {
-        yield return new WaitUntil(() => {
+        yield return new WaitUntil(() =>
+        {
             keyboardInput = turntable.GetComponentInChildren<TurntableControlKeyboardInput>();
             return keyboardInput;
         });
@@ -39,22 +36,24 @@ class NetworkTurntableSync : MonoBehaviour
     {
         SingletonBehaviour<CoroutineManager>.Instance.Stop(coroutineInputLever);
         turntable.Snapped -= Turntable_Snapped;
-        if(keyboardInput)
+        if (keyboardInput)
             keyboardInput.enabled = true;
     }
 
     private void Turntable_Snapped()
     {
-        if(!SingletonBehaviour<NetworkTurntableManager>.Instance.IsChangeByNetwork)
+        if (!SingletonBehaviour<NetworkTurntableManager>.Instance.IsChangeByNetwork)
             SingletonBehaviour<NetworkTurntableManager>.Instance.OnTurntableSnap(turntable, turntable.turntable.currentYRotation);
     }
 
     private IEnumerator CheckInputLever()
     {
-        yield return new WaitUntil(() => {
+        yield return new WaitUntil(() =>
+        {
             return (lever.Value < .45f || lever.Value > .55f) && lever.IsGrabbedOrHoverScrolled();
         });
-        yield return new WaitUntil(() => {
+        yield return new WaitUntil(() =>
+        {
             OnTurntableLeverAngleChanged(lever.Value);
             return lever.Value > .45f && lever.Value < .55f && !lever.IsGrabbedOrHoverScrolled();
         });
