@@ -14,7 +14,7 @@ namespace DVMultiplayer.Patches
     {
         static void Postfix(TrainCar trainCar, ref bool __result)
         {
-            if (NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Instance.SaveTrainCarsLoaded)
+            if (NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded)
                 __result = false;
         }
     }

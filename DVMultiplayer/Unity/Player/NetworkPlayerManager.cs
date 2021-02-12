@@ -276,7 +276,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             // Initialize trains on save
             Main.DebugLog($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
             SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
-            yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.SaveTrainCarsLoaded);
+            yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded);
 
             // Load Train data from server that changed since uptime
             Main.DebugLog($"Syncing Junctions");
