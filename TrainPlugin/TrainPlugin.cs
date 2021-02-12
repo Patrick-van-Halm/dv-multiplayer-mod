@@ -12,7 +12,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.5.19");
+        public override Version Version => new Version("1.6.0");
 
         private readonly List<WorldTrain> worldTrains;
 
@@ -87,43 +87,65 @@ namespace TrainPlugin
                     case NetworkTags.TRAIN_INIT:
                         NewTrainInitialized(message, e.Client);
                         break;
+
+                    case NetworkTags.TRAIN_REMOVAL:
+                        OnCarRemovalMessage(message, e.Client);
+                        break;
                 }
             }
         }
 
+        private void OnCarRemovalMessage(Message message, IClient sender)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                CarRemoval carRemoval = reader.ReadSerializable<CarRemoval>();
+                WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == carRemoval.Guid);
+                if (train == null)
+                {
+                    train = new WorldTrain()
+                    {
+                        Guid = carRemoval.Guid,
+                        IsRemoved = true,
+                    };
+                    worldTrains.Add(train);
+                }
+            }
+
+            Logger.Trace("[SERVER] > TRAIN_REMOVAL");
+            ReliableSendToOthers(message, sender);
+        }
+
         private void UpdateTrainSwitch(Message message, IClient sender)
         {
-            if (worldTrains != null)
+            using (DarkRiftReader reader = message.GetReader())
             {
-                using (DarkRiftReader reader = message.GetReader())
+                TrainCarChange carChange = reader.ReadSerializable<TrainCarChange>();
+                if (carChange.TrainId != "")
                 {
-                    TrainCarChange carChange = reader.ReadSerializable<TrainCarChange>();
-                    if (carChange.TrainId != "")
+                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == carChange.TrainId);
+                    if (train == null)
                     {
-                        WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == carChange.TrainId);
-                        if (train == null)
+                        train = new WorldTrain()
                         {
-                            train = new WorldTrain()
-                            {
-                                Guid = carChange.TrainId
-                            };
-                            worldTrains.Add(train);
-                        }
-
-                        train.Id = carChange.CarId;
-                        train.CarType = (TrainCarType)carChange.Type;
-                        train.IsLoco = carChange.IsLoco;
-                        train.IsPlayerSpawned = carChange.IsPlayerSpawned;
-                        train.Position = carChange.Position;
-                        train.Forward = carChange.Forward;
-                        train.Rotation = carChange.Rotation;
-                        train.IsBogie1Derailed = carChange.IsBogie1Derailed;
-                        train.Bogie1PositionAlongTrack = carChange.Bogie1PositionAlongTrack;
-                        train.Bogie1RailTrackName = carChange.Bogie1RailTrackName;
-                        train.IsBogie2Derailed = carChange.IsBogie2Derailed;
-                        train.Bogie2PositionAlongTrack = carChange.Bogie2PositionAlongTrack;
-                        train.Bogie2RailTrackName = carChange.Bogie2RailTrackName;
+                            Guid = carChange.TrainId
+                        };
+                        worldTrains.Add(train);
                     }
+
+                    train.Id = carChange.CarId;
+                    train.CarType = (TrainCarType)carChange.Type;
+                    train.IsLoco = carChange.IsLoco;
+                    train.IsPlayerSpawned = carChange.IsPlayerSpawned;
+                    train.Position = carChange.Position;
+                    train.Forward = carChange.Forward;
+                    train.Rotation = carChange.Rotation;
+                    train.IsBogie1Derailed = carChange.IsBogie1Derailed;
+                    train.Bogie1PositionAlongTrack = carChange.Bogie1PositionAlongTrack;
+                    train.Bogie1RailTrackName = carChange.Bogie1RailTrackName;
+                    train.IsBogie2Derailed = carChange.IsBogie2Derailed;
+                    train.Bogie2PositionAlongTrack = carChange.Bogie2PositionAlongTrack;
+                    train.Bogie2RailTrackName = carChange.Bogie2RailTrackName;
                 }
             }
 
