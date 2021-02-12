@@ -132,20 +132,6 @@ namespace TrainPlugin
                         };
                         worldTrains.Add(train);
                     }
-
-                    train.Id = carChange.CarId;
-                    train.CarType = (TrainCarType)carChange.Type;
-                    train.IsLoco = carChange.IsLoco;
-                    train.IsPlayerSpawned = carChange.IsPlayerSpawned;
-                    train.Position = carChange.Position;
-                    train.Forward = carChange.Forward;
-                    train.Rotation = carChange.Rotation;
-                    train.IsBogie1Derailed = carChange.IsBogie1Derailed;
-                    train.Bogie1PositionAlongTrack = carChange.Bogie1PositionAlongTrack;
-                    train.Bogie1RailTrackName = carChange.Bogie1RailTrackName;
-                    train.IsBogie2Derailed = carChange.IsBogie2Derailed;
-                    train.Bogie2PositionAlongTrack = carChange.Bogie2PositionAlongTrack;
-                    train.Bogie2RailTrackName = carChange.Bogie2RailTrackName;
                 }
             }
 

@@ -523,20 +523,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 val = new TrainCarChange()
                 {
                     PlayerId = SingletonBehaviour<UnityClient>.Instance.ID,
-                    TrainId = train.CarGUID,
-                    CarId = train.ID,
-                    Type = train.carType,
-                    IsLoco = train.IsLoco,
-                    IsPlayerSpawned = train.playerSpawnedCar,
-                    Position = train.transform.position - WorldMover.currentMove,
-                    Forward = train.transform.forward,
-                    Rotation = train.transform.rotation,
-                    IsBogie1Derailed = bogie1.HasDerailed,
-                    Bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
-                    Bogie1RailTrackName = bogie1.track.name,
-                    IsBogie2Derailed = bogie2.HasDerailed,
-                    Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
-                    Bogie2RailTrackName = bogie2.track.name
+                    TrainId = train.CarGUID
                 };
             }
             else
