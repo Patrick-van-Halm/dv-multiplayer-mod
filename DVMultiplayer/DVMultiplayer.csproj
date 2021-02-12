@@ -238,4 +238,9 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties info_1json__JsonSchema="https://json.schemastore.org/config" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>
