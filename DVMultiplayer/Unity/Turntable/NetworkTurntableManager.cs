@@ -84,7 +84,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                     TurntableController turntableController = turntables.FirstOrDefault(j => j.transform.position == turntable.Position + WorldMover.currentMove);
                     if (turntableController)
                     {
-                        SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntableController, turntable));
+                        SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntableController, turntable.Rotation.Value));
                     }
                 }
             }
@@ -93,12 +93,26 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
         buffer.RunBuffer();
     }
 
-    private IEnumerator RotateTurntableTowardsByNetwork(TurntableController turntableController, Turntable turntable)
+    private IEnumerator RotateTurntableTowardsByNetwork(TurntableController turntableController, float angle, bool moveSlow = false)
     {
         IsChangeByNetwork = true;
-        turntableController.turntable.targetYRotation = turntable.Rotation.Value;
-        turntableController.turntable.RotateToTargetRotation();
-        yield return new WaitUntil(() => turntableController.turntable.currentYRotation == turntable.Rotation.Value);
+        if (moveSlow)
+        {
+            bool addToAngle = angle > turntableController.turntable.currentYRotation;
+            turntableController.turntable.targetYRotation += addToAngle ? .5f : -.5f;
+            turntableController.turntable.RotateToTargetRotation();
+            yield return new WaitUntil(() => turntableController.turntable.targetYRotation == turntableController.turntable.currentYRotation);
+            if (!(Mathf.Abs(turntableController.turntable.currentYRotation - angle) < .1f))
+            {
+                yield return RotateTurntableTowardsByNetwork(turntableController, angle, moveSlow);
+            }
+        }
+        else
+        {
+            turntableController.turntable.targetYRotation = angle;
+            turntableController.turntable.RotateToTargetRotation();
+            yield return new WaitUntil(() => Mathf.Abs(turntableController.turntable.currentYRotation - angle) < .1f);
+        }
         IsChangeByNetwork = false;
     }
 
@@ -183,11 +197,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                 TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == turntableInfo.Position + WorldMover.currentMove);
                 if (turntable && turntableInfo.Rotation.HasValue)
                 {
-                    turntable.leverGO.GetComponent<LeverBase>().SetValue(.5f);
-                    if (Mathf.Abs(turntable.turntable.currentYRotation - turntableInfo.Rotation.Value) < .01f)
-                    {
-                        SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo));
-                    }
+                    turntable.leverGO.GetComponent<LeverBase>().MoveLeverAndReset(.5f);
                 }
                 else if (turntable && turntableInfo.LeverAngle.HasValue)
                 {
@@ -214,7 +224,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                 if (turntable && turntableInfo.Rotation.HasValue)
                 {
                     turntable.leverGO.GetComponent<LeverBase>().SetValue(.5f);
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo));
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation.Value, true));
                 }
             }
         }
