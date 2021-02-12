@@ -49,7 +49,7 @@ class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainRerail()
     {
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendRerailTrainUpdate(trainCar);
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendRerailCarUpdate(trainCar);
     }
 
     private void TrainDerail(TrainCar derailedCar)
@@ -57,7 +57,7 @@ class NetworkTrainPosSync : MonoBehaviour
         if (!NetworkManager.IsHost())
             return;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendDerailTrainUpdate(trainCar);
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendDerailCarUpdate(trainCar);
     }
 
     private void Update()
@@ -119,7 +119,7 @@ class NetworkTrainPosSync : MonoBehaviour
         yield return new WaitUntil(() => !trainCar.frontCoupler.IsCoupled());
         if (NetworkManager.IsHost() && (!trainCar.isStationary || (trainCar.derailed && Vector3.Distance(trainCar.transform.position, prevPos) > .1f)))
         {
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendTrainLocationUpdate(trainCar);
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar);
             prevPos = trainCar.transform.position;
         }
         yield return UpdateLocation();

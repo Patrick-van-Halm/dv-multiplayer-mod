@@ -1,4 +1,5 @@
 ﻿using DarkRift;
+using DV.Logic.Job;
 using DVMultiplayer.Darkrift;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,7 @@ namespace DVMultiplayer.DTO.Train
         public string Id { get; set; } = "";
         public TrainCarType CarType { get; set; } = TrainCarType.NotSet;
         public bool IsLoco { get; set; }
+        public bool IsRemoved { get; set; } = false;
         
         // Player
         public bool IsPlayerSpawned { get; set; }
@@ -53,12 +55,17 @@ namespace DVMultiplayer.DTO.Train
         // Specific Train states
         public Shunter Shunter { get; set; } = new Shunter();
 
+        // Cargo based trains
+        public float CargoAmount { get; set; }
+        public CargoType CargoType { get; set; } = CargoType.None;
+
         public void Deserialize(DeserializeEvent e)
         {
             Guid = e.Reader.ReadString();
             Id = e.Reader.ReadString();
             CarType = (TrainCarType)e.Reader.ReadUInt32();
             IsLoco = e.Reader.ReadBoolean();
+            IsRemoved = e.Reader.ReadBoolean();
 
             Position = e.Reader.ReadVector3();
             Forward = e.Reader.ReadVector3();
@@ -90,6 +97,11 @@ namespace DVMultiplayer.DTO.Train
                 Sander = e.Reader.ReadSingle();
                 Reverser = e.Reader.ReadSingle();
             }
+            else
+            {
+                CargoType = (CargoType)e.Reader.ReadUInt32();
+                CargoAmount = e.Reader.ReadSingle();
+            }
 
             switch (CarType)
             {
@@ -105,6 +117,7 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(Id);
             e.Writer.Write((uint)CarType);
             e.Writer.Write(IsLoco);
+            e.Writer.Write(IsRemoved);
 
             e.Writer.Write(Position);
             e.Writer.Write(Forward);
@@ -135,6 +148,11 @@ namespace DVMultiplayer.DTO.Train
                 e.Writer.Write(IndepBrake);
                 e.Writer.Write(Sander);
                 e.Writer.Write(Reverser);
+            }
+            else
+            {
+                e.Writer.Write((uint)CargoType);
+                e.Writer.Write(CargoAmount);
             }
 
             switch (CarType)

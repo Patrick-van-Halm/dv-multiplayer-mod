@@ -291,7 +291,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
            
             // Load Train data from server that changed since uptime
             Main.DebugLog($"Syncing traincars");
-            SingletonBehaviour<NetworkTrainManager>.Instance.SyncTrainCars();
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendInitCarsRequest();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced);
 
             PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
