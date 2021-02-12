@@ -408,13 +408,18 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
+            Bogie bogie1 = trainCar.Bogies[0];
+            Bogie bogie2 = trainCar.Bogies[trainCar.Bogies.Length - 1];
             writer.Write(new TrainRerail()
             {
                 TrainId = trainCar.CarGUID,
                 Position = trainCar.transform.position - WorldMover.currentMove,
                 Forward = trainCar.transform.forward,
                 Rotation = trainCar.transform.rotation,
-                TrackName = trainCar.Bogies[0].track.name
+                Bogie1TrackName = bogie1.track.name,
+                Bogie2TrackName = bogie2.track.name,
+                Bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
+                Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_RERAIL, writer))
@@ -686,6 +691,17 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == rerail.TrainId);
                 if (train)
                 {
+                    WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == rerail.TrainId);
+                    if(serverState != null)
+                    {
+                        serverState.Position = rerail.Position;
+                        serverState.Rotation = rerail.Rotation;
+                        serverState.Forward = rerail.Forward;
+                        serverState.Bogie1RailTrackName = rerail.Bogie1TrackName;
+                        serverState.Bogie2RailTrackName = rerail.Bogie2TrackName;
+                        serverState.Bogie1PositionAlongTrack = rerail.Bogie1PositionAlongTrack;
+                        serverState.Bogie2PositionAlongTrack = rerail.Bogie2PositionAlongTrack;
+                    }
                     train.Rerail(RailTrack.GetClosest(rerail.Position + WorldMover.currentMove).track, CalculateWorldPosition(rerail.Position + WorldMover.currentMove, rerail.Forward, train.Bounds.center.z), rerail.Forward);
                 }
             }

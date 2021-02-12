@@ -347,6 +347,10 @@ namespace TrainPlugin
 
                     train.IsBogie1Derailed = false;
                     train.IsBogie2Derailed = false;
+                    train.Bogie1RailTrackName = rerailed.Bogie1TrackName;
+                    train.Bogie2RailTrackName = rerailed.Bogie2TrackName;
+                    train.Bogie1PositionAlongTrack = rerailed.Bogie1PositionAlongTrack;
+                    train.Bogie2PositionAlongTrack = rerailed.Bogie2PositionAlongTrack;
                     train.Position = rerailed.Position;
                     train.Forward = rerailed.Forward;
                     train.Rotation = rerailed.Rotation;
