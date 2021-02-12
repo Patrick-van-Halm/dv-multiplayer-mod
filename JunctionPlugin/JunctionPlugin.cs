@@ -35,7 +35,7 @@ namespace JunctionPlugin
                 if (!tag.ToString().StartsWith("SWITCH_"))
                     return;
 
-                Logger.Trace($"[SERVER] < {tag.ToString()}");
+                Logger.Trace($"[SERVER] < {tag}");
 
                 switch (tag)
                 {

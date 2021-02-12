@@ -50,12 +50,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="JobChainSaveData.cs" />
-    <Compile Include="JobDefinitionDataBase.cs" />
     <Compile Include="JobsPlugin.cs" />
-    <Compile Include="JobsSaveGameData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TaskSaveData.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DVMultiplayer\DVMultiplayer.csproj">

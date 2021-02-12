@@ -251,10 +251,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 Bogie2RailTrackName = bogie2.track.name,
                 IsFrontCouplerCoupled = car.frontCoupler.coupledTo,
                 IsFrontCouplerCockOpen = car.frontCoupler.IsCockOpen,
-                IsFrontCouplerHoseConnected = car.frontCoupler.GetAirHoseConnectedTo(),
+                IsFrontCouplerHoseConnected = car.frontCoupler.GetAirHoseConnectedTo() != null,
                 IsRearCouplerCoupled = car.rearCoupler.coupledTo,
                 IsRearCouplerCockOpen = car.rearCoupler.IsCockOpen,
-                IsRearCouplerHoseConnected = car.rearCoupler.GetAirHoseConnectedTo(),
+                IsRearCouplerHoseConnected = car.rearCoupler.GetAirHoseConnectedTo() != null,
                 IsPlayerSpawned = car.playerSpawnedCar,
                 CargoType = car.LoadedCargo,
                 CargoAmount = car.LoadedCargoAmount
@@ -436,7 +436,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             Bogie bogie1 = trainCar.Bogies[0];
             Bogie bogie2 = trainCar.Bogies[trainCar.Bogies.Length - 1];
-            writer.Write<TrainDerail>(new TrainDerail()
+            writer.Write(new TrainDerail()
             {
                 TrainId = trainCar.CarGUID,
                 IsBogie1Derailed = bogie1.HasDerailed,
@@ -716,8 +716,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 SingletonBehaviour<CoroutineManager>.Instance.Run(SyncCarsFromServerState());
             }
         }
-        IsSynced = true;
-        buffer.RunBuffer();
     }
 
     private void OnPlayerCarChangeMessage(Message message)
@@ -767,6 +765,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
                 if (train)
                 {
+                    IsChangeByNetwork = true;
                     Main.DebugLog($"[CLIENT] < TRAIN_DERAIL: Packet size: {reader.Length}, TrainId: {train.ID}");
                     WorldTrain serverTrainState = serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID);
                     if (serverTrainState == null)
@@ -788,6 +787,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
                     train.GetComponent<NetworkTrainPosSync>().hostDerailed = true;
                     train.Derail();
+                    IsChangeByNetwork = false;
                 }
                 else
                 {
@@ -811,8 +811,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
                 if (train)
                 {
-                    Main.DebugLog($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location));
                     WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID);
                     if (serverState == null)
                     {
@@ -834,6 +832,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     serverState.Bogie1RailTrackName = location.Bogie1TrackName;
                     serverState.Bogie2PositionAlongTrack = location.Bogie2PositionAlongTrack;
                     serverState.Bogie2RailTrackName = location.Bogie2TrackName;
+
+                    Main.DebugLog($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location));
                 }
             }
         }
@@ -891,7 +892,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             break;
 
                         case Levers.Sander:
-                            baseController.SetSanders(lever.Value);
+                            baseController.UpdateSand(lever.Value > 0 ? ToggleDirection.DOWN : ToggleDirection.UP);
                             serverTrainState.Sander = lever.Value;
                             break;
 
@@ -1350,6 +1351,13 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 catch (Exception) { }
             IsChangeByNetwork = false;
         }
+
+        IsSynced = true;
+    }
+
+    internal void RunBuffer()
+    {
+        buffer.RunBuffer();
     }
 
     private void SyncLocomotiveWithServerStates(TrainCar train, WorldTrain serverState)

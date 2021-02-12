@@ -10,7 +10,7 @@ namespace DVMultiplayer.Patches
     {
         private static bool Prefix()
         {
-            if (NetworkManager.IsClient() && !NetworkManager.IsHost())
+            if (NetworkManager.IsClient() && SingletonBehaviour<NetworkPlayerManager>.Instance.IsAnyoneInLocalPlayerRegion())
                 return false;
 
             return true;

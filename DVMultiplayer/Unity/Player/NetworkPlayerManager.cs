@@ -284,17 +284,22 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             SingletonBehaviour<NetworkTurntableManager>.Instance.SyncTurntables();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTurntableManager>.Instance.IsSynced);
 
-
             // Load Train data from server that changed since uptime
             Main.DebugLog($"Syncing traincars");
             SingletonBehaviour<NetworkTrainManager>.Instance.SendInitCarsRequest();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced);
+            SingletonBehaviour<NetworkTrainManager>.Instance.RunBuffer();
 
-            PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
-            SingletonBehaviour<NetworkTrainManager>.Instance.SyncLocomotives();
+            // Load Job data from server that changed since uptime
+            Main.DebugLog($"Syncing jobs");
+            SingletonBehaviour<NetworkJobsManager>.Instance.SendJobsRequest();
+            yield return new WaitUntil(() => SingletonBehaviour<NetworkJobsManager>.Instance.IsSynced);
+            SingletonBehaviour<NetworkJobsManager>.Instance.OnFinishLoading();
+
             AppUtil.Instance.UnpauseGame();
             yield return new WaitUntil(() => !AppUtil.IsPaused);
             yield return new WaitForEndOfFrame();
+            PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
             CustomUI.Close();
         }
         else
@@ -304,6 +309,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
             Main.DebugLog($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
             SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
+            Main.DebugLog($"Run OnFinishedLoading in NetworkJobsManager");
+            SingletonBehaviour<NetworkJobsManager>.Instance.OnFinishLoading();
         }
 
         SendIsLoaded();

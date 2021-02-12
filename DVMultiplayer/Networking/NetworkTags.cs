@@ -32,5 +32,8 @@
         PLAYER_LOADED,
         TRAIN_INIT,
         TRAIN_REMOVAL,
+        JOB_CREATED,
+        JOB_SYNC,
+        JOB_HOST_SYNC,
     }
 }

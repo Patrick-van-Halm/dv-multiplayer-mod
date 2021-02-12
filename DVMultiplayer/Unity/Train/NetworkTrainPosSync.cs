@@ -6,7 +6,6 @@ using UnityEngine;
 
 internal class NetworkTrainPosSync : MonoBehaviour
 {
-    private const float SYNC_CHECKTIME = .05f;
     private TrainCar trainCar;
     private float? newExtraForce = null;
     private float prevExtraForce;
@@ -16,6 +15,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private float prevIndepBrakePos;
     private float prevBrakePos;
     private Vector3 prevPos;
+    private bool isSyncingToHost = false;
     public bool hostDerailed;
 
 #pragma warning disable IDE0051 // Remove unused private members
@@ -29,39 +29,53 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.DebugLog($"Listen to derailment events");
         trainCar.OnDerailed += TrainDerail;
         trainCar.OnRerailed += TrainRerail;
-        trainCar.MovementStateChanged += TrainCar_MovementStateChanged;
+
+        if (NetworkManager.IsHost())
+        {
+            SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
+        }
     }
 
     private void Update()
     {
-        if (!SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced && hostDerailed)
+        if (!SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced)
             return;
 
-        if (!NetworkManager.IsHost() && newExtraForce.HasValue && prevExtraForce != newExtraForce.Value)
+        if (!NetworkManager.IsHost() && newExtraForce.HasValue && !trainCar.derailed)
         {
-            if (hostPos != null && trainCar.isStationary && isOutOfSync && !trainCar.derailed)
+            if(isOutOfSync && ((trainCar.brakeSystem.hasIndependentBrake && trainCar.brakeSystem.independentBrakePosition > 0) || trainCar.brakeSystem.trainBrakePosition > 0))
             {
-                SingletonBehaviour<CoroutineManager>.Instance.Run(SyncToHostPos());
+                prevIndepBrakePos = trainCar.brakeSystem.hasIndependentBrake ? trainCar.brakeSystem.independentBrakePosition : 0;
+                prevBrakePos = trainCar.brakeSystem.trainBrakePosition;
+                if (trainCar.brakeSystem.hasIndependentBrake)
+                    trainCar.brakeSystem.independentBrakePosition = 0;
+                trainCar.brakeSystem.trainBrakePosition = 0;
             }
-            if (prevExtraForce != 0)
-                trainCar.Bogies[0].ApplyForce(-prevExtraForce);
-            trainCar.Bogies[0].ApplyForce(newExtraForce.Value);
-            prevExtraForce = newExtraForce.Value;
-            if (newExtraForce == 0)
-                newExtraForce = null;
+            else if (!isOutOfSync && prevBrakePos != 0 && prevIndepBrakePos != 0)
+            {
+                prevIndepBrakePos = 0;
+                prevBrakePos = 0;
+                if (trainCar.brakeSystem.hasIndependentBrake)
+                    trainCar.brakeSystem.independentBrakePosition = prevIndepBrakePos;
+                trainCar.brakeSystem.trainBrakePosition = prevBrakePos;
+            }
+
+            if(prevExtraForce != newExtraForce.Value)
+            {
+                foreach (Bogie bogie in trainCar.Bogies)
+                {
+                    if (prevExtraForce != 0)
+                        bogie.ApplyForce(-prevExtraForce);
+                    bogie.ApplyForce(newExtraForce.Value / trainCar.Bogies.Length);
+                    if (newExtraForce == 0)
+                        newExtraForce = null;
+                }
+                prevExtraForce = newExtraForce.Value / trainCar.Bogies.Length;
+            }
         }
     }
 #pragma warning restore IDE0051 // Remove unused private members
-    private void TrainCar_MovementStateChanged(bool isMoving)
-    {
-        if (NetworkManager.IsHost())
-        {
-            if (isMoving)
-                movingCoroutine = SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
-            else
-                SingletonBehaviour<CoroutineManager>.Instance.Stop(movingCoroutine);
-        }
-    }
+        
 
     private void TrainRerail()
     {
@@ -70,50 +84,16 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainDerail(TrainCar derailedCar)
     {
-        if (!NetworkManager.IsHost())
+        if (!NetworkManager.IsHost() || SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendDerailCarUpdate(trainCar);
     }
 
-    private IEnumerator SyncToHostPos()
-    {
-        if ((trainCar.brakeSystem.hasIndependentBrake && trainCar.brakeSystem.independentBrakePosition > 0) || trainCar.brakeSystem.trainBrakePosition > 0)
-        {
-            prevIndepBrakePos = trainCar.brakeSystem.hasIndependentBrake ? trainCar.brakeSystem.independentBrakePosition : 0;
-            prevBrakePos = trainCar.brakeSystem.trainBrakePosition;
-            if (trainCar.brakeSystem.hasIndependentBrake)
-                trainCar.brakeSystem.independentBrakePosition = 0;
-            trainCar.brakeSystem.trainBrakePosition = 0;
-        }
-        float distance = Distance(trainCar.transform, hostPos);
-        if (distance < .1f && distance > -.1f)
-        {
-            isOutOfSync = false;
-            newExtraForce = 0;
-
-            if (trainCar.brakeSystem.hasIndependentBrake)
-                trainCar.brakeSystem.independentBrakePosition = prevIndepBrakePos;
-            trainCar.brakeSystem.trainBrakePosition = prevBrakePos;
-            yield break;
-        }
-        else if (distance < 0)
-        {
-            newExtraForce = -2000;
-        }
-        else
-        {
-            newExtraForce = 2000;
-        }
-        yield return new WaitForEndOfFrame();
-        yield return SyncToHostPos();
-    }
-
     private IEnumerator UpdateLocation()
     {
-        yield return new WaitForSeconds(SYNC_CHECKTIME);
-        yield return new WaitUntil(() => !trainCar.frontCoupler.IsCoupled());
-        if (NetworkManager.IsHost() && (!trainCar.isStationary || (trainCar.derailed && Vector3.Distance(trainCar.transform.position, prevPos) > .1f)))
+        yield return new WaitUntil(() => Vector3.Distance(trainCar.transform.position, prevPos) > .01f);
+        if (NetworkManager.IsHost())
         {
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar);
             prevPos = trainCar.transform.position;
@@ -123,14 +103,16 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     internal IEnumerator UpdateLocation(TrainLocation location)
     {
-        location.Position += WorldMover.currentMove;
-
         if (trainCar.derailed && !hostDerailed)
         {
+            trainCar.transform.position = location.Position + WorldMover.currentMove;
+            trainCar.transform.rotation = location.Rotation;
+            trainCar.transform.forward = location.Forward;
             yield return SingletonBehaviour<NetworkTrainManager>.Instance.RerailDesynced(trainCar, location.Position, location.Forward);
         }
         else if (trainCar.derailed && hostDerailed)
         {
+            location.Position += WorldMover.currentMove;
             trainCar.transform.position = location.Position;
             trainCar.transform.rotation = location.Rotation;
             trainCar.rb.velocity = location.Velocity;
@@ -139,6 +121,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             yield break;
         }
 
+        location.Position += WorldMover.currentMove;
         SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(location);
 
     }
@@ -159,7 +142,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         hostPos = location.Position;
         if (distance > 3f)
         {
-            newExtraForce = 3000;
+            newExtraForce = 8000;
             isOutOfSync = true;
         }
         else if (distance <= 1f && distance > 0.1f)
@@ -189,7 +172,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         else if (distance <= -1f && distance > -3f)
         {
-            newExtraForce = -3000;
+            newExtraForce = -8000;
             isOutOfSync = true;
         }
 

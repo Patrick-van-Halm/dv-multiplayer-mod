@@ -1,4 +1,5 @@
 ﻿using DarkRift;
+using UnityEngine;
 
 namespace DVMultiplayer.DTO.Train
 {

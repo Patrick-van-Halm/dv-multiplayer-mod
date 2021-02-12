@@ -84,7 +84,6 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
 
     private IEnumerator LoadOfflineSave()
     {
-        SingletonBehaviour<NetworkJobsManager>.Instance.PlayerDisconnect();
         UUI.UnlockMouse(true);
         TutorialController.movementAllowed = false;
         CarSpawner.useCarPooling = true;

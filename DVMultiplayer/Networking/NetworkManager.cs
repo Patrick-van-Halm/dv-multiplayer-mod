@@ -254,7 +254,6 @@ namespace DVMultiplayer.Networking
             networkManager.GetComponent<NetworkJunctionManager>().PlayerDisconnect();
             Object.Destroy(networkManager.GetComponent<NetworkJunctionManager>());
             Main.DebugLog($"[DISCONNECTING] NetworkJobsManager Deinitializing");
-            SingletonBehaviour<NetworkJobsManager>.Instance.PlayerDisconnect();
             Object.Destroy(networkManager.GetComponent<NetworkJobsManager>());
             Main.DebugLog($"[DISCONNECTING] NetworkSaveGameManager Deinitializing");
             networkManager.GetComponent<NetworkSaveGameManager>().PlayerDisconnect();

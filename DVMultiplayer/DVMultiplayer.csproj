@@ -150,6 +150,8 @@
     <Compile Include="Darkrift\Server\XmlUnityServer.cs" />
     <Compile Include="Darkrift\WriterExtends.cs" />
     <Compile Include="DebugUI.cs" />
+    <Compile Include="DTO\Job\Job.cs" />
+    <Compile Include="DTO\Job\JobCreated.cs" />
     <Compile Include="DTO\Junction\Switch.cs" />
     <Compile Include="DTO\Player\Disconnect.cs" />
     <Compile Include="DTO\Player\Location.cs" />
@@ -184,6 +186,7 @@
     <Compile Include="Patches\StopGamePauseInMenus.cs" />
     <Compile Include="Patches\StopGeneratingJobsAsClient.cs" />
     <Compile Include="Unity\Jobs\NetworkJobsManager.cs" />
+    <Compile Include="Unity\Jobs\NetworkJobsSync.cs" />
     <Compile Include="Unity\Junction\NetworkJunctionSync.cs" />
     <Compile Include="Unity\Junction\NetworkJunctionManager.cs" />
     <Compile Include="Unity\Player\RotateTowardsPlayer.cs" />
