@@ -37,5 +37,6 @@ namespace DVMultiplayer.Networking
         TURNTABLE_SNAP,
         PLAYER_LOADED,
         TRAIN_INIT,
+        TRAIN_REMOVAL,
     }
 }

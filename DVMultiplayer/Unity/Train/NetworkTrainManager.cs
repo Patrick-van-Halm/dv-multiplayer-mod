@@ -196,6 +196,10 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 case NetworkTags.TRAIN_INIT:
                     OnCarInitMessage(message);
                     break;
+
+                case NetworkTags.TRAIN_REMOVAL:
+                    OnCarRemovalMessage(message);
+                    break;
             }
         }
     }
@@ -205,7 +209,19 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     #region Sending Nessages
     private void SendCarBeingRemoved(TrainCar car)
     {
-        throw new NotImplementedException();
+        if (!IsSynced)
+            return;
+
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write(new CarRemoval()
+            {
+                Guid = car.CarGUID
+            });
+
+            using (Message message = Message.Create((ushort)NetworkTags.TRAIN_REMOVAL, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
     }
 
     private void SendNewCarSpawned(TrainCar car)
@@ -626,6 +642,28 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     #endregion
 
     #region Receiving Messages
+
+    private void OnCarRemovalMessage(Message message)
+    {
+        if (buffer.NotSyncedAddToBuffer(IsSynced, OnCarRemovalMessage, message))
+            return;
+
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            while (reader.Position < reader.Length)
+            {
+                CarRemoval carRemoval = reader.ReadSerializable<CarRemoval>();
+                TrainCar train = trainCars.FirstOrDefault(t => t.CarGUID == carRemoval.Guid);
+                if (train)
+                {
+                    IsChangeByNetwork = true;
+                    CarSpawner.DeleteCar(train);
+                    IsChangeByNetwork = false;
+                }
+            }
+        }
+    }
+
     private void OnCarInitMessage(Message message)
     {
         if (buffer.NotSyncedAddToBuffer(IsSynced, OnCarInitMessage, message))
@@ -1156,6 +1194,7 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     }
     #endregion
 
+    #region Car Functions
     internal Vector3 CalculateWorldPosition(Vector3 position, Vector3 forward, float zBounds)
     {
         return position + forward * zBounds;
@@ -1452,4 +1491,5 @@ class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             }
         }
     }
+    #endregion
 }
