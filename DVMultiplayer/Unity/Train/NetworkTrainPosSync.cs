@@ -36,7 +36,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         if (!SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced)
             return;
@@ -50,6 +50,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 if (trainCar.brakeSystem.hasIndependentBrake)
                     trainCar.brakeSystem.independentBrakePosition = 0;
                 trainCar.brakeSystem.trainBrakePosition = 0;
+                trainCar.rb.velocity += trainCar.transform.forward * newExtraForce.Value;
             }
             else if (!isOutOfSync && prevBrakePos != 0 && prevIndepBrakePos != 0)
             {
@@ -62,15 +63,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
             if(prevExtraForce != newExtraForce.Value)
             {
-                foreach (Bogie bogie in trainCar.Bogies)
-                {
-                    if (prevExtraForce != 0)
-                        bogie.ApplyForce(-prevExtraForce);
-                    bogie.ApplyForce(newExtraForce.Value / trainCar.Bogies.Length);
-                    if (newExtraForce == 0)
-                        newExtraForce = null;
-                }
-                prevExtraForce = newExtraForce.Value / trainCar.Bogies.Length;
+                trainCar.rb.velocity += trainCar.transform.forward * newExtraForce.Value;
+                prevExtraForce = newExtraForce.Value;
             }
         }
     }
@@ -142,17 +136,17 @@ internal class NetworkTrainPosSync : MonoBehaviour
         hostPos = location.Position;
         if (distance > 3f)
         {
-            newExtraForce = 8000;
+            newExtraForce = -.86f;
             isOutOfSync = true;
         }
         else if (distance <= 1f && distance > 0.1f)
         {
-            newExtraForce = 1500;
+            newExtraForce = -.56f;
             isOutOfSync = true;
         }
         else if (distance <= .1f && distance > 0.01f)
         {
-            newExtraForce = 750;
+            newExtraForce = -.14f;
             isOutOfSync = true;
         }
         else if (distance < .01f && distance > -.01f)
@@ -162,17 +156,17 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         else if (distance <= -.01f && distance > -0.1f)
         {
-            newExtraForce = -750;
+            newExtraForce = .14f;
             isOutOfSync = true;
         }
         else if (distance <= -.1f && distance > -1f)
         {
-            newExtraForce = -1500;
+            newExtraForce = .56f;
             isOutOfSync = true;
         }
         else if (distance <= -1f && distance > -3f)
         {
-            newExtraForce = -8000;
+            newExtraForce = .86f;
             isOutOfSync = true;
         }
 
