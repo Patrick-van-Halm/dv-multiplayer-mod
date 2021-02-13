@@ -7,6 +7,8 @@ using DVMultiplayer;
 using DVMultiplayer.DTO.Player;
 using DVMultiplayer.Networking;
 using DVMultiplayer.Utils;
+using DVMultiplayer.Utils.Game;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -201,7 +203,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             {
                 writer.Write(new SetSpawn()
                 {
-                    Position = pos - WorldMover.currentMove
+                    Position = SavedPositions.Stations.Values.OrderBy(x => Math.Abs((x - pos).sqrMagnitude)).First()
                 });
 
                 using (Message message = Message.Create((ushort)NetworkTags.PLAYER_SPAWN_SET, writer))
@@ -266,9 +268,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                 NetworkManager.Disconnect();
             }
 
-            // Wait till world is loaded
-            yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
-
             // Initialize trains on save
             Main.DebugLog($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
             SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
@@ -288,7 +287,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             Main.DebugLog($"Syncing traincars");
             SingletonBehaviour<NetworkTrainManager>.Instance.SendInitCarsRequest();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced);
-            SingletonBehaviour<NetworkTrainManager>.Instance.RunBuffer();
 
             // Load Job data from server that changed since uptime
             Main.DebugLog($"Syncing jobs");
@@ -300,6 +298,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             yield return new WaitUntil(() => !AppUtil.IsPaused);
             yield return new WaitForEndOfFrame();
             PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
+            // Wait till world is loaded
+            yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
             CustomUI.Close();
         }
         else
@@ -455,6 +455,15 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     }
 
     /// <summary>
+    /// Gets all player objects
+    /// </summary>
+    /// <returns>GameObjects of all player</returns>
+    internal IEnumerable<GameObject> GetPlayers()
+    {
+        return networkPlayers.Values;
+    }
+
+    /// <summary>
     /// Gets the local player gameobject
     /// </summary>
     /// <returns>Local Player GameObject</returns>
@@ -527,5 +536,12 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             }
         }
         return false;
+    }
+
+    internal bool IsPlayerCloseToStation(GameObject player, StationController station)
+    {
+        StationJobGenerationRange stationRange = station.GetComponent<StationJobGenerationRange>();
+        float playerSqrDistanceFromStationCenter = (player.transform.position - stationRange.stationCenterAnchor.position).sqrMagnitude;
+        return stationRange.IsPlayerInJobGenerationZone(playerSqrDistanceFromStationCenter);
     }
 }

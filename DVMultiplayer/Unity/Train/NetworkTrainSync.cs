@@ -122,18 +122,19 @@ internal class NetworkTrainSync : MonoBehaviour
 
     public void OnDestroy()
     {
-        Main.DebugLog($"[{loco.ID}] NetworkTrainSync.OnDestroy()");
-        Main.DebugLog($"[{loco.ID}] Stop listening to input");
-        StopListeningToTrainInputEvents();
-        Main.DebugLog($"[{loco.ID}] Stop keeping interior loaded");
-        loco.keepInteriorLoaded = false;
+        if (loco)
+        {
+            Main.DebugLog($"[{loco.ID}] NetworkTrainSync.OnDestroy()");
+            Main.DebugLog($"[{loco.ID}] Stop listening to input");
+            StopListeningToTrainInputEvents();
+            Main.DebugLog($"[{loco.ID}] Stop keeping interior loaded");
+            loco.keepInteriorLoaded = false;
 
-        Main.DebugLog($"[{loco.ID}] Unload interior if player is not in car");
-        if (PlayerManager.Car && PlayerManager.Car.CarGUID == loco.CarGUID)
-            return;
+            Main.DebugLog($"[{loco.ID}] Unload interior if player is not in car");
 
-        if (loco.IsInteriorLoaded)
-            loco.UnloadInterior();
+            if (loco.IsInteriorLoaded)
+                loco.UnloadInterior();
+        }
     }
 
     private IEnumerator RotaryAmplitudeCheckerStartListen(FuseBoxPowerController fuseBox)
@@ -193,21 +194,9 @@ internal class NetworkTrainSync : MonoBehaviour
 
     private void OnTrainSanderChanged(float value)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs || sanderCoroutineActive)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
-        SingletonBehaviour<CoroutineManager>.Instance.Run(SanderUpdate());
-    }
-
-    private IEnumerator SanderUpdate()
-    {
-        sanderCoroutineActive = true;
-        if (baseController.IsSandOn())
-        {
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.Sander, 1);
-            yield return new WaitUntil(() => !baseController.IsSandOn());
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.Sander, 0);
-        }
-        sanderCoroutineActive = false;
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.Sander, value);
     }
 
     private void OnTrainReverserStateChanged(float value)

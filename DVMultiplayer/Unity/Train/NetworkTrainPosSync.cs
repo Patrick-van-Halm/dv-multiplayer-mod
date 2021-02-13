@@ -7,15 +7,13 @@ using UnityEngine;
 internal class NetworkTrainPosSync : MonoBehaviour
 {
     private TrainCar trainCar;
-    private float? newExtraForce = null;
-    private float prevExtraForce;
+    private Vector3? newExtraForce = null;
+    private Vector3 prevExtraForce;
     private bool isOutOfSync = false;
-    private Coroutine movingCoroutine;
     private Vector3 hostPos;
     private float prevIndepBrakePos;
     private float prevBrakePos;
     private Vector3 prevPos;
-    private bool isSyncingToHost = false;
     public bool hostDerailed;
 
 #pragma warning disable IDE0051 // Remove unused private members
@@ -50,7 +48,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 if (trainCar.brakeSystem.hasIndependentBrake)
                     trainCar.brakeSystem.independentBrakePosition = 0;
                 trainCar.brakeSystem.trainBrakePosition = 0;
-                trainCar.rb.velocity += trainCar.transform.forward * newExtraForce.Value;
+                if (Distance(trainCar.transform, hostPos) > 0)
+                    newExtraForce = new Vector3(0, 0, .14f);
+                else if (Distance(trainCar.transform, hostPos) < 0)
+                    newExtraForce = new Vector3(0, 0, -.14f);
             }
             else if (!isOutOfSync && prevBrakePos != 0 && prevIndepBrakePos != 0)
             {
@@ -63,7 +64,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
             if(prevExtraForce != newExtraForce.Value)
             {
-                trainCar.rb.velocity += trainCar.transform.forward * newExtraForce.Value;
+                trainCar.rb.velocity = newExtraForce.Value;
                 prevExtraForce = newExtraForce.Value;
             }
         }
@@ -134,39 +135,49 @@ internal class NetworkTrainPosSync : MonoBehaviour
     {
         float distance = Distance(trainCar.transform, location.Position);
         hostPos = location.Position;
-        if (distance > 3f)
+        if (distance > 10f)
         {
-            newExtraForce = -.86f;
+            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z + 1.5f);
             isOutOfSync = true;
         }
-        else if (distance <= 1f && distance > 0.1f)
+        else if (distance > 3f)
         {
-            newExtraForce = -.56f;
+            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z + .86f);
+            isOutOfSync = true;
+        }
+        else if (distance <= 3f && distance > .1f)
+        {
+            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z + .48f);
             isOutOfSync = true;
         }
         else if (distance <= .1f && distance > 0.01f)
         {
-            newExtraForce = -.14f;
+            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z + .14f);
             isOutOfSync = true;
         }
         else if (distance < .01f && distance > -.01f)
         {
-            newExtraForce = 0;
+            newExtraForce = location.Velocity;
             isOutOfSync = false;
         }
         else if (distance <= -.01f && distance > -0.1f)
         {
-            newExtraForce = .14f;
+            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z - .14f);
             isOutOfSync = true;
         }
-        else if (distance <= -.1f && distance > -1f)
+        else if (distance <= -.1f && distance > -3f)
         {
-            newExtraForce = .56f;
+            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z - .48f);
             isOutOfSync = true;
         }
-        else if (distance <= -1f && distance > -3f)
+        else if (distance <= -3f && distance >= -10f)
         {
-            newExtraForce = .86f;
+            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z - .86f);
+            isOutOfSync = true;
+        }
+        else if (distance > -10f)
+        {
+            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z - 1.5f);
             isOutOfSync = true;
         }
 

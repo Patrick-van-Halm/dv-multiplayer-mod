@@ -176,6 +176,7 @@
     <Compile Include="Networking\NetworkingUI.cs" />
     <Compile Include="Networking\NetworkManager.cs" />
     <Compile Include="Networking\NetworkTags.cs" />
+    <Compile Include="Patches\StopCreatingLocosAsClient.cs" />
     <Compile Include="Patches\StopTrainsToPoolWhenClient.cs" />
     <Compile Include="Patches\StopRemovingTrainsWhenClient.cs" />
     <Compile Include="Patches\StopTurntablePushWhenClient.cs" />
@@ -204,6 +205,7 @@
     <Compile Include="Unity\UI\InputButton.cs" />
     <Compile Include="Unity\UI\InputScreen.cs" />
     <Compile Include="Unity\UI\TextField.cs" />
+    <Compile Include="Utils\Game\SavedPositions.cs" />
     <Compile Include="Utils\UGameObject.cs" />
     <Compile Include="Utils\UUI.cs" />
   </ItemGroup>

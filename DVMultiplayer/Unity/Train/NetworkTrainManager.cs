@@ -892,7 +892,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             break;
 
                         case Levers.Sander:
-                            baseController.UpdateSand(lever.Value > 0 ? ToggleDirection.DOWN : ToggleDirection.UP);
+                            baseController.SetSanders(lever.Value);
                             serverTrainState.Sander = lever.Value;
                             break;
 

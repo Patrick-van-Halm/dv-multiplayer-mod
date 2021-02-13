@@ -2,6 +2,7 @@
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DV.CabControls;
+using DV.TerrainSystem;
 using DVMultiplayer;
 using DVMultiplayer.Darkrift;
 using DVMultiplayer.DTO.Turntable;
@@ -102,7 +103,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
             turntableController.turntable.targetYRotation += addToAngle ? .5f : -.5f;
             turntableController.turntable.RotateToTargetRotation();
             yield return new WaitUntil(() => turntableController.turntable.targetYRotation == turntableController.turntable.currentYRotation);
-            if (!(Mathf.Abs(turntableController.turntable.currentYRotation - angle) < .1f))
+            if (!(Mathf.Abs(turntableController.turntable.currentYRotation - angle) < .01f))
             {
                 yield return RotateTurntableTowardsByNetwork(turntableController, angle, moveSlow);
             }
@@ -224,7 +225,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                 if (turntable && turntableInfo.Rotation.HasValue)
                 {
                     turntable.leverGO.GetComponent<LeverBase>().SetValue(.5f);
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation.Value, true));
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation.Value, !SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(turntable.transform.position)));
                 }
             }
         }
