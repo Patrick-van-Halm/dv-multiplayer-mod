@@ -137,7 +137,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Vector3 newVelocity = Vector3.zero;
         if (distance > 10f)
         {
-            newVelocity = new Vector3(0, 0, trainCar.rb.velocity.z + 1.5f);
+            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z + 1.5f);
             if(newVelocity != newExtraForce)
             {
                 velocityShouldUpdate = true;
@@ -147,7 +147,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         else if (distance > 3f)
         {
-            newVelocity = new Vector3(0, 0, trainCar.rb.velocity.z + .86f);
+            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z + .86f);
             if (newVelocity != newExtraForce)
             {
                 velocityShouldUpdate = true;
@@ -157,7 +157,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         else if (distance <= 3f && distance > .1f)
         {
-            newVelocity = new Vector3(0, 0, trainCar.rb.velocity.z + .15f);
+            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z + .25f);
             if (newVelocity != newExtraForce)
             {
                 velocityShouldUpdate = true;
@@ -177,7 +177,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         else if (distance <= -.1f && distance > -3f)
         {
-            newVelocity = new Vector3(0, 0, trainCar.rb.velocity.z - .15f);
+            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z - .25f);
             if (newVelocity != newExtraForce)
             {
                 velocityShouldUpdate = true;
@@ -187,7 +187,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         else if (distance <= -3f && distance >= -10f)
         {
-            newVelocity = new Vector3(0, 0, trainCar.rb.velocity.z - .86f);
+            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z - .86f);
             if (newVelocity != newExtraForce)
             {
                 velocityShouldUpdate = true;
@@ -197,7 +197,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         else if (distance > -10f)
         {
-            newVelocity = new Vector3(0, 0, trainCar.rb.velocity.z - 1.5f);
+            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z - 1.5f);
             if (newVelocity != newExtraForce)
             {
                 velocityShouldUpdate = true;
