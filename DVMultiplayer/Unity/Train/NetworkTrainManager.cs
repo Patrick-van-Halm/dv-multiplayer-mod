@@ -475,6 +475,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 Bogie2TrackName = bogie2.track.name,
                 Bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
                 Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
+                IsStationary = trainCar.isStationary
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_LOCATION_UPDATE, writer))
@@ -668,8 +669,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 Main.DebugLog($"[CLIENT] < TRAIN_INIT: {train.Guid}");
                 serverCarStates.Add(train);
                 TrainCar car = InitializeNewTrainCar(train);
-                TeleportTrainToTrack(car, train.Position, train.Forward);
-                ResyncCoupling(car, train);
+                SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(car, train, true));
                 localCars.Add(car);
                 IsChangeByNetwork = false;
             }
@@ -832,6 +832,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     serverState.Bogie1RailTrackName = location.Bogie1TrackName;
                     serverState.Bogie2PositionAlongTrack = location.Bogie2PositionAlongTrack;
                     serverState.Bogie2RailTrackName = location.Bogie2TrackName;
+                    serverState.IsStationary = location.IsStationary;
 
                     Main.DebugLog($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
                     SingletonBehaviour<CoroutineManager>.Instance.Run(train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location));
@@ -1284,15 +1285,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
 
         Main.DebugLog($"Train repositioning sync: Pos: {serverState.Position.ToString("G3")}");
-        if (serverState.Position != Vector3.zero)
-            TeleportTrainToTrack(train, serverState.Position, serverState.Forward);
-
-        if (!isDerailed && train.derailed)
-        {
-            Main.DebugLog($"Train is not derailed on host so rerail");
-            if (serverState.Position != Vector3.zero)
-                yield return RerailDesynced(train, serverState.Position, serverState.Forward);
-        }
+        if (serverState.Position != Vector3.zero && !isDerailed && train.derailed)
+            yield return RerailDesynced(train, serverState.Position, serverState.Forward);
 
         SyncLocomotiveWithServerStates(train, serverState);
 
@@ -1448,41 +1442,34 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             newTrain.logicCar.LoadCargo(train.CargoAmount, train.CargoType);
         }
 
-        TeleportTrainToTrack(newTrain, train.Position, train.Forward);
-        try
-        {
-            ResyncCoupling(newTrain, train);
-        }
-        catch (Exception) { }
+        SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(newTrain, train, true));
         localCars.Add(newTrain);
 
         return newTrain;
+    }
+
+    internal IEnumerator RerailDesynced(TrainCar trainCar, WorldTrain train, bool resyncCoupling)
+    {
+        yield return RerailDesynced(trainCar, train.Position, train.Forward);
+        if (resyncCoupling)
+            try
+            {
+                ResyncCoupling(trainCar, train);
+            }
+            catch (Exception) { }
     }
 
     internal IEnumerator RerailDesynced(TrainCar trainCar, Vector3 pos, Vector3 fwd)
     {
         IsChangeByNetwork = true;
         trainCar.Rerail(RailTrack.GetClosest(pos + WorldMover.currentMove).track, CalculateWorldPosition(pos + WorldMover.currentMove, fwd, trainCar.Bounds.center.z), fwd);
+        foreach (Bogie bogie in trainCar.Bogies)
+            bogie.RefreshBogiePoints();
         yield return new WaitUntil(() => !trainCar.derailed);
         WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID);
         if (serverState != null)
             SyncLocomotiveWithServerStates(trainCar, serverState);
         IsChangeByNetwork = false;
-    }
-
-    internal void TeleportTrainToTrack(TrainCar trainCar, Vector3 pos, Vector3 fwd)
-    {
-        try
-        {
-            if (trainCar.AreBogiesFullyInitialized())
-            {
-                trainCar.Rerail(RailTrack.GetClosest(pos + WorldMover.currentMove).track, CalculateWorldPosition(pos + WorldMover.currentMove, fwd, trainCar.Bounds.center.z), fwd);
-            }
-        }
-        catch (Exception e)
-        {
-            Main.DebugLog($"Error: {e}");
-        }
     }
 
     internal void SyncLocomotives()

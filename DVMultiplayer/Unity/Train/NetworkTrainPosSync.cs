@@ -11,10 +11,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private Vector3 prevExtraForce;
     private bool isOutOfSync = false;
     private Vector3 hostPos;
+    private bool hostStationary;
     private float prevIndepBrakePos;
     private float prevBrakePos;
     private Vector3 prevPos;
     public bool hostDerailed;
+    private bool velocityShouldUpdate = false;
 
 #pragma warning disable IDE0051 // Remove unused private members
     private void Awake()
@@ -41,19 +43,16 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         if (!NetworkManager.IsHost() && newExtraForce.HasValue && !trainCar.derailed)
         {
-            if(isOutOfSync && ((trainCar.brakeSystem.hasIndependentBrake && trainCar.brakeSystem.independentBrakePosition > 0) || trainCar.brakeSystem.trainBrakePosition > 0))
+            if(isOutOfSync && hostStationary && ((trainCar.brakeSystem.hasIndependentBrake && trainCar.brakeSystem.independentBrakePosition > 0) || trainCar.brakeSystem.trainBrakePosition > 0))
             {
                 prevIndepBrakePos = trainCar.brakeSystem.hasIndependentBrake ? trainCar.brakeSystem.independentBrakePosition : 0;
                 prevBrakePos = trainCar.brakeSystem.trainBrakePosition;
                 if (trainCar.brakeSystem.hasIndependentBrake)
                     trainCar.brakeSystem.independentBrakePosition = 0;
                 trainCar.brakeSystem.trainBrakePosition = 0;
-                if (Distance(trainCar.transform, hostPos) > 0)
-                    newExtraForce = new Vector3(0, 0, .14f);
-                else if (Distance(trainCar.transform, hostPos) < 0)
-                    newExtraForce = new Vector3(0, 0, -.14f);
+                velocityShouldUpdate = true;
             }
-            else if (!isOutOfSync && prevBrakePos != 0 && prevIndepBrakePos != 0)
+            else if (!isOutOfSync && hostStationary && prevBrakePos != 0 && prevIndepBrakePos != 0)
             {
                 prevIndepBrakePos = 0;
                 prevBrakePos = 0;
@@ -62,10 +61,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 trainCar.brakeSystem.trainBrakePosition = prevBrakePos;
             }
 
-            if(prevExtraForce != newExtraForce.Value)
+            if(velocityShouldUpdate)
             {
                 trainCar.rb.velocity = newExtraForce.Value;
-                prevExtraForce = newExtraForce.Value;
+                velocityShouldUpdate = false;
             }
         }
     }
@@ -117,8 +116,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
 
         location.Position += WorldMover.currentMove;
+        hostStationary = location.IsStationary;
         SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(location);
-
     }
 
     private void SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(TrainLocation location)
@@ -135,49 +134,75 @@ internal class NetworkTrainPosSync : MonoBehaviour
     {
         float distance = Distance(trainCar.transform, location.Position);
         hostPos = location.Position;
+        Vector3 newVelocity = Vector3.zero;
         if (distance > 10f)
         {
-            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z + 1.5f);
+            newVelocity = new Vector3(0, 0, trainCar.rb.velocity.z + 1.5f);
+            if(newVelocity != newExtraForce)
+            {
+                velocityShouldUpdate = true;
+                newExtraForce = newVelocity;
+            }
             isOutOfSync = true;
         }
         else if (distance > 3f)
         {
-            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z + .86f);
+            newVelocity = new Vector3(0, 0, trainCar.rb.velocity.z + .86f);
+            if (newVelocity != newExtraForce)
+            {
+                velocityShouldUpdate = true;
+                newExtraForce = newVelocity;
+            }
             isOutOfSync = true;
         }
         else if (distance <= 3f && distance > .1f)
         {
-            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z + .48f);
+            newVelocity = new Vector3(0, 0, trainCar.rb.velocity.z + .15f);
+            if (newVelocity != newExtraForce)
+            {
+                velocityShouldUpdate = true;
+                newExtraForce = newVelocity;
+            }
             isOutOfSync = true;
         }
-        else if (distance <= .1f && distance > 0.01f)
+        else if (distance < .1f && distance > -.1f)
         {
-            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z + .14f);
-            isOutOfSync = true;
-        }
-        else if (distance < .01f && distance > -.01f)
-        {
-            newExtraForce = location.Velocity;
+            newVelocity = location.Velocity;
+            if (newVelocity != newExtraForce)
+            {
+                velocityShouldUpdate = true;
+                newExtraForce = newVelocity;
+            }
             isOutOfSync = false;
-        }
-        else if (distance <= -.01f && distance > -0.1f)
-        {
-            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z - .14f);
-            isOutOfSync = true;
         }
         else if (distance <= -.1f && distance > -3f)
         {
-            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z - .48f);
+            newVelocity = new Vector3(0, 0, trainCar.rb.velocity.z - .15f);
+            if (newVelocity != newExtraForce)
+            {
+                velocityShouldUpdate = true;
+                newExtraForce = newVelocity;
+            }
             isOutOfSync = true;
         }
         else if (distance <= -3f && distance >= -10f)
         {
-            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z - .86f);
+            newVelocity = new Vector3(0, 0, trainCar.rb.velocity.z - .86f);
+            if (newVelocity != newExtraForce)
+            {
+                velocityShouldUpdate = true;
+                newExtraForce = newVelocity;
+            }
             isOutOfSync = true;
         }
         else if (distance > -10f)
         {
-            newExtraForce = new Vector3(0, 0, trainCar.rb.velocity.z - 1.5f);
+            newVelocity = new Vector3(0, 0, trainCar.rb.velocity.z - 1.5f);
+            if (newVelocity != newExtraForce)
+            {
+                velocityShouldUpdate = true;
+                newExtraForce = newVelocity;
+            }
             isOutOfSync = true;
         }
 

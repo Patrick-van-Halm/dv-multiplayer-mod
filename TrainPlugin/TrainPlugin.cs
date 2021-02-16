@@ -12,7 +12,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.0");
+        public override Version Version => new Version("1.6.1");
 
         private readonly List<WorldTrain> worldTrains;
 
@@ -488,6 +488,7 @@ namespace TrainPlugin
                     train.Bogie1RailTrackName = newLocation.Bogie1TrackName;
                     train.Bogie2PositionAlongTrack = newLocation.Bogie2PositionAlongTrack;
                     train.Bogie2RailTrackName = newLocation.Bogie2TrackName;
+                    train.IsStationary = newLocation.IsStationary;
                 }
             }
             //Logger.Trace("[SERVER] > TRAIN_LOCATION_UPDATE");
