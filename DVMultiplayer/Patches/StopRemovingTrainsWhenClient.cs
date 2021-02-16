@@ -18,7 +18,7 @@ namespace DVMultiplayer.Patches
 			}
             else if(NetworkManager.IsHost() && SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded)
             {
-				bool isPlayerNearTrain = false;
+				bool isPlayerNotNearTrain = true;
 				float distCheck;
 				if (CarTypes.IsAnyLocomotiveOrTender(trainCar.carType))
 				{
@@ -35,15 +35,16 @@ namespace DVMultiplayer.Patches
 
 				foreach (GameObject player in SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers())
 				{
-					isPlayerNearTrain = (trainCar.transform.position - player.transform.position).sqrMagnitude > distCheck;
-					break;
+					isPlayerNotNearTrain = (trainCar.transform.position - player.transform.position).sqrMagnitude > distCheck;
+					if(!isPlayerNotNearTrain)
+						break;
 				}
 
-				if (!isPlayerNearTrain)
+				if (isPlayerNotNearTrain)
 				{
-					isPlayerNearTrain = (trainCar.transform.position - PlayerManager.PlayerTransform.position).sqrMagnitude > distCheck;
+					isPlayerNotNearTrain = (trainCar.transform.position - PlayerManager.PlayerTransform.position).sqrMagnitude > distCheck;
 				}
-				__result = isPlayerNearTrain;
+				__result = isPlayerNotNearTrain;
 			}
         }
     }
