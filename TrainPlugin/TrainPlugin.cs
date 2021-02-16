@@ -13,12 +13,12 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.2");
+        public override Version Version => new Version("1.6.3");
 
         private readonly List<WorldTrain> worldTrains;
         private bool shouldSendNewTrains = false;
         private Timer sendNewTrainsCheck;
-        private Dictionary<IClient, List<WorldTrain>> sendNewTrains;
+        private readonly Dictionary<IClient, List<WorldTrain>> sendNewTrains;
 
         public TrainPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -292,19 +292,20 @@ namespace TrainPlugin
 
         private void NewTrainInitialized(Message message, IClient sender)
         {
+            shouldSendNewTrains = false;
             using (DarkRiftReader reader = message.GetReader())
             {
-                worldTrains.Add(reader.ReadSerializable<WorldTrain>());
-                shouldSendNewTrains = false;
+                WorldTrain train = reader.ReadSerializable<WorldTrain>();
+                worldTrains.Add(train);
                 if (sendNewTrains.ContainsKey(sender))
-                    sendNewTrains[sender].Add(reader.ReadSerializable<WorldTrain>());
+                    sendNewTrains[sender].Add(train);
                 else
-                    sendNewTrains.Add(sender, new List<WorldTrain>() { reader.ReadSerializable<WorldTrain>() });
+                    sendNewTrains.Add(sender, new List<WorldTrain>() { train });
             }
 
             if(sendNewTrainsCheck == null)
             {
-                sendNewTrainsCheck = new Timer(1000);
+                sendNewTrainsCheck = new Timer(2000);
                 sendNewTrainsCheck.Elapsed += NewTrainsCheck;
                 sendNewTrainsCheck.Start();
             }

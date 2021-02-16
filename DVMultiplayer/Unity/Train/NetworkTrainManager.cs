@@ -1433,22 +1433,31 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         newTrain.LoadInterior();
         newTrain.keepInteriorLoaded = true;
 
-        newTrain.gameObject.AddComponent<NetworkTrainPosSync>();
+        NetworkTrainPosSync posSyncer = newTrain.gameObject.AddComponent<NetworkTrainPosSync>();
         if (newTrain.IsLoco)
             newTrain.gameObject.AddComponent<NetworkTrainSync>();
 
         newTrain.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
         newTrain.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
 
-        if (!newTrain.IsLoco && train.CargoType != CargoType.None)
-        {
+        if(newTrain.logicCar != null && !newTrain.IsLoco && train.CargoType != CargoType.None)
             newTrain.logicCar.LoadCargo(train.CargoAmount, train.CargoType);
-        }
+        else if(newTrain.logicCar != null)
+            posSyncer.OnTrainCarInitialized += NetworkTrainManager_OnTrainCarInitialized;
 
         SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(newTrain, train, true));
         localCars.Add(newTrain);
 
         return newTrain;
+    }
+
+    private void NetworkTrainManager_OnTrainCarInitialized(TrainCar train)
+    {
+        WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID);
+        if (!train.IsLoco && serverState.CargoType != CargoType.None)
+        {
+            train.logicCar.LoadCargo(serverState.CargoAmount, serverState.CargoType);
+        }
     }
 
     internal IEnumerator RerailDesynced(TrainCar trainCar, WorldTrain train, bool resyncCoupling)

@@ -1,6 +1,7 @@
 ﻿using DVMultiplayer;
 using DVMultiplayer.DTO.Train;
 using DVMultiplayer.Networking;
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -17,6 +18,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private Vector3 prevPos;
     public bool hostDerailed;
     private bool velocityShouldUpdate = false;
+    public event Action<TrainCar> OnTrainCarInitialized;
 
 #pragma warning disable IDE0051 // Remove unused private members
     private void Awake()
@@ -29,11 +31,17 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.DebugLog($"Listen to derailment events");
         trainCar.OnDerailed += TrainDerail;
         trainCar.OnRerailed += TrainRerail;
+        trainCar.LogicCarInitialized += TrainCar_LogicCarInitialized;
 
         if (NetworkManager.IsHost())
         {
             SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
         }
+    }
+
+    private void TrainCar_LogicCarInitialized()
+    {
+        OnTrainCarInitialized?.Invoke(trainCar);
     }
 
     private void FixedUpdate()
