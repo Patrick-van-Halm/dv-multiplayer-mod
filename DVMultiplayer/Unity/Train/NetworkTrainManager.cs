@@ -665,12 +665,15 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             while (reader.Position < reader.Length)
             {
                 IsChangeByNetwork = true;
-                WorldTrain train = reader.ReadSerializable<WorldTrain>();
-                Main.DebugLog($"[CLIENT] < TRAIN_INIT: {train.Guid}");
-                serverCarStates.Add(train);
-                TrainCar car = InitializeNewTrainCar(train);
-                SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(car, train, true));
-                localCars.Add(car);
+                WorldTrain[] trains = reader.ReadSerializables<WorldTrain>();
+                foreach(WorldTrain train in trains)
+                {
+                    Main.DebugLog($"[CLIENT] < TRAIN_INIT: {train.Guid}");
+                    serverCarStates.Add(train);
+                    TrainCar car = InitializeNewTrainCar(train);
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(car, train, true));
+                    localCars.Add(car);
+                }
                 IsChangeByNetwork = false;
             }
         }

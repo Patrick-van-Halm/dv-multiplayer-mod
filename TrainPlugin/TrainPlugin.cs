@@ -5,6 +5,7 @@ using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Timers;
 
 namespace TrainPlugin
 {
@@ -12,13 +13,17 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.1");
+        public override Version Version => new Version("1.6.2");
 
         private readonly List<WorldTrain> worldTrains;
+        private bool shouldSendNewTrains = false;
+        private Timer sendNewTrainsCheck;
+        private Dictionary<IClient, List<WorldTrain>> sendNewTrains;
 
         public TrainPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
             worldTrains = new List<WorldTrain>();
+            sendNewTrains = new Dictionary<IClient, List<WorldTrain>>();
             ClientManager.ClientConnected += OnClientConnected;
         }
 
@@ -290,9 +295,44 @@ namespace TrainPlugin
             using (DarkRiftReader reader = message.GetReader())
             {
                 worldTrains.Add(reader.ReadSerializable<WorldTrain>());
+                shouldSendNewTrains = false;
+                if (sendNewTrains.ContainsKey(sender))
+                    sendNewTrains[sender].Add(reader.ReadSerializable<WorldTrain>());
+                else
+                    sendNewTrains.Add(sender, new List<WorldTrain>() { reader.ReadSerializable<WorldTrain>() });
             }
 
-            ReliableSendToOthers(message, sender);
+            if(sendNewTrainsCheck == null)
+            {
+                sendNewTrainsCheck = new Timer(1000);
+                sendNewTrainsCheck.Elapsed += NewTrainsCheck;
+                sendNewTrainsCheck.Start();
+            }
+        }
+
+        private void NewTrainsCheck(object sender, ElapsedEventArgs e)
+        {
+            if(!shouldSendNewTrains)
+            {
+                shouldSendNewTrains = true;
+            }
+            else
+            {
+                foreach(IClient client in sendNewTrains.Keys)
+                {
+                    using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                    {
+                        Logger.Trace("[SERVER] > TRAIN_INIT");
+
+                        writer.Write(sendNewTrains[client].ToArray());
+
+                        using (Message message = Message.Create((ushort)NetworkTags.TRAIN_INIT, writer))
+                            ReliableSendToOthers(message, client);
+                    }
+                    sendNewTrains.Remove(client);
+                }
+                shouldSendNewTrains = false;
+            }
         }
 
         private void UpdateTrainDerailed(Message message, IClient sender)
