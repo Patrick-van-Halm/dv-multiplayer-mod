@@ -12,16 +12,18 @@ namespace DVMultiplayer.DTO.Job
         public string Id { get; set; }
         public string JobData { get; set; }
         public bool IsTaken { get; set; } = false;
-        public ushort TakenByClient { get; set; } = 0;
         public bool IsCompleted { get; set; } = false;
+        public bool CanTakeJob { get; set; } = true;
+        public List<ushort> TakenBy { get; set; }
+        public bool IsTakenByLocalPlayer { get; set; } = false;
 
         public void Deserialize(DeserializeEvent e)
         {
             Id = e.Reader.ReadString();
             JobData = e.Reader.ReadString();
             IsTaken = e.Reader.ReadBoolean();
-            TakenByClient = e.Reader.ReadUInt16();
             IsCompleted = e.Reader.ReadBoolean();
+            CanTakeJob = e.Reader.ReadBoolean();
         }
 
         public void Serialize(SerializeEvent e)
@@ -29,8 +31,8 @@ namespace DVMultiplayer.DTO.Job
             e.Writer.Write(Id);
             e.Writer.Write(JobData);
             e.Writer.Write(IsTaken);
-            e.Writer.Write(TakenByClient);
             e.Writer.Write(IsCompleted);
+            e.Writer.Write(CanTakeJob);
         }
     }
 }

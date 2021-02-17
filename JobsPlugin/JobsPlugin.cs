@@ -12,7 +12,7 @@ namespace JobsPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.0");
+        public override Version Version => new Version("1.0.1");
 
         private readonly List<Job> jobs;
 
@@ -50,9 +50,40 @@ namespace JobsPlugin
                     case NetworkTags.JOB_HOST_SYNC:
                         UpdateServerJobs(message);
                         break;
-                }
 
+                    case NetworkTags.JOB_TAKEN:
+                        OnJobTaken(message, e.Client);
+                        break;
+
+                    case NetworkTags.JOB_COMPLETED:
+                        OnJobCompleted(message, e.Client);
+                        break;
+                }
             }
+        }
+
+        private void OnJobCompleted(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                string id = reader.ReadString();
+                Job job = jobs.FirstOrDefault(j => j.Id == id);
+                job.IsCompleted = true;
+            }
+
+            ReliableSendToOthers(message, client);
+        }
+
+        private void OnJobTaken(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                string id = reader.ReadString();
+                Job job = jobs.FirstOrDefault(j => j.Id == id);
+                job.IsTaken = true;
+            }
+
+            ReliableSendToOthers(message, client);
         }
 
         private void UpdateServerJobs(Message message)
@@ -68,7 +99,7 @@ namespace JobsPlugin
         {
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
-                writer.Write(jobs.ToArray());
+                writer.Write(jobs.Where(j => !j.IsCompleted).ToArray());
 
                 using (Message msg = Message.Create((ushort)NetworkTags.JOB_SYNC, writer))
                     sender.SendMessage(msg, SendMode.Reliable);

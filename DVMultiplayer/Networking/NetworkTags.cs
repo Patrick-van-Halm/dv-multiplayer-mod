@@ -35,5 +35,7 @@
         JOB_CREATED,
         JOB_SYNC,
         JOB_HOST_SYNC,
+        JOB_TAKEN,
+        JOB_COMPLETED,
     }
 }
