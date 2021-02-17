@@ -1291,7 +1291,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         if (serverState.Position != Vector3.zero && !isDerailed && train.derailed)
             yield return RerailDesynced(train, serverState.Position, serverState.Forward);
 
-        SyncLocomotiveWithServerStates(train, serverState);
+        SyncLocomotiveWithServerState(train, serverState);
 
         Main.DebugLog($"Train physics sync");
         if (serverState.Velocity != Vector3.zero)
@@ -1357,7 +1357,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         buffer.RunBuffer();
     }
 
-    private void SyncLocomotiveWithServerStates(TrainCar train, WorldTrain serverState)
+    private void SyncLocomotiveWithServerState(TrainCar train, WorldTrain serverState)
     {
         if (!train.IsLoco)
             return;
@@ -1474,14 +1474,26 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     internal IEnumerator RerailDesynced(TrainCar trainCar, Vector3 pos, Vector3 fwd)
     {
         IsChangeByNetwork = true;
-        trainCar.Rerail(RailTrack.GetClosest(pos + WorldMover.currentMove).track, CalculateWorldPosition(pos + WorldMover.currentMove, fwd, trainCar.Bounds.center.z), fwd);
-        foreach (Bogie bogie in trainCar.Bogies)
-            bogie.RefreshBogiePoints();
-        yield return new WaitUntil(() => !trainCar.derailed);
-        WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID);
-        if (serverState != null)
-            SyncLocomotiveWithServerStates(trainCar, serverState);
+        RailTrack track = RailTrack.GetClosest(pos + WorldMover.currentMove).track;
+        if (track)
+        {
+            trainCar.Rerail(track, CalculateWorldPosition(pos + WorldMover.currentMove, fwd, trainCar.Bounds.center.z), fwd);
+            foreach (Bogie bogie in trainCar.Bogies)
+                bogie.RefreshBogiePoints();
+            yield return new WaitUntil(() => !trainCar.derailed);
+            WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID);
+            if (serverState != null)
+            {
+                SyncLocomotiveWithServerState(trainCar, serverState);
+                SyncDamageWithServerState(trainCar, serverState);
+            }
+        }
         IsChangeByNetwork = false;
+    }
+
+    private void SyncDamageWithServerState(TrainCar trainCar, WorldTrain serverState)
+    {
+        
     }
 
     internal void SyncLocomotives()
@@ -1495,7 +1507,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
             if (train != null)
             {
-                SyncLocomotiveWithServerStates(train, selectedTrain);
+                SyncLocomotiveWithServerState(train, selectedTrain);
             }
         }
     }
