@@ -14,13 +14,13 @@ using UnityEngine;
 internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
 {
     private StationController[] allStations;
-    private Dictionary<Job, JobChainController> jobs;
+    private Dictionary<Job, DV.Logic.Job.Job> jobs;
     public bool IsChangedByNetwork { get; set; }
     public bool IsSynced { get; internal set; }
 
     protected override void Awake()
     {
-        jobs = new Dictionary<Job, JobChainController>();
+        jobs = new Dictionary<Job, DV.Logic.Job.Job>();
         Main.DebugLog($"NetworkJobsManager initialized");
         base.Awake();
         allStations = GameObject.FindObjectsOfType<StationController>();
@@ -68,11 +68,12 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
     private void Job_JobCompleted(DV.Logic.Job.Job job)
     {
         Job sJob = jobs.Keys.FirstOrDefault(j => j.Id == job.ID);
-        if (sJob != null && sJob.IsCompleted)
+        if (sJob != null && !sJob.IsCompleted)
         {
             SendJobCompleted(job.ID);
             sJob.IsCompleted = true;
         }
+        jobs.Remove(sJob);
     }
 
     #endregion
@@ -121,7 +122,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                 {
                     job.IsCompleted = true;
                     if(!job.IsTakenByLocalPlayer)
-                        jobs[job].currentJobInChain.CompleteJob();
+                        jobs[job].CompleteJob();
                 }
                 IsChangedByNetwork = false;
             }
@@ -165,9 +166,9 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                     GameObject jobGO = SingletonBehaviour<JobSaveManager>.Instance.LoadJobChain(jobSaveData);
                     if (jobGO)
                     {
-                        JobChainController chain = jobGO.GetComponent<JobChainController>();
-                        chain.currentJobInChain.JobTaken += CurrentJobInChain_JobTaken;
-                        this.jobs.Add(job, chain);
+                        StaticJobDefinition jobDef = jobGO.GetComponent<StaticJobDefinition>();
+                        jobDef.job.JobTaken += CurrentJobInChain_JobTaken;
+                        this.jobs.Add(job, jobDef.job);
                         Main.DebugLog("Job successfully loaded");
                     }
                 }
@@ -188,18 +189,18 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                 IsChangedByNetwork = true;
                 JobCreated job = reader.ReadSerializable<JobCreated>();
                 JobChainSaveData jobSaveData = JsonConvert.DeserializeObject<JobChainSaveData>(job.JobData, JobSaveManager.serializeSettings);
-                GameObject generatedJobGO = SingletonBehaviour<JobSaveManager>.Instance.LoadJobChain(jobSaveData);
-                if (generatedJobGO)
+                GameObject jobGO = SingletonBehaviour<JobSaveManager>.Instance.LoadJobChain(jobSaveData);
+                if (jobGO)
                 {
-                    JobChainController chain = generatedJobGO.GetComponent<JobChainController>();
-                    chain.currentJobInChain.JobTaken += CurrentJobInChain_JobTaken;
+                    StaticJobDefinition jobDef = jobGO.GetComponent<StaticJobDefinition>();
+                    jobDef.job.JobTaken += CurrentJobInChain_JobTaken;
                     jobs.Add(new Job()
                     {
                         Id = job.Id,
                         JobData = job.JobData,
                         IsTaken = false,
                         IsCompleted = false
-                    }, chain);
+                    }, jobDef.job);
                     Main.DebugLog("Job successfully loaded");
                 }
                 IsChangedByNetwork = false;
@@ -232,7 +233,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                 JobData = newJob.JobData,
                 IsCompleted = false,
                 IsTaken = false
-            }, job);
+            }, job.currentJobInChain);
 
             using (Message message = Message.Create((ushort)NetworkTags.JOB_CREATED, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
@@ -300,7 +301,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                     currentJobs.Add(sJob);
 
                     job.currentJobInChain.JobTaken += CurrentJobInChain_JobTaken;
-                    jobs.Add(sJob, job);
+                    jobs.Add(sJob, job.currentJobInChain);
                 }
             }
             writer.Write(currentJobs.ToArray());
