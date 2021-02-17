@@ -1,4 +1,5 @@
-﻿using DVMultiplayer.Networking;
+﻿using DV.Printers;
+using DVMultiplayer.Networking;
 using HarmonyLib;
 
 namespace DVMultiplayer.Patches
@@ -8,12 +9,16 @@ namespace DVMultiplayer.Patches
     [HarmonyPatch(typeof(JobValidator), "ProcessJobOverview")]
     internal class JobValidatorStopAcceptingJobIfNotAllowed
     {
-        private static bool Prefix(JobOverview jobOverview)
+        private static bool Prefix(JobOverview jobOverview, PrinterController ___bookletPrinter)
         {
             if (NetworkManager.IsClient())
             {
-                if(jobOverview.job.State == DV.Logic.Job.JobState.Available)
-                    return SingletonBehaviour<NetworkJobsManager>.Instance.IsAllowedToTakeJob(jobOverview.job.ID);
+                if(jobOverview.job.State == DV.Logic.Job.JobState.Available && SingletonBehaviour<NetworkJobsManager>.Instance.IsAllowedToTakeJob(jobOverview.job.ID))
+                {
+                    ___bookletPrinter.PlayErrorSound();
+                    jobOverview.DestroyJobOverview();
+                    return false;
+                }
             }
             return true;
         }
