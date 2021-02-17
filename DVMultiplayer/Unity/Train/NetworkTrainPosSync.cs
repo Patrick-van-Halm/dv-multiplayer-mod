@@ -76,10 +76,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
     }
 #pragma warning restore IDE0051 // Remove unused private members
-        
 
     private void TrainRerail()
     {
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
+            return;
+
         SingletonBehaviour<NetworkTrainManager>.Instance.SendRerailCarUpdate(trainCar);
     }
 
