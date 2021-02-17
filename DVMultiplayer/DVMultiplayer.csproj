@@ -159,6 +159,7 @@
     <Compile Include="DTO\Player\NPlayer.cs" />
     <Compile Include="DTO\Player\SetSpawn.cs" />
     <Compile Include="DTO\Savegame\Savegame.cs" />
+    <Compile Include="DTO\Train\CarDamage.cs" />
     <Compile Include="DTO\Train\CarRemoval.cs" />
     <Compile Include="DTO\Train\Shunter.cs" />
     <Compile Include="DTO\Train\TrainCouplerCockChange.cs" />

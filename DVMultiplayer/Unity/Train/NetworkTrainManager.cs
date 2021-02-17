@@ -141,6 +141,15 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         if (trainCar && trainCar.IsLoco)
             trainCar.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = true;
     }
+
+    private void NetworkTrainManager_OnTrainCarInitialized(TrainCar train)
+    {
+        WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID);
+        if (!train.IsLoco && serverState.CargoType != CargoType.None)
+        {
+            train.logicCar.LoadCargo(serverState.CargoAmount, serverState.CargoType);
+        }
+    }
     #endregion
 
     #region Messaging
@@ -198,13 +207,35 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 case NetworkTags.TRAIN_REMOVAL:
                     OnCarRemovalMessage(message);
                     break;
+
+                case NetworkTags.TRAIN_DAMAGE:
+                    OnCarDamageMessage(message);
+                    break;
             }
         }
     }
-
     #endregion
 
     #region Sending Messages
+    internal void SendCarDamaged(string carGUID, DamageType type, float amount)
+    {
+        if (!IsSynced)
+            return;
+
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write(new CarDamage()
+            {
+                Guid = carGUID,
+                DamageType = type,
+                Damage = amount
+            });
+
+            using (Message message = Message.Create((ushort)NetworkTags.TRAIN_DAMAGE, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
+    }
+
     private void SendCarBeingRemoved(TrainCar car)
     {
         if (!IsSynced)
@@ -226,77 +257,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
-            Main.DebugLog($"Get train bogies");
-            Bogie bogie1 = car.Bogies[0];
-            Bogie bogie2 = car.Bogies[car.Bogies.Length - 1];
-            Main.DebugLog($"Train bogies found: {bogie1 != null && bogie2 != null}");
-
-            Main.DebugLog($"Set train defaults");
-            WorldTrain train = new WorldTrain()
-            {
-                Guid = car.CarGUID,
-                Id = car.ID,
-                CarType = car.carType,
-                IsLoco = car.IsLoco,
-                Position = car.transform.position - WorldMover.currentMove,
-                Rotation = car.transform.rotation,
-                Velocity = car.rb.velocity,
-                AngularVelocity = car.rb.angularVelocity,
-                Forward = car.transform.forward,
-                IsBogie1Derailed = bogie1.HasDerailed,
-                IsBogie2Derailed = bogie2.HasDerailed,
-                Bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
-                Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
-                Bogie1RailTrackName = bogie1.track.name,
-                Bogie2RailTrackName = bogie2.track.name,
-                IsFrontCouplerCoupled = car.frontCoupler.coupledTo,
-                IsFrontCouplerCockOpen = car.frontCoupler.IsCockOpen,
-                IsFrontCouplerHoseConnected = car.frontCoupler.GetAirHoseConnectedTo() != null,
-                IsRearCouplerCoupled = car.rearCoupler.coupledTo,
-                IsRearCouplerCockOpen = car.rearCoupler.IsCockOpen,
-                IsRearCouplerHoseConnected = car.rearCoupler.GetAirHoseConnectedTo() != null,
-                IsPlayerSpawned = car.playerSpawnedCar,
-                CargoType = car.LoadedCargo,
-                CargoAmount = car.LoadedCargoAmount
-            };
-
-            if (car.IsLoco)
-            {
-                Main.DebugLog($"Set locomotive defaults");
-                LocoControllerBase loco = car.GetComponent<LocoControllerBase>();
-                Main.DebugLog($"Loco controller found: {loco != null}");
-                train.Throttle = loco.throttle;
-                Main.DebugLog($"Throttle set: {train.Throttle}");
-                train.Brake = loco.brake;
-                Main.DebugLog($"Brake set: {train.Brake}");
-                train.IndepBrake = loco.independentBrake;
-                Main.DebugLog($"IndepBrake set: {train.IndepBrake}");
-                train.Reverser = loco.reverser;
-                Main.DebugLog($"Reverser set: {train.Reverser}");
-                train.Sander = loco.IsSandOn() ? 1 : 0;
-                Main.DebugLog($"Sander set: {train.Sander}");
-            }
-
-            switch (car.carType)
-            {
-                case TrainCarType.LocoShunter:
-                    Main.DebugLog($"Set shunter defaults");
-                    LocoControllerShunter loco = car.GetComponent<LocoControllerShunter>();
-                    Main.DebugLog($"Shunter controller found: {loco != null}");
-                    ShunterDashboardControls dashboard = car.interior.GetComponentInChildren<ShunterDashboardControls>();
-                    Main.DebugLog($"Shunter dashboard found: {dashboard != null}");
-                    train.Shunter = new Shunter()
-                    {
-                        IsEngineOn = loco.GetEngineRunning(),
-                        IsMainFuseOn = dashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1,
-                        IsSideFuse1On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1,
-                        IsSideFuse2On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1
-                    };
-                    Main.DebugLog($"Shunter set: IsEngineOn: {train.Shunter.IsEngineOn}, IsMainFuseOn: {train.Shunter.IsMainFuseOn}, IsSideFuse1On: {train.Shunter.IsSideFuse1On}, IsSideFuse2On: {train.Shunter.IsSideFuse2On}");
-                    break;
-            }
-
-            writer.Write(train);
+            writer.Write(GenerateServerCarData(car));
             Main.DebugLog($"[CLIENT] > TRAIN_INIT: {car.CarGUID}");
 
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_INIT, writer))
@@ -312,82 +273,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             Main.DebugLog($"Host synching trains with server. Train amount: {localCars.Count}");
             foreach (TrainCar car in localCars)
             {
-                Main.DebugLog($"Load train interior if not loaded");
-                car.LoadInterior();
-                Main.DebugLog($"Keep train interior loaded");
-                car.keepInteriorLoaded = true;
-
-                Main.DebugLog($"Get train bogies");
-                Bogie bogie1 = car.Bogies[0];
-                Bogie bogie2 = car.Bogies[car.Bogies.Length - 1];
-                Main.DebugLog($"Train bogies found: {bogie1 != null && bogie2 != null}");
-
-                Main.DebugLog($"Set train defaults");
-                WorldTrain train = new WorldTrain()
-                {
-                    Guid = car.CarGUID,
-                    Id = car.ID,
-                    CarType = car.carType,
-                    IsLoco = car.IsLoco,
-                    Position = car.transform.position - WorldMover.currentMove,
-                    Rotation = car.transform.rotation,
-                    Velocity = car.rb.velocity,
-                    AngularVelocity = car.rb.angularVelocity,
-                    Forward = car.transform.forward,
-                    IsBogie1Derailed = bogie1.HasDerailed,
-                    IsBogie2Derailed = bogie2.HasDerailed,
-                    Bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
-                    Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
-                    Bogie1RailTrackName = bogie1.track.name,
-                    Bogie2RailTrackName = bogie2.track.name,
-                    IsFrontCouplerCoupled = car.frontCoupler.coupledTo,
-                    IsFrontCouplerCockOpen = car.frontCoupler.IsCockOpen,
-                    IsFrontCouplerHoseConnected = car.frontCoupler.GetAirHoseConnectedTo(),
-                    IsRearCouplerCoupled = car.rearCoupler.coupledTo,
-                    IsRearCouplerCockOpen = car.rearCoupler.IsCockOpen,
-                    IsRearCouplerHoseConnected = car.rearCoupler.GetAirHoseConnectedTo(),
-                    IsPlayerSpawned = car.playerSpawnedCar,
-                    CargoType = car.LoadedCargo,
-                    CargoAmount = car.LoadedCargoAmount
-                };
-
-                if (car.IsLoco)
-                {
-                    Main.DebugLog($"Set locomotive defaults");
-                    LocoControllerBase loco = car.GetComponent<LocoControllerBase>();
-                    Main.DebugLog($"Loco controller found: {loco != null}");
-                    train.Throttle = loco.throttle;
-                    Main.DebugLog($"Throttle set: {train.Throttle}");
-                    train.Brake = loco.brake;
-                    Main.DebugLog($"Brake set: {train.Brake}");
-                    train.IndepBrake = loco.independentBrake;
-                    Main.DebugLog($"IndepBrake set: {train.IndepBrake}");
-                    train.Reverser = loco.reverser;
-                    Main.DebugLog($"Reverser set: {train.Reverser}");
-                    train.Sander = loco.IsSandOn() ? 1 : 0;
-                    Main.DebugLog($"Sander set: {train.Sander}");
-                }
-
-                switch (car.carType)
-                {
-                    case TrainCarType.LocoShunter:
-                        Main.DebugLog($"Set shunter defaults");
-                        LocoControllerShunter loco = car.GetComponent<LocoControllerShunter>();
-                        Main.DebugLog($"Shunter controller found: {loco != null}");
-                        ShunterDashboardControls dashboard = car.interior.GetComponentInChildren<ShunterDashboardControls>();
-                        Main.DebugLog($"Shunter dashboard found: {dashboard != null}");
-                        train.Shunter = new Shunter()
-                        {
-                            IsEngineOn = loco.GetEngineRunning(),
-                            IsMainFuseOn = dashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1,
-                            IsSideFuse1On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1,
-                            IsSideFuse2On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1
-                        };
-                        Main.DebugLog($"Shunter set: IsEngineOn: {train.Shunter.IsEngineOn}, IsMainFuseOn: {train.Shunter.IsMainFuseOn}, IsSideFuse1On: {train.Shunter.IsSideFuse1On}, IsSideFuse2On: {train.Shunter.IsSideFuse2On}");
-                        break;
-                }
-                Main.DebugLog($"Add train to sync pile");
-                trains.Add(train);
+                trains.Add(GenerateServerCarData(car));
             }
 
             Main.mod.Logger.Log($"[CLIENT] > TRAIN_HOSTSYNC: AmountOfTrains: {trains.Count}");
@@ -633,6 +519,42 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     #endregion
 
     #region Receiving Messages
+    private void OnCarDamageMessage(Message message)
+    {
+        if (buffer.NotSyncedAddToBuffer(IsSynced, OnCarDamageMessage, message))
+            return;
+
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            while (reader.Position < reader.Length)
+            {
+                CarDamage damage = reader.ReadSerializable<CarDamage>();
+                TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == damage.Guid);
+                if (train)
+                {
+                    IsChangeByNetwork = true;
+                    bool isRepaired = damage.Damage < 0;
+                    switch (damage.DamageType)
+                    {
+                        case DamageType.Car:
+                            if (isRepaired)
+                                train.CarDamage.RepairCar(-damage.Damage);
+                            else
+                                train.CarDamage.DamageCar(damage.Damage);
+                            break;
+
+                        case DamageType.Cargo:
+                            if (isRepaired)
+                                Main.DebugLog("[ERROR] Cargo cannot be repaired");
+                            else
+                                train.CargoDamage.LoadCargoDamageState(damage.Damage);
+                            break;
+                    }
+                    IsChangeByNetwork = false;
+                }
+            }
+        }
+    }
 
     private void OnCarRemovalMessage(Message message)
     {
@@ -702,8 +624,20 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         serverState.Bogie2RailTrackName = rerail.Bogie2TrackName;
                         serverState.Bogie1PositionAlongTrack = rerail.Bogie1PositionAlongTrack;
                         serverState.Bogie2PositionAlongTrack = rerail.Bogie2PositionAlongTrack;
+                        if (serverState.IsLoco)
+                        {
+                            serverState.Throttle = 0;
+                            serverState.Sander = 0;
+                            serverState.Brake = 0;
+                            serverState.IndepBrake = 1;
+                            serverState.Reverser = .5f;
+                            if (serverState.Shunter != null)
+                            {
+                                serverState.Shunter.IsEngineOn = false;
+                            }
+                        }
                     }
-                    train.Rerail(RailTrack.GetClosest(rerail.Position + WorldMover.currentMove).track, CalculateWorldPosition(rerail.Position + WorldMover.currentMove, rerail.Forward, train.Bounds.center.z), rerail.Forward);
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(train, rerail.Position, rerail.Forward));
                 }
             }
         }
@@ -1292,6 +1226,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             yield return RerailDesynced(train, serverState.Position, serverState.Forward);
 
         SyncLocomotiveWithServerState(train, serverState);
+        SyncDamageWithServerState(train, serverState);
 
         Main.DebugLog($"Train physics sync");
         if (serverState.Velocity != Vector3.zero)
@@ -1451,15 +1386,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         return newTrain;
     }
 
-    private void NetworkTrainManager_OnTrainCarInitialized(TrainCar train)
-    {
-        WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID);
-        if (!train.IsLoco && serverState.CargoType != CargoType.None)
-        {
-            train.logicCar.LoadCargo(serverState.CargoAmount, serverState.CargoType);
-        }
-    }
-
     internal IEnumerator RerailDesynced(TrainCar trainCar, WorldTrain train, bool resyncCoupling)
     {
         yield return RerailDesynced(trainCar, train.Position, train.Forward);
@@ -1493,7 +1419,93 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void SyncDamageWithServerState(TrainCar trainCar, WorldTrain serverState)
     {
-        
+        trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
+        if (!trainCar.IsLoco)
+        {
+            trainCar.CargoDamage.LoadCargoDamageState(serverState.CargoHealth);
+        }
+    }
+
+    private WorldTrain GenerateServerCarData(TrainCar car)
+    {
+        Main.DebugLog($"Get train bogies");
+        Bogie bogie1 = car.Bogies[0];
+        Bogie bogie2 = car.Bogies[car.Bogies.Length - 1];
+        Main.DebugLog($"Train bogies found: {bogie1 != null && bogie2 != null}");
+
+        Main.DebugLog($"Set train defaults");
+        WorldTrain train = new WorldTrain()
+        {
+            Guid = car.CarGUID,
+            Id = car.ID,
+            CarType = car.carType,
+            IsLoco = car.IsLoco,
+            Position = car.transform.position - WorldMover.currentMove,
+            Rotation = car.transform.rotation,
+            Velocity = car.rb.velocity,
+            AngularVelocity = car.rb.angularVelocity,
+            Forward = car.transform.forward,
+            IsBogie1Derailed = bogie1.HasDerailed,
+            IsBogie2Derailed = bogie2.HasDerailed,
+            Bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
+            Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
+            Bogie1RailTrackName = bogie1.track.name,
+            Bogie2RailTrackName = bogie2.track.name,
+            IsFrontCouplerCoupled = car.frontCoupler.coupledTo,
+            IsFrontCouplerCockOpen = car.frontCoupler.IsCockOpen,
+            IsFrontCouplerHoseConnected = car.frontCoupler.GetAirHoseConnectedTo() != null,
+            IsRearCouplerCoupled = car.rearCoupler.coupledTo,
+            IsRearCouplerCockOpen = car.rearCoupler.IsCockOpen,
+            IsRearCouplerHoseConnected = car.rearCoupler.GetAirHoseConnectedTo() != null,
+            IsPlayerSpawned = car.playerSpawnedCar,
+            IsRemoved = false,
+            IsStationary = true,
+            CarHealth = car.CarDamage.currentHealth
+        };
+
+        if (car.IsLoco)
+        {
+            Main.DebugLog($"Set locomotive defaults");
+            LocoControllerBase loco = car.GetComponent<LocoControllerBase>();
+            Main.DebugLog($"Loco controller found: {loco != null}");
+            train.Throttle = loco.throttle;
+            Main.DebugLog($"Throttle set: {train.Throttle}");
+            train.Brake = loco.brake;
+            Main.DebugLog($"Brake set: {train.Brake}");
+            train.IndepBrake = loco.independentBrake;
+            Main.DebugLog($"IndepBrake set: {train.IndepBrake}");
+            train.Reverser = loco.reverser;
+            Main.DebugLog($"Reverser set: {train.Reverser}");
+            train.Sander = loco.IsSandOn() ? 1 : 0;
+            Main.DebugLog($"Sander set: {train.Sander}");
+        }
+        else
+        {
+            train.CargoType = car.LoadedCargo;
+            train.CargoAmount = car.LoadedCargoAmount;
+            train.CargoHealth = car.CargoDamage.currentHealth;
+        }
+
+        switch (car.carType)
+        {
+            case TrainCarType.LocoShunter:
+                Main.DebugLog($"Set shunter defaults");
+                LocoControllerShunter loco = car.GetComponent<LocoControllerShunter>();
+                Main.DebugLog($"Shunter controller found: {loco != null}");
+                ShunterDashboardControls dashboard = car.interior.GetComponentInChildren<ShunterDashboardControls>();
+                Main.DebugLog($"Shunter dashboard found: {dashboard != null}");
+                train.Shunter = new Shunter()
+                {
+                    IsEngineOn = loco.GetEngineRunning(),
+                    IsMainFuseOn = dashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1,
+                    IsSideFuse1On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1,
+                    IsSideFuse2On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1
+                };
+                Main.DebugLog($"Shunter set: IsEngineOn: {train.Shunter.IsEngineOn}, IsMainFuseOn: {train.Shunter.IsMainFuseOn}, IsSideFuse1On: {train.Shunter.IsSideFuse1On}, IsSideFuse2On: {train.Shunter.IsSideFuse2On}");
+                break;
+        }
+
+        return train;
     }
 
     internal void SyncLocomotives()

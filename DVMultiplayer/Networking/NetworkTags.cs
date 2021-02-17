@@ -37,5 +37,6 @@
         JOB_HOST_SYNC,
         JOB_TAKEN,
         JOB_COMPLETED,
+        TRAIN_DAMAGE,
     }
 }

@@ -41,6 +41,9 @@ namespace DVMultiplayer.DTO.Train
         public bool? IsFrontCouplerHoseConnected { get; set; } = null;
         public bool? IsRearCouplerHoseConnected { get; set; } = null;
 
+        // Damage
+        public float CarHealth { get; set; }
+
         // Locomotive (Only set if item is locomotive)
         public float Throttle { get; set; } = 0;
         public float Brake { get; set; } = 0;
@@ -54,6 +57,7 @@ namespace DVMultiplayer.DTO.Train
         // Cargo based trains
         public float CargoAmount { get; set; }
         public CargoType CargoType { get; set; } = CargoType.None;
+        public float CargoHealth { get; set; }
 
         public void Deserialize(DeserializeEvent e)
         {
@@ -77,6 +81,8 @@ namespace DVMultiplayer.DTO.Train
             Bogie2RailTrackName = e.Reader.ReadString();
             Bogie2PositionAlongTrack = e.Reader.ReadDouble();
 
+            CarHealth = e.Reader.ReadSingle();
+
             IsFrontCouplerCoupled = e.Reader.ReadNullableBoolean();
             IsRearCouplerCoupled = e.Reader.ReadNullableBoolean();
             IsFrontCouplerCockOpen = e.Reader.ReadNullableBoolean();
@@ -98,6 +104,7 @@ namespace DVMultiplayer.DTO.Train
             {
                 CargoType = (CargoType)e.Reader.ReadUInt32();
                 CargoAmount = e.Reader.ReadSingle();
+                CargoHealth = e.Reader.ReadSingle();
             }
 
             switch (CarType)
@@ -130,6 +137,8 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(Bogie2RailTrackName);
             e.Writer.Write(Bogie2PositionAlongTrack);
 
+            e.Writer.Write(CarHealth);
+
             e.Writer.Write(IsFrontCouplerCoupled);
             e.Writer.Write(IsRearCouplerCoupled);
             e.Writer.Write(IsFrontCouplerCockOpen);
@@ -151,6 +160,7 @@ namespace DVMultiplayer.DTO.Train
             {
                 e.Writer.Write((uint)CargoType);
                 e.Writer.Write(CargoAmount);
+                e.Writer.Write(CargoHealth);
             }
 
             switch (CarType)

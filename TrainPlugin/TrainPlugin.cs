@@ -13,7 +13,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.3");
+        public override Version Version => new Version("1.6.4");
 
         private readonly List<WorldTrain> worldTrains;
         private bool shouldSendNewTrains = false;
@@ -96,8 +96,43 @@ namespace TrainPlugin
                     case NetworkTags.TRAIN_REMOVAL:
                         OnCarRemovalMessage(message, e.Client);
                         break;
+
+                    case NetworkTags.TRAIN_DAMAGE:
+                        OnCarDamage(message, e.Client);
+                        break;
                 }
             }
+        }
+
+        private void OnCarDamage(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                CarDamage damage = reader.ReadSerializable<CarDamage>();
+                WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == damage.Guid);
+                if (train == null)
+                {
+                    train = new WorldTrain()
+                    {
+                        Guid = damage.Guid,
+                    };
+                    worldTrains.Add(train);
+                }
+
+                switch (damage.DamageType)
+                {
+                    case DamageType.Car:
+                        train.CarHealth -= damage.Damage;
+                        break;
+
+                    case DamageType.Cargo:
+                        train.CargoHealth -= damage.Damage;
+                        break;
+                }    
+            }
+
+            Logger.Trace("[SERVER] > TRAIN_DAMAGE");
+            ReliableSendToOthers(message, client);
         }
 
         private void OnCarRemovalMessage(Message message, IClient sender)
@@ -111,10 +146,10 @@ namespace TrainPlugin
                     train = new WorldTrain()
                     {
                         Guid = carRemoval.Guid,
-                        IsRemoved = true,
                     };
                     worldTrains.Add(train);
                 }
+                train.IsRemoved = true;
             }
 
             Logger.Trace("[SERVER] > TRAIN_REMOVAL");
@@ -143,7 +178,7 @@ namespace TrainPlugin
             Logger.Trace("[SERVER] > TRAIN_SWITCH");
             ReliableSendToOthers(message, sender);
         }
-
+        
         private void UpdateCoupleCockState(Message message, IClient sender)
         {
             if (worldTrains != null)
@@ -395,6 +430,19 @@ namespace TrainPlugin
                     train.Position = rerailed.Position;
                     train.Forward = rerailed.Forward;
                     train.Rotation = rerailed.Rotation;
+
+                    if (train.IsLoco)
+                    {
+                        train.Throttle = 0;
+                        train.Sander = 0;
+                        train.Brake = 0;
+                        train.IndepBrake = 1;
+                        train.Reverser = .5f;
+                        if (train.Shunter != null)
+                        {
+                            train.Shunter.IsEngineOn = false;
+                        }
+                    }
                 }
             }
             Logger.Trace("[SERVER] > TRAIN_RERAIL");
@@ -409,7 +457,7 @@ namespace TrainPlugin
                 {
                     Logger.Trace("[SERVER] > TRAIN_SYNC_ALL");
 
-                    writer.Write(worldTrains.ToArray());
+                    writer.Write(worldTrains.Where(t => !t.IsRemoved).ToArray());
 
                     using (Message msg = Message.Create((ushort)NetworkTags.TRAIN_SYNC_ALL, writer))
                         sender.SendMessage(msg, SendMode.Reliable);

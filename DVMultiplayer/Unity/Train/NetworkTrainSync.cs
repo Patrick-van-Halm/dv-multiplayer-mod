@@ -10,7 +10,7 @@ internal class NetworkTrainSync : MonoBehaviour
     public TrainCar loco;
     public bool listenToLocalPlayerInputs = false;
     private LocoControllerBase baseController;
-    private bool sanderCoroutineActive;
+    private float prevCarHealth;
 
     public void ListenToTrainInputEvents()
     {
@@ -118,6 +118,28 @@ internal class NetworkTrainSync : MonoBehaviour
 
         Main.DebugLog($"[{loco.ID}] Listen to inputEvents");
         ListenToTrainInputEvents();
+
+        prevCarHealth = loco.CarDamage.currentHealth;
+        loco.CarDamage.CarEffectiveHealthStateUpdate += OnBodyDamageTaken;
+        if (!loco.IsLoco)
+            loco.CargoDamage.CargoDamaged += OnCargoDamageTaken;
+    }
+
+    private void OnCargoDamageTaken(float _)
+    {
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco)
+            return;
+        
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(loco.CarGUID, DamageType.Cargo, loco.CargoDamage.currentHealth);
+    }
+
+    private void OnBodyDamageTaken(float _)
+    {
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco)
+            return;
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(loco.CarGUID, DamageType.Car, prevCarHealth - loco.CarDamage.currentHealth);
+        prevCarHealth = loco.CarDamage.currentHealth;
     }
 
     public void OnDestroy()
