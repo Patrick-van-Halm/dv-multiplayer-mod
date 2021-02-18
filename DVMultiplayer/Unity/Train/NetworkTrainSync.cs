@@ -1,6 +1,7 @@
 ﻿using DV.CabControls;
 using DVMultiplayer;
 using DVMultiplayer.DTO.Train;
+using DVMultiplayer.Networking;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -119,7 +120,7 @@ internal class NetworkTrainSync : MonoBehaviour
 
     private void OnCargoDamageTaken(float _)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !NetworkManager.IsHost())
             return;
         
         SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(loco.CarGUID, DamageType.Cargo, loco.CargoDamage.currentHealth);
@@ -127,7 +128,7 @@ internal class NetworkTrainSync : MonoBehaviour
 
     private void OnBodyDamageTaken(float _)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !NetworkManager.IsHost())
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(loco.CarGUID, DamageType.Car, loco.CarDamage.currentHealth);
