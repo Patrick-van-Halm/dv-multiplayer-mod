@@ -607,10 +607,11 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             while (reader.Position < reader.Length)
             {
                 TrainRerail rerail = reader.ReadSerializable<TrainRerail>();
-                TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == rerail.TrainId);
+                Main.Log($"[CLIENT] < TRAIN_RERAIL: ID: {rerail.Guid}");
+                TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == rerail.Guid);
                 if (train)
                 {
-                    WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == rerail.TrainId);
+                    WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == rerail.Guid);
                     if (serverState != null)
                     {
                         serverState.Position = rerail.Position;
@@ -667,7 +668,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             {
                 TrainCarChange changedCar = reader.ReadSerializable<TrainCarChange>();
                 NetworkPlayerSync targetPlayerSync = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayerSyncById(changedCar.PlayerId);
-                Main.Log($"[CLIENT] < TRAIN_SWITCH: Packet size: {reader.Length}, TrainData: {(changedCar.TrainId == "" ? "No" : "Yes")}");
+                Main.Log($"[CLIENT] < TRAIN_SWITCH: {(changedCar.TrainId == "" ? "Player left train" : $"ID: {changedCar.TrainId}")}");
                 if (changedCar.TrainId == "")
                 {
                     targetPlayerSync.Train = null;
@@ -775,7 +776,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     serverState.Bogie2RailTrackName = location.Bogie2TrackName;
                     serverState.IsStationary = location.IsStationary;
 
-                    Main.Log($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
+                    //Main.Log($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
                     SingletonBehaviour<CoroutineManager>.Instance.Run(train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location));
                 }
             }

@@ -6,7 +6,7 @@ namespace DVMultiplayer.DTO.Train
 {
     public class TrainRerail : IDarkRiftSerializable
     {
-        public string TrainId { get; set; }
+        public string Guid { get; set; }
         public Vector3 Position { get; set; }
         public Vector3 Forward { get; set; }
         public Quaternion Rotation { get; set; }
@@ -19,7 +19,7 @@ namespace DVMultiplayer.DTO.Train
 
         public void Deserialize(DeserializeEvent e)
         {
-            TrainId = e.Reader.ReadString();
+            Guid = e.Reader.ReadString();
             Forward = e.Reader.ReadVector3();
             Position = e.Reader.ReadVector3();
             Rotation = e.Reader.ReadQuaternion();
@@ -36,7 +36,7 @@ namespace DVMultiplayer.DTO.Train
 
         public void Serialize(SerializeEvent e)
         {
-            e.Writer.Write(TrainId);
+            e.Writer.Write(Guid);
             e.Writer.Write(Forward);
             e.Writer.Write(Position);
             e.Writer.Write(Rotation);

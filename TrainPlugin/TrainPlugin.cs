@@ -413,12 +413,12 @@ namespace TrainPlugin
                 using (DarkRiftReader reader = message.GetReader())
                 {
                     TrainRerail rerailed = reader.ReadSerializable<TrainRerail>();
-                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == rerailed.TrainId);
+                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == rerailed.Guid);
                     if (train == null)
                     {
                         train = new WorldTrain()
                         {
-                            Guid = rerailed.TrainId,
+                            Guid = rerailed.Guid,
                         };
                         worldTrains.Add(train);
                     }
