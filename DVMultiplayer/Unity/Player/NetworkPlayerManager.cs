@@ -298,6 +298,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             yield return new WaitUntil(() => !AppUtil.IsPaused);
             yield return new WaitForEndOfFrame();
             PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
+            UUI.UnlockMouse(true);
             // Wait till world is loaded
             yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
             CustomUI.Close();
