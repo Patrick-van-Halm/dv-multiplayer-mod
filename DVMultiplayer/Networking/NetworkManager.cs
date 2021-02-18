@@ -18,6 +18,7 @@ namespace DVMultiplayer.Networking
         private static GameObject networkManager;
         private static bool isHost;
         private static bool isClient;
+        private static bool isConnecting;
         private static string host;
         private static int port;
         internal static string username;
@@ -95,9 +96,10 @@ namespace DVMultiplayer.Networking
 
         private static void ClientConnect()
         {
-            if (isClient)
+            if (isClient || isConnecting)
                 return;
 
+            isConnecting = true;
             Main.DebugLog("[CLIENT] Connecting to server");
             client.ConnectInBackground(host, port, true, OnConnected);
         }
@@ -183,6 +185,7 @@ namespace DVMultiplayer.Networking
 
         private static void OnConnected(Exception ex)
         {
+            isConnecting = false;
             if (ex != null && !string.IsNullOrEmpty(ex.Message))
             {
                 isClient = false;
@@ -195,7 +198,7 @@ namespace DVMultiplayer.Networking
                 }
                 else
                 {
-                    Main.mod.Logger.Log($"[CLIENT] Connecting failed stop retries.");
+                    Main.mod.Logger.Log($"[CLIENT] Connecting failed stopping retries.");
                     tries = 0;
                 }
             }

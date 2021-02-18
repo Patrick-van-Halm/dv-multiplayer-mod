@@ -16,7 +16,7 @@ namespace PlayerPlugin
 
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("2.6.7");
+        public override Version Version => new Version("2.6.8");
 
         public PlayerPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -169,7 +169,12 @@ namespace PlayerPlugin
                     }
                 }
                 if (succesfullyConnected)
-                    players.Add(sender, new Player(player.Id, player.Username, player.Mods));
+                {
+                    if (players.ContainsKey(sender))
+                        sender.Disconnect();
+                    else
+                        players.Add(sender, new Player(player.Id, player.Username, player.Mods));
+                }
             }
         }
 
