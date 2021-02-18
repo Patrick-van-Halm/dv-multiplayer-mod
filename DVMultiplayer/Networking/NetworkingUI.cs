@@ -169,7 +169,7 @@ namespace DVMultiplayer.Networking
                 }
                 catch (Exception ex)
                 {
-                    Main.DebugLog(ex.Message);
+                    Main.Log(ex.Message);
                     SaveFavoriteUI.transform.Find("Label Error").GetComponentInChildren<TextMeshProUGUI>().text = ex.Message;
                 }
             });

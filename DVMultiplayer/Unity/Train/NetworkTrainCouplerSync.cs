@@ -7,16 +7,16 @@ internal class NetworkTrainCouplerSync : MonoBehaviour
 #pragma warning disable IDE0051 // Remove unused private members
     private void Awake()
     {
-        Main.DebugLog($"NetworkTrainCouplerSync.Awake()");
+        Main.Log($"NetworkTrainCouplerSync.Awake()");
         coupler = GetComponent<Coupler>();
-        Main.DebugLog($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] NetworkTrainCouplerSync Awake called");
-        Main.DebugLog($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to coupled event");
+        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] NetworkTrainCouplerSync Awake called");
+        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to coupled event");
         coupler.Coupled += CouplerCoupled;
-        Main.DebugLog($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to uncoupled event");
+        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to uncoupled event");
         coupler.Uncoupled += CouplerUncoupled;
-        Main.DebugLog($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to hose connection changed event");
+        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to hose connection changed event");
         coupler.HoseConnectionChanged += CouplerHoseConChanged;
-        Main.DebugLog($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to cock changed event");
+        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to cock changed event");
         coupler.CockChanged += CouplerCockChanged;
     }
 #pragma warning restore IDE0051 // Remove unused private members

@@ -29,7 +29,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
     {
         if (NetworkManager.IsHost())
         {
-            Main.DebugLog("[CLIENT] > SAVEGAME_UPDATE");
+            Main.Log("[CLIENT] > SAVEGAME_UPDATE");
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
                 writer.Write<SaveGame>(new SaveGame()
@@ -38,7 +38,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
                     SaveDataSwitches = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions).ToString(Formatting.None),
                     SaveDataTurntables = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables).ToString(Formatting.None),
                 });
-                Main.DebugLog($"[CLIENT] > SAVEGAME_UPDATE {writer.Length}");
+                Main.Log($"[CLIENT] > SAVEGAME_UPDATE {writer.Length}");
 
                 using (Message message = Message.Create((ushort)NetworkTags.SAVEGAME_UPDATE, writer))
                     SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
@@ -47,7 +47,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         else if (!NetworkManager.IsHost() && NetworkManager.IsClient())
         {
             IsHostSaveReceived = false;
-            Main.DebugLog("[CLIENT] > SAVEGAME_GET");
+            Main.Log("[CLIENT] > SAVEGAME_GET");
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
                 using (Message message = Message.Create((ushort)NetworkTags.SAVEGAME_GET, writer))
@@ -97,7 +97,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         }
         else
         {
-            Main.DebugLog("[WARNING] Turntables data not found!");
+            Main.Log("[WARNING] Turntables data not found!");
         }
         jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
         if (jObject != null)
@@ -106,7 +106,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         }
         else
         {
-            Main.DebugLog("[WARNING] Junctions save not found!");
+            Main.Log("[WARNING] Junctions save not found!");
         }
 
         jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
@@ -114,10 +114,10 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         {
             carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jObject);
             if (!carsLoadedSuccessfully)
-                Main.DebugLog("[WARNING] Cars not loaded successfully!");
+                Main.Log("[WARNING] Cars not loaded successfully!");
         }
         else
-            Main.DebugLog("[WARNING] Cars save not found!");
+            Main.Log("[WARNING] Cars save not found!");
 
         if (carsLoadedSuccessfully)
         {
@@ -127,7 +127,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
                 SingletonBehaviour<JobSaveManager>.Instance.LoadJobSaveGameData(saveData);
             }
             else
-                Main.DebugLog("[WARNING] Jobs save not found!");
+                Main.Log("[WARNING] Jobs save not found!");
             SingletonBehaviour<JobSaveManager>.Instance.MarkAllNonJobCarsAsUnused();
         }
 
@@ -143,7 +143,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            Main.DebugLog($"[CLIENT] SAVEGAME_GET received | Packet size: {reader.Length}");
+            Main.Log($"[CLIENT] SAVEGAME_GET received | Packet size: {reader.Length}");
             while (reader.Position < reader.Length)
             {
                 SaveGame save = reader.ReadSerializable<SaveGame>();
@@ -169,7 +169,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         }
         else
         {
-            Main.DebugLog("[WARNING] Turntables data not found!");
+            Main.Log("[WARNING] Turntables data not found!");
         }
         jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
         if (jObject != null)
@@ -178,7 +178,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         }
         else
         {
-            Main.DebugLog("[WARNING] Junctions save not found!");
+            Main.Log("[WARNING] Junctions save not found!");
         }
 
         //jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);

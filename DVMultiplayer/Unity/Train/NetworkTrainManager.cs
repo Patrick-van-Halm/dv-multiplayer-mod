@@ -34,24 +34,24 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         SaveCarsLoaded = false;
         localCars = GameObject.FindObjectsOfType<TrainCar>().ToList();
-        Main.DebugLog($"{localCars.Count} traincars found, {localCars.Where(car => car.IsLoco).Count()} are locomotives");
+        Main.Log($"{localCars.Count} traincars found, {localCars.Where(car => car.IsLoco).Count()} are locomotives");
 
         foreach (TrainCar trainCar in localCars)
         {
-            Main.DebugLog($"Initializing TrainCar Coupling scripts");
+            Main.Log($"Initializing TrainCar Coupling scripts");
             trainCar.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
             trainCar.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
-            Main.DebugLog($"Initializing TrainCar Positioning script");
+            Main.Log($"Initializing TrainCar Positioning script");
             trainCar.gameObject.AddComponent<NetworkTrainPosSync>();
 
             if (trainCar.IsLoco)
             {
-                Main.DebugLog($"Initializing TrainCar input script");
+                Main.Log($"Initializing TrainCar input script");
                 trainCar.gameObject.AddComponent<NetworkTrainSync>();
             }
         }
 
-        Main.DebugLog($"Listening to CarChanged event");
+        Main.Log($"Listening to CarChanged event");
         PlayerManager.CarChanged += OnPlayerSwitchTrainCarEvent;
         CarSpawner.CarSpawned += OnCarSpawned;
         CarSpawner.CarAboutToBeDeleted += OnCarAboutToBeDeleted;
@@ -545,7 +545,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
                         case DamageType.Cargo:
                             if (isRepaired)
-                                Main.DebugLog("[ERROR] Cargo cannot be repaired");
+                                Main.Log("[ERROR] Cargo cannot be repaired");
                             else
                                 train.CargoDamage.LoadCargoDamageState(damage.Damage);
                             break;
@@ -666,7 +666,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             {
                 TrainCarChange changedCar = reader.ReadSerializable<TrainCarChange>();
                 NetworkPlayerSync targetPlayerSync = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayerSyncById(changedCar.PlayerId);
-                Main.DebugLog($"[CLIENT] < TRAIN_SWITCH: Packet size: {reader.Length}, TrainData: {(changedCar.TrainId == "" ? "No" : "Yes")}");
+                Main.Log($"[CLIENT] < TRAIN_SWITCH: Packet size: {reader.Length}, TrainData: {(changedCar.TrainId == "" ? "No" : "Yes")}");
                 if (changedCar.TrainId == "")
                 {
                     targetPlayerSync.Train = null;
@@ -676,12 +676,12 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == changedCar.TrainId);
                     if (train)
                     {
-                        Main.DebugLog($"[CLIENT] < TRAIN_SWITCH: Train found: {train}, ID: {train.ID}, GUID: {train.CarGUID}");
+                        Main.Log($"[CLIENT] < TRAIN_SWITCH: Train found: {train}, ID: {train.ID}, GUID: {train.CarGUID}");
                         targetPlayerSync.Train = train;
                     }
                     else
                     {
-                        Main.DebugLog($"[CLIENT] < TRAIN_SWITCH: Train not found, GUID: {changedCar.TrainId}");
+                        Main.Log($"[CLIENT] < TRAIN_SWITCH: Train not found, GUID: {changedCar.TrainId}");
                     }
                 }
             }
@@ -703,7 +703,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 if (train)
                 {
                     IsChangeByNetwork = true;
-                    Main.DebugLog($"[CLIENT] < TRAIN_DERAIL: Packet size: {reader.Length}, TrainId: {train.ID}");
+                    Main.Log($"[CLIENT] < TRAIN_DERAIL: Packet size: {reader.Length}, TrainId: {train.ID}");
                     WorldTrain serverTrainState = serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID);
                     if (serverTrainState == null)
                     {
@@ -728,7 +728,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 }
                 else
                 {
-                    Main.DebugLog($"[CLIENT] < TRAIN_SWITCH: Train not found, GUID: {derailed.TrainId}");
+                    Main.Log($"[CLIENT] < TRAIN_SWITCH: Train not found, GUID: {derailed.TrainId}");
                 }
             }
         }
@@ -771,7 +771,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     serverState.Bogie2RailTrackName = location.Bogie2TrackName;
                     serverState.IsStationary = location.IsStationary;
 
-                    Main.DebugLog($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
+                    Main.Log($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
                     SingletonBehaviour<CoroutineManager>.Instance.Run(train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location));
                 }
             }
@@ -804,7 +804,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             serverTrainState.Shunter = new Shunter();
                         serverCarStates.Add(serverTrainState);
                     }
-                    Main.DebugLog($"[CLIENT] < TRAIN_LEVER: Packet size: {reader.Length}, TrainID: {train.ID}, Lever: {lever.Lever}, Value: {lever.Value}");
+                    Main.Log($"[CLIENT] < TRAIN_LEVER: Packet size: {reader.Length}, TrainID: {train.ID}, Lever: {lever.Lever}, Value: {lever.Value}");
                     IsChangeByNetwork = true;
                     LocoControllerBase baseController = train.GetComponent<LocoControllerBase>();
                     switch (lever.Lever)
@@ -972,7 +972,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         }
                     }
 
-                    Main.DebugLog($"[CLIENT] < TRAIN_COUPLE: Packet size: {reader.Length}, TrainID_C1: {trainCoupler1.ID} (isFront: {coupled.IsC1Front}), TrainID_C2: {trainCoupler2.ID} (isFront: {coupled.IsC2Front})");
+                    Main.Log($"[CLIENT] < TRAIN_COUPLE: Packet size: {reader.Length}, TrainID_C1: {trainCoupler1.ID} (isFront: {coupled.IsC1Front}), TrainID_C2: {trainCoupler2.ID} (isFront: {coupled.IsC2Front})");
                     Coupler C1 = coupled.IsC1Front ? trainCoupler1.frontCoupler : trainCoupler1.rearCoupler;
                     Coupler C2 = coupled.IsC2Front ? trainCoupler2.frontCoupler : trainCoupler2.rearCoupler;
 
@@ -990,12 +990,12 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     }
                     else if (C1.coupledTo != C2 && !isCoupled)
                     {
-                        Main.DebugLog($"[CLIENT] < TRAIN_COUPLE: Couplers were already uncoupled");
+                        Main.Log($"[CLIENT] < TRAIN_COUPLE: Couplers were already uncoupled");
                     }
                 }
                 else
                 {
-                    Main.DebugLog($"[CLIENT] < TRAIN_COUPLE: Trains not found, TrainID_C1: {coupled.TrainIdC1}, TrainID_C2: {coupled.TrainIdC2}");
+                    Main.Log($"[CLIENT] < TRAIN_COUPLE: Trains not found, TrainID_C1: {coupled.TrainIdC1}, TrainID_C2: {coupled.TrainIdC2}");
                 }
             }
         }
@@ -1032,14 +1032,14 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     else
                         train.IsRearCouplerHoseConnected = cockChange.IsOpen;
                     IsChangeByNetwork = true;
-                    Main.DebugLog($"[CLIENT] < TRAIN_COUPLE_COCK: Packet size: {reader.Length}, TrainID: {trainCoupler.ID} (isFront: {cockChange.IsCouplerFront}), isOpen: {cockChange.IsOpen}");
+                    Main.Log($"[CLIENT] < TRAIN_COUPLE_COCK: Packet size: {reader.Length}, TrainID: {trainCoupler.ID} (isFront: {cockChange.IsCouplerFront}), isOpen: {cockChange.IsOpen}");
                     Coupler coupler = cockChange.IsCouplerFront ? trainCoupler.frontCoupler : trainCoupler.rearCoupler;
                     coupler.IsCockOpen = cockChange.IsOpen;
                     IsChangeByNetwork = false;
                 }
                 else
                 {
-                    Main.DebugLog($"[CLIENT] < TRAIN_COUPLE_COCK: Trains not found, TrainID: {cockChange.TrainIdCoupler}, isOpen: {cockChange.IsOpen}");
+                    Main.Log($"[CLIENT] < TRAIN_COUPLE_COCK: Trains not found, TrainID: {cockChange.TrainIdCoupler}, isOpen: {cockChange.IsOpen}");
                 }
             }
         }
@@ -1092,7 +1092,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         train.IsFrontCouplerHoseConnected = hoseChange.IsConnected;
                     else
                         train.IsRearCouplerHoseConnected = hoseChange.IsConnected;
-                    Main.DebugLog($"[CLIENT] < TRAIN_COUPLE_HOSE: Packet size: {reader.Length}, TrainID_C1: {trainCoupler1.ID} (isFront: {hoseChange.IsC1Front}), TrainID_C2: {trainCoupler2.ID} (isFront: {hoseChange.IsC2Front}), HoseConnected: {hoseChange.IsConnected}");
+                    Main.Log($"[CLIENT] < TRAIN_COUPLE_HOSE: Packet size: {reader.Length}, TrainID_C1: {trainCoupler1.ID} (isFront: {hoseChange.IsC1Front}), TrainID_C2: {trainCoupler2.ID} (isFront: {hoseChange.IsC2Front}), HoseConnected: {hoseChange.IsConnected}");
                     Coupler C1 = hoseChange.IsC1Front ? trainCoupler1.frontCoupler : trainCoupler1.rearCoupler;
                     Coupler C2 = hoseChange.IsC2Front ? trainCoupler2.frontCoupler : trainCoupler2.rearCoupler;
 
@@ -1121,13 +1121,13 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     else
                         train.IsRearCouplerHoseConnected = hoseChange.IsConnected;
 
-                    Main.DebugLog($"[CLIENT] < TRAIN_COUPLE_HOSE: TrainID: {trainCoupler1.ID} (isFront: {hoseChange.IsC1Front}), HoseConnected: {hoseChange.IsConnected}");
+                    Main.Log($"[CLIENT] < TRAIN_COUPLE_HOSE: TrainID: {trainCoupler1.ID} (isFront: {hoseChange.IsC1Front}), HoseConnected: {hoseChange.IsConnected}");
                     Coupler C1 = hoseChange.IsC1Front ? trainCoupler1.frontCoupler : trainCoupler1.rearCoupler;
                     C1.DisconnectAirHose(true);
                 }
                 else
                 {
-                    Main.DebugLog($"[CLIENT] < TRAIN_COUPLE: Trains not found, TrainID_C1: {hoseChange.TrainIdC1}, TrainID_C2: {hoseChange.TrainIdC2}, IsConnected: {hoseChange.IsConnected}");
+                    Main.Log($"[CLIENT] < TRAIN_COUPLE: Trains not found, TrainID_C1: {hoseChange.TrainIdC1}, TrainID_C2: {hoseChange.TrainIdC2}, IsConnected: {hoseChange.IsConnected}");
                 }
             }
         }
@@ -1183,23 +1183,23 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private IEnumerator FullResyncCar(TrainCar train, WorldTrain serverState)
     {
-        Main.DebugLog($"Train load interior");
+        Main.Log($"Train load interior");
         train.LoadInterior();
         train.keepInteriorLoaded = true;
-        Main.DebugLog($"Train interior should stay loaded: {train.keepInteriorLoaded}");
+        Main.Log($"Train interior should stay loaded: {train.keepInteriorLoaded}");
 
-        Main.DebugLog($"Train set derailed");
+        Main.Log($"Train set derailed");
         bool isDerailed = train.derailed;
-        Main.DebugLog($"Train is derailed: {isDerailed}");
+        Main.Log($"Train is derailed: {isDerailed}");
         if (train.Bogies != null && train.Bogies.Length >= 2 && serverState.Position != Vector3.zero)
         {
-            Main.DebugLog($"Train Bogies synching");
+            Main.Log($"Train Bogies synching");
             Bogie bogie1 = train.Bogies[0];
             Bogie bogie2 = train.Bogies[train.Bogies.Length - 1];
-            Main.DebugLog($"Train bogies are set {bogie1 != null && bogie2 != null}");
+            Main.Log($"Train bogies are set {bogie1 != null && bogie2 != null}");
 
             isDerailed = serverState.IsBogie1Derailed || serverState.IsBogie2Derailed;
-            Main.DebugLog($"Train is derailed by bogies {isDerailed}");
+            Main.Log($"Train is derailed by bogies {isDerailed}");
             if (serverState.IsBogie1Derailed && !bogie1.HasDerailed)
             {
                 bogie1.Derail();
@@ -1209,41 +1209,41 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             {
                 bogie2.Derail();
             }
-            Main.DebugLog($"Train bogies synced");
+            Main.Log($"Train bogies synced");
 
             if (bogie1.HasDerailed || bogie2.HasDerailed)
             {
-                Main.DebugLog("Teleport train to derailed position");
+                Main.Log("Teleport train to derailed position");
                 train.transform.position = serverState.Position + WorldMover.currentMove;
                 train.transform.rotation = serverState.Rotation;
-                Main.DebugLog("Stop syncing rest of train since values will be reset at rerail");
+                Main.Log("Stop syncing rest of train since values will be reset at rerail");
                 yield break;
             }
         }
 
-        Main.DebugLog($"Train repositioning sync: Pos: {serverState.Position.ToString("G3")}");
+        Main.Log($"Train repositioning sync: Pos: {serverState.Position.ToString("G3")}");
         if (serverState.Position != Vector3.zero && !isDerailed && train.derailed)
             yield return RerailDesynced(train, serverState.Position, serverState.Forward);
 
         SyncLocomotiveWithServerState(train, serverState);
         SyncDamageWithServerState(train, serverState);
 
-        Main.DebugLog($"Train physics sync");
+        Main.Log($"Train physics sync");
         if (serverState.Velocity != Vector3.zero)
             train.rb.velocity = serverState.Velocity;
         if (serverState.AngularVelocity != Vector3.zero)
             train.rb.angularVelocity = serverState.AngularVelocity;
-        Main.DebugLog($"Train physics sync finished");
-        Main.DebugLog($"Train should be synced");
+        Main.Log($"Train physics sync finished");
+        Main.Log($"Train should be synced");
     }
 
     private IEnumerator SyncCarsFromServerState()
     {
-        Main.DebugLog($"Synching trains. Train amount: {serverCarStates.Count}");
+        Main.Log($"Synching trains. Train amount: {serverCarStates.Count}");
         foreach (WorldTrain selectedTrain in serverCarStates)
         {
             IsChangeByNetwork = true;
-            Main.DebugLog($"Synching train: {selectedTrain.Guid}.");
+            Main.Log($"Synching train: {selectedTrain.Guid}.");
 
             TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == selectedTrain.Guid);
             if (train == null)
@@ -1271,7 +1271,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         foreach (WorldTrain selectedTrain in serverCarStates.Where(t => (t.IsFrontCouplerCoupled.HasValue && t.IsFrontCouplerCoupled.Value) || (t.IsRearCouplerCoupled.HasValue && t.IsRearCouplerCoupled.Value)))
         {
             IsChangeByNetwork = true;
-            Main.DebugLog($"Synching train: {selectedTrain.Guid}.");
+            Main.Log($"Synching train: {selectedTrain.Guid}.");
 
             TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == selectedTrain.Guid);
 
@@ -1298,9 +1298,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             return;
 
         IsChangeByNetwork = true;
-        Main.DebugLog($"Train Loco generic sync");
+        Main.Log($"Train Loco generic sync");
         LocoControllerBase controller = train.GetComponent<LocoControllerBase>();
-        Main.DebugLog($"Train Loco controller found {controller != null}");
+        Main.Log($"Train Loco controller found {controller != null}");
         if (controller != null)
         {
             controller.SetBrake(serverState.Brake);
@@ -1310,20 +1310,20 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             controller.SetThrottle(serverState.Throttle);
         }
 
-        Main.DebugLog($"Train Loco specific sync");
+        Main.Log($"Train Loco specific sync");
         switch (serverState.CarType)
         {
             case TrainCarType.LocoShunter:
-                Main.DebugLog($"Train Loco is shunter");
+                Main.Log($"Train Loco is shunter");
                 LocoControllerShunter controllerShunter = train.GetComponent<LocoControllerShunter>();
-                Main.DebugLog($"Train controller found {controllerShunter != null}");
+                Main.Log($"Train controller found {controllerShunter != null}");
                 Shunter shunter = serverState.Shunter;
-                Main.DebugLog($"Train Loco Server data found {shunter != null}");
+                Main.Log($"Train Loco Server data found {shunter != null}");
                 if (shunter != null)
                 {
                     ShunterDashboardControls shunterDashboard = train.interior.GetComponentInChildren<ShunterDashboardControls>();
-                    Main.DebugLog($"Shunter dashboard found {shunterDashboard != null}");
-                    Main.DebugLog($"Sync engine state");
+                    Main.Log($"Shunter dashboard found {shunterDashboard != null}");
+                    Main.Log($"Sync engine state");
                     if ((shunter.IsSideFuse1On && shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 0) || (!shunter.IsSideFuse1On && shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1))
                         train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Use();
 
@@ -1412,12 +1412,12 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private WorldTrain GenerateServerCarData(TrainCar car)
     {
-        Main.DebugLog($"Get train bogies");
+        Main.Log($"Get train bogies");
         Bogie bogie1 = car.Bogies[0];
         Bogie bogie2 = car.Bogies[car.Bogies.Length - 1];
-        Main.DebugLog($"Train bogies found: {bogie1 != null && bogie2 != null}");
+        Main.Log($"Train bogies found: {bogie1 != null && bogie2 != null}");
 
-        Main.DebugLog($"Set train defaults");
+        Main.Log($"Set train defaults");
         WorldTrain train = new WorldTrain()
         {
             Guid = car.CarGUID,
@@ -1449,19 +1449,19 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         if (car.IsLoco)
         {
-            Main.DebugLog($"Set locomotive defaults");
+            Main.Log($"Set locomotive defaults");
             LocoControllerBase loco = car.GetComponent<LocoControllerBase>();
-            Main.DebugLog($"Loco controller found: {loco != null}");
+            Main.Log($"Loco controller found: {loco != null}");
             train.Throttle = loco.throttle;
-            Main.DebugLog($"Throttle set: {train.Throttle}");
+            Main.Log($"Throttle set: {train.Throttle}");
             train.Brake = loco.brake;
-            Main.DebugLog($"Brake set: {train.Brake}");
+            Main.Log($"Brake set: {train.Brake}");
             train.IndepBrake = loco.independentBrake;
-            Main.DebugLog($"IndepBrake set: {train.IndepBrake}");
+            Main.Log($"IndepBrake set: {train.IndepBrake}");
             train.Reverser = loco.reverser;
-            Main.DebugLog($"Reverser set: {train.Reverser}");
+            Main.Log($"Reverser set: {train.Reverser}");
             train.Sander = loco.IsSandOn() ? 1 : 0;
-            Main.DebugLog($"Sander set: {train.Sander}");
+            Main.Log($"Sander set: {train.Sander}");
         }
         else
         {
@@ -1473,11 +1473,11 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         switch (car.carType)
         {
             case TrainCarType.LocoShunter:
-                Main.DebugLog($"Set shunter defaults");
+                Main.Log($"Set shunter defaults");
                 LocoControllerShunter loco = car.GetComponent<LocoControllerShunter>();
-                Main.DebugLog($"Shunter controller found: {loco != null}");
+                Main.Log($"Shunter controller found: {loco != null}");
                 ShunterDashboardControls dashboard = car.interior.GetComponentInChildren<ShunterDashboardControls>();
-                Main.DebugLog($"Shunter dashboard found: {dashboard != null}");
+                Main.Log($"Shunter dashboard found: {dashboard != null}");
                 train.Shunter = new Shunter()
                 {
                     IsEngineOn = loco.GetEngineRunning(),
@@ -1485,7 +1485,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     IsSideFuse1On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1,
                     IsSideFuse2On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1
                 };
-                Main.DebugLog($"Shunter set: IsEngineOn: {train.Shunter.IsEngineOn}, IsMainFuseOn: {train.Shunter.IsMainFuseOn}, IsSideFuse1On: {train.Shunter.IsSideFuse1On}, IsSideFuse2On: {train.Shunter.IsSideFuse2On}");
+                Main.Log($"Shunter set: IsEngineOn: {train.Shunter.IsEngineOn}, IsMainFuseOn: {train.Shunter.IsMainFuseOn}, IsSideFuse1On: {train.Shunter.IsSideFuse1On}, IsSideFuse2On: {train.Shunter.IsSideFuse2On}");
                 break;
         }
 
@@ -1497,7 +1497,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         foreach (WorldTrain selectedTrain in serverCarStates)
         {
             if (selectedTrain.IsLoco)
-                Main.DebugLog($"Synching train: {selectedTrain.Guid}.");
+                Main.Log($"Synching train: {selectedTrain.Guid}.");
 
             TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == selectedTrain.Guid);
 

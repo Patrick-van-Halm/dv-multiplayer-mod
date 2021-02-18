@@ -6,9 +6,9 @@ internal class NetworkJunctionSync : MonoBehaviour
     private Junction junction;
     private void Awake()
     {
-        Main.DebugLog($"NetworkJunctionSync initalized");
+        Main.Log($"NetworkJunctionSync initalized");
         junction = GetComponent<Junction>();
-        Main.DebugLog($"NetworkJunctionSync Listening to Junction change event");
+        Main.Log($"NetworkJunctionSync Listening to Junction change event");
         junction.Switched += OnJunctionSwitched;
     }
 

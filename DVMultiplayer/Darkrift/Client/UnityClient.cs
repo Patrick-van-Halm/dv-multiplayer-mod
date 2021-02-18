@@ -453,7 +453,7 @@ namespace DarkRift.Client.Unity
             if (invokeFromDispatcher)
             {
                 if (sniffData)
-                    Main.DebugLog("Message Received: Tag = " + e.Tag + ", SendMode = " + e.SendMode);
+                    Main.Log("Message Received: Tag = " + e.Tag + ", SendMode = " + e.SendMode);
 
                 // DarkRift will recycle the message inside the event args when this method exits so make a copy now that we control the lifecycle of!
                 Message message = e.GetMessage();
@@ -476,7 +476,7 @@ namespace DarkRift.Client.Unity
             else
             {
                 if (sniffData)
-                    Main.DebugLog("Message Received: Tag = " + e.Tag + ", SendMode = " + e.SendMode);
+                    Main.Log("Message Received: Tag = " + e.Tag + ", SendMode = " + e.SendMode);
 
                 EventHandler<MessageReceivedEventArgs> handler = MessageReceived;
                 if (handler != null)

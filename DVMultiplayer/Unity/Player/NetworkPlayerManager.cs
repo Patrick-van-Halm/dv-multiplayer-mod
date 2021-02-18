@@ -141,7 +141,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
     private void SetSpawnPosition(Message message)
     {
-        Main.DebugLog("[CLIENT] < PLAYER_SPAWN_SET");
+        Main.Log("[CLIENT] < PLAYER_SPAWN_SET");
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)
@@ -153,7 +153,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
     private void OnModMismatch(Message message)
     {
-        Main.DebugLog("[CLIENT] Client disconnected due to mods mismatch");
+        Main.Log("[CLIENT] Client disconnected due to mods mismatch");
         using (DarkRiftReader reader = message.GetReader())
         {
             while (reader.Position < reader.Length)
@@ -182,7 +182,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
                 if (disconnectedPlayer.PlayerId != SingletonBehaviour<UnityClient>.Instance.ID)
                 {
-                    Main.DebugLog($"[CLIENT] < PLAYER_DISCONNECT: Username: {networkPlayers[disconnectedPlayer.PlayerId].GetComponent<NetworkPlayerSync>().Username}");
+                    Main.Log($"[CLIENT] < PLAYER_DISCONNECT: Username: {networkPlayers[disconnectedPlayer.PlayerId].GetComponent<NetworkPlayerSync>().Username}");
                     Destroy(networkPlayers[disconnectedPlayer.PlayerId]);
                     networkPlayers.Remove(disconnectedPlayer.PlayerId);
                 }
@@ -198,7 +198,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         Vector3 pos = PlayerManager.PlayerTransform.position;
         if (NetworkManager.IsHost())
         {
-            Main.DebugLog("[CLIENT] > PLAYER_SPAWN_SET");
+            Main.Log("[CLIENT] > PLAYER_SPAWN_SET");
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
                 writer.Write(new SetSpawn()
@@ -211,7 +211,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             }
         }
 
-        Main.DebugLog("[CLIENT] > PLAYER_INIT");
+        Main.Log("[CLIENT] > PLAYER_INIT");
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write<NPlayer>(new NPlayer()
@@ -225,7 +225,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
 
-        Main.DebugLog($"Wait for connection initializiation is finished");
+        Main.Log($"Wait for connection initializiation is finished");
         SingletonBehaviour<CoroutineManager>.Instance.Run(WaitForInit());
     }
 
@@ -237,13 +237,13 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         {
             AppUtil.Instance.PauseGame();
             CustomUI.OpenPopup("Connecting", "Loading savegame");
-            Main.DebugLog($"[CLIENT] Receiving savegame");
+            Main.Log($"[CLIENT] Receiving savegame");
             // Check if host is connected if so the savegame should be available to receive
             SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
             yield return new WaitUntil(() => networkPlayers.ContainsKey(0) || modMismatched);
             if (modMismatched)
             {
-                Main.DebugLog($"Mods Mismatched so disconnecting player");
+                Main.Log($"Mods Mismatched so disconnecting player");
                 UUI.UnlockMouse(false);
                 TutorialController.movementAllowed = true;
                 NetworkManager.Disconnect();
@@ -254,42 +254,42 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             yield return new WaitUntil(() => spawnData != null);
 
             // Get the online save game
-            Main.DebugLog($"Syncing Save");
+            Main.Log($"Syncing Save");
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveReceived);
 
             // Load the online save game
-            Main.DebugLog($"Syncing Loading save");
+            Main.Log($"Syncing Loading save");
             SingletonBehaviour<NetworkSaveGameManager>.Instance.LoadMultiplayerData();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoaded || SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed);
             if (SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed)
             {
-                Main.DebugLog("Connection failed syncing savegame");
+                Main.Log("Connection failed syncing savegame");
                 NetworkManager.Disconnect();
             }
 
             // Initialize trains on save
-            Main.DebugLog($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
+            Main.Log($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
             SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded);
 
             // Load Train data from server that changed since uptime
-            Main.DebugLog($"Syncing Junctions");
+            Main.Log($"Syncing Junctions");
             SingletonBehaviour<NetworkJunctionManager>.Instance.SyncJunction();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkJunctionManager>.Instance.IsSynced);
 
             // Load Turntable data from server that changed since uptime
-            Main.DebugLog($"Syncing Turntables");
+            Main.Log($"Syncing Turntables");
             SingletonBehaviour<NetworkTurntableManager>.Instance.SyncTurntables();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTurntableManager>.Instance.IsSynced);
 
             // Load Train data from server that changed since uptime
-            Main.DebugLog($"Syncing traincars");
+            Main.Log($"Syncing traincars");
             SingletonBehaviour<NetworkTrainManager>.Instance.SendInitCarsRequest();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced);
 
             // Load Job data from server that changed since uptime
-            Main.DebugLog($"Syncing jobs");
+            Main.Log($"Syncing jobs");
             SingletonBehaviour<NetworkJobsManager>.Instance.SendJobsRequest();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkJobsManager>.Instance.IsSynced);
             SingletonBehaviour<NetworkJobsManager>.Instance.OnFinishLoading();
@@ -305,17 +305,17 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         }
         else
         {
-            Main.DebugLog($"[CLIENT] Sending savegame");
+            Main.Log($"[CLIENT] Sending savegame");
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
 
-            Main.DebugLog($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
+            Main.Log($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
             SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
-            Main.DebugLog($"Run OnFinishedLoading in NetworkJobsManager");
+            Main.Log($"Run OnFinishedLoading in NetworkJobsManager");
             SingletonBehaviour<NetworkJobsManager>.Instance.OnFinishLoading();
         }
 
         SendIsLoaded();
-        Main.DebugLog($"Finished loading everything. Unlocking mouse and allow movement");
+        Main.Log($"Finished loading everything. Unlocking mouse and allow movement");
         UUI.UnlockMouse(false);
         TutorialController.movementAllowed = true;
         // Move to spawn
@@ -361,7 +361,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                 if (player.Id != SingletonBehaviour<UnityClient>.Instance.ID)
                 {
                     Location playerPos = reader.ReadSerializable<Location>();
-                    Main.DebugLog($"[CLIENT] < PLAYER_SPAWN: Username: {player.Username} ");
+                    Main.Log($"[CLIENT] < PLAYER_SPAWN: Username: {player.Username} ");
 
                     Vector3 pos = playerPos.Position;
                     pos = new Vector3(pos.x, pos.y + 1, pos.z);

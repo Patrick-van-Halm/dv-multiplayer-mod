@@ -69,17 +69,19 @@ namespace DVMultiplayer
 
         private static void Initialize()
         {
-            DebugLog("Initializing...");
+            Log("Initializing...");
             CustomUI.Initialize();
             FavoritesManager.CreateFavoritesFileIfNotExists();
             NetworkManager.Initialize();
             isInitialized = true;
         }
-#if DEBUG
-        public static void DebugLog(string msg)
+
+        public static void Log(string msg)
         {
-            mod.Logger.NativeLog($"[DEBUG] {msg}");
+            if (mod.Info.Version.StartsWith("dev-"))
+                mod.Logger.Log($"[DEBUG] {msg}");
+            else
+                mod.Logger.NativeLog($"[DEBUG] {msg}");
         }
-#endif
     }
 }

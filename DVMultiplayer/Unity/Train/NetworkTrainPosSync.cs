@@ -1,4 +1,4 @@
-﻿using DVMultiplayer;
+using DVMultiplayer;
 using DVMultiplayer.DTO.Train;
 using DVMultiplayer.Networking;
 using System;
@@ -22,12 +22,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
 #pragma warning disable IDE0051 // Remove unused private members
     private void Awake()
     {
-        Main.DebugLog($"NetworkTrainPosSync.Awake()");
+        Main.Log($"NetworkTrainPosSync.Awake()");
         trainCar = GetComponent<TrainCar>();
-        Main.DebugLog($"[{trainCar.ID}] NetworkTrainPosSync Awake called");
-        Main.DebugLog($"Starting coroutine for location updating");
+        Main.Log($"[{trainCar.ID}] NetworkTrainPosSync Awake called");
+        Main.Log($"Starting coroutine for location updating");
 
-        Main.DebugLog($"Listen to derailment events");
+        Main.Log($"Listen to derailment events");
         trainCar.OnDerailed += TrainDerail;
         trainCar.OnRerailed += TrainRerail;
         trainCar.LogicCarInitialized += TrainCar_LogicCarInitialized;

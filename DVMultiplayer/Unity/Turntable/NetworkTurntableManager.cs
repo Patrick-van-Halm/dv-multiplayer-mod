@@ -38,7 +38,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
     internal void SyncTurntables()
     {
         IsSynced = false;
-        Main.DebugLog($"[CLIENT] > TURNTABLE_SYNC");
+        Main.Log($"[CLIENT] > TURNTABLE_SYNC");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
@@ -74,7 +74,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            Main.DebugLog($"[CLIENT] < TURNTABLE_SYNC");
+            Main.Log($"[CLIENT] < TURNTABLE_SYNC");
 
             while (reader.Position < reader.Length)
             {
@@ -121,7 +121,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
     {
         if (!IsSynced)
             return;
-        Main.DebugLog($"[CLIENT] > TURNTABLE_ANGLE_CHANGED");
+        Main.Log($"[CLIENT] > TURNTABLE_ANGLE_CHANGED");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
@@ -154,7 +154,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
         if (!IsSynced)
             return;
 
-        Main.DebugLog($"[CLIENT] > TURNTABLE_SNAP");
+        Main.Log($"[CLIENT] > TURNTABLE_SNAP");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
@@ -189,7 +189,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
 
         using (DarkRiftReader reader = message.GetReader())
         {
-            Main.DebugLog($"[CLIENT] < TURNTABLE_ANGLE_CHANGED");
+            Main.Log($"[CLIENT] < TURNTABLE_ANGLE_CHANGED");
 
             while (reader.Position < reader.Length)
             {
@@ -215,7 +215,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
 
         using (DarkRiftReader reader = message.GetReader())
         {
-            Main.DebugLog($"[CLIENT] < TURNTABLE_SNAP");
+            Main.Log($"[CLIENT] < TURNTABLE_SNAP");
 
             while (reader.Position < reader.Length)
             {

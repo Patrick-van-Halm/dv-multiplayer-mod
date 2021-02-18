@@ -18,10 +18,10 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
 
     protected override void Awake()
     {
-        Main.DebugLog("NetworkJunctionManager initialized");
+        Main.Log("NetworkJunctionManager initialized");
         base.Awake();
         switches = GameObject.FindObjectsOfType<VisualSwitch>();
-        Main.DebugLog($"NetworkJunctionManager found {switches.Length} switches in world");
+        Main.Log($"NetworkJunctionManager found {switches.Length} switches in world");
         foreach (VisualSwitch @switch in switches)
         {
             @switch.junction.gameObject.AddComponent<NetworkJunctionSync>();
@@ -66,7 +66,7 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
     {
         using (DarkRiftReader reader = message.GetReader())
         {
-            Main.DebugLog($"[CLIENT] < SWITCH_SYNC");
+            Main.Log($"[CLIENT] < SWITCH_SYNC");
 
             while (reader.Position < reader.Length)
             {
@@ -95,7 +95,7 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
         if (!IsSynced)
             return;
 
-        Main.DebugLog($"[CLIENT] > SWITCH_CHANGED");
+        Main.Log($"[CLIENT] > SWITCH_CHANGED");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
@@ -118,7 +118,7 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
 
         using (DarkRiftReader reader = message.GetReader())
         {
-            Main.DebugLog($"[CLIENT] < SWITCH_CHANGED");
+            Main.Log($"[CLIENT] < SWITCH_CHANGED");
 
             while (reader.Position < reader.Length)
             {

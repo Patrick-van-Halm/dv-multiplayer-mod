@@ -13,7 +13,7 @@ namespace DVMultiplayer.Patches
         {
             if (Main.isInitialized && CustomUI.readyForCSUpdate && !CustomUI.CSUpdateFinished)
             {
-                Main.DebugLog("Updating image components");
+                Main.Log("Updating image components");
                 ___imageComponents = (from img in SingletonBehaviour<CanvasSpawner>.Instance.CanvasGO.GetComponentsInChildren<Image>(true)
                                       where img.transform.name != "VRTK_UICANVAS_DRAGGABLE_PANEL"
                                       select img).ToArray<Image>();

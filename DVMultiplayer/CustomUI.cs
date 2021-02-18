@@ -44,7 +44,7 @@ namespace DVMultiplayer
             }
             catch (Exception ex)
             {
-                Main.DebugLog($"{ex}");
+                Main.Log($"{ex}");
             }
             readyForCSUpdate = true;
         }
