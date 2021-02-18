@@ -29,7 +29,6 @@ internal class NetworkTrainSync : MonoBehaviour
         baseController.ReverserUpdated += OnTrainReverserStateChanged;
         Main.DebugLog($"[{loco.ID}] Listen sander change on base loco controller");
         baseController.SandersUpdated += OnTrainSanderChanged;
-        //loco.TrainCarCollisions.CarDamaged += OnTrainDamaged;
 
         Main.DebugLog($"[{loco.ID}] Listen to specific train events");
         switch (loco.carType)
@@ -56,11 +55,6 @@ internal class NetworkTrainSync : MonoBehaviour
                 SingletonBehaviour<CoroutineManager>.Instance.Run(RotaryAmplitudeCheckerStartListen(fuseBox));
                 break;
         }
-    }
-
-    private void OnTrainDamaged(float colDamage, Vector3 forceDirection)
-    {
-        throw new NotImplementedException();
     }
 
     public void StopListeningToTrainInputEvents()
