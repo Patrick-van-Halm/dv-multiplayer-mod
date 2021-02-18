@@ -12,6 +12,8 @@ namespace DVMultiplayer.DTO.Train
         public string Bogie2TrackName { get; set; }
         public double Bogie1PositionAlongTrack { get; set; }
         public double Bogie2PositionAlongTrack { get; set; }
+        public float CarHealth { get; set; }
+        public float CargoHealth { get; set; } = 0;
 
         public void Deserialize(DeserializeEvent e)
         {
@@ -22,6 +24,8 @@ namespace DVMultiplayer.DTO.Train
             Bogie2TrackName = e.Reader.ReadString();
             Bogie1PositionAlongTrack = e.Reader.ReadDouble();
             Bogie2PositionAlongTrack = e.Reader.ReadDouble();
+            CarHealth = e.Reader.ReadSingle();
+            CargoHealth = e.Reader.ReadSingle();
         }
 
         public void Serialize(SerializeEvent e)
@@ -33,6 +37,8 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(Bogie2TrackName);
             e.Writer.Write(Bogie1PositionAlongTrack);
             e.Writer.Write(Bogie2PositionAlongTrack);
+            e.Writer.Write(CarHealth);
+            e.Writer.Write(CargoHealth);
         }
     }
 }

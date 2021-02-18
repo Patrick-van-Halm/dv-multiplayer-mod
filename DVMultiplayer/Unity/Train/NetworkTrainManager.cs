@@ -533,21 +533,17 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 if (train)
                 {
                     IsChangeByNetwork = true;
-                    bool isRepaired = damage.Damage < 0;
+                    WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == damage.Guid);
                     switch (damage.DamageType)
                     {
                         case DamageType.Car:
-                            if (isRepaired)
-                                train.CarDamage.RepairCar(-damage.Damage);
-                            else
-                                train.CarDamage.DamageCar(damage.Damage);
+                            train.CarDamage.LoadCarDamageState(damage.NewHealth);
+                            serverState.CarHealth = damage.NewHealth;
                             break;
 
                         case DamageType.Cargo:
-                            if (isRepaired)
-                                Main.Log("[ERROR] Cargo cannot be repaired");
-                            else
-                                train.CargoDamage.LoadCargoDamageState(damage.Damage);
+                            train.CargoDamage.LoadCargoDamageState(damage.NewHealth);
+                            serverState.CargoHealth = damage.NewHealth;
                             break;
                     }
                     IsChangeByNetwork = false;
@@ -624,6 +620,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         serverState.Bogie2RailTrackName = rerail.Bogie2TrackName;
                         serverState.Bogie1PositionAlongTrack = rerail.Bogie1PositionAlongTrack;
                         serverState.Bogie2PositionAlongTrack = rerail.Bogie2PositionAlongTrack;
+                        serverState.CarHealth = rerail.CarHealth;
                         if (serverState.IsLoco)
                         {
                             serverState.Throttle = 0;
@@ -635,6 +632,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             {
                                 serverState.Shunter.IsEngineOn = false;
                             }
+                        }
+                        else
+                        {
+                            serverState.CargoHealth = rerail.CargoHealth;
                         }
                     }
                     SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(train, rerail.Position, rerail.Forward));
@@ -721,9 +722,12 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     serverTrainState.Bogie2RailTrackName = derailed.Bogie2TrackName;
                     serverTrainState.Bogie1PositionAlongTrack = derailed.Bogie1PositionAlongTrack;
                     serverTrainState.Bogie2PositionAlongTrack = derailed.Bogie2PositionAlongTrack;
+                    serverTrainState.CarHealth = derailed.CarHealth;
+                    serverTrainState.CargoHealth = derailed.CargoHealth;
 
                     train.GetComponent<NetworkTrainPosSync>().hostDerailed = true;
                     train.Derail();
+                    SyncDamageWithServerState(train, serverTrainState);
                     IsChangeByNetwork = false;
                 }
                 else

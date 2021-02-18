@@ -1,4 +1,4 @@
-﻿using DarkRift;
+using DarkRift;
 using DarkRift.Server;
 using DVMultiplayer.DTO.Train;
 using DVMultiplayer.Networking;
@@ -122,11 +122,11 @@ namespace TrainPlugin
                 switch (damage.DamageType)
                 {
                     case DamageType.Car:
-                        train.CarHealth -= damage.Damage;
+                        train.CarHealth = damage.NewHealth;
                         break;
 
                     case DamageType.Cargo:
-                        train.CargoHealth -= damage.Damage;
+                        train.CargoHealth = damage.NewHealth;
                         break;
                 }    
             }
@@ -394,6 +394,8 @@ namespace TrainPlugin
                     train.Bogie2RailTrackName = derailed.Bogie2TrackName;
                     train.Bogie1PositionAlongTrack = derailed.Bogie1PositionAlongTrack;
                     train.Bogie2PositionAlongTrack = derailed.Bogie2PositionAlongTrack;
+                    train.CarHealth = derailed.CarHealth;
+                    train.CargoHealth = derailed.CargoHealth;
 
                     if (train.CarType == TrainCarType.LocoShunter)
                         train.Shunter.IsEngineOn = false;
@@ -430,6 +432,8 @@ namespace TrainPlugin
                     train.Position = rerailed.Position;
                     train.Forward = rerailed.Forward;
                     train.Rotation = rerailed.Rotation;
+                    train.CarHealth = rerailed.CarHealth;
+                    train.CargoHealth = rerailed.CargoHealth;
 
                     if (train.IsLoco)
                     {
