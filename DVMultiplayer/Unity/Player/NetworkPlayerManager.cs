@@ -208,15 +208,17 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     /// </summary>
     public void PlayerConnect()
     {
-        Vector3 pos = PlayerManager.PlayerTransform.position;
+        Vector3 pos = PlayerManager.PlayerTransform.position - WorldMover.currentMove;
         if (NetworkManager.IsHost())
         {
             Main.Log("[CLIENT] > PLAYER_SPAWN_SET");
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
+                KeyValuePair<string, Vector3> closestStation = SavedPositions.Stations.Where(pair => pair.Value == SavedPositions.Stations.Values.OrderBy(x => Vector3.Distance(x, pos)).First()).FirstOrDefault();
+                Main.Log($"Setting spawn at: {closestStation.Key}");
                 writer.Write(new SetSpawn()
                 {
-                    Position = SavedPositions.Stations.Values.OrderBy(x => Math.Abs((x - pos).sqrMagnitude)).First()
+                    Position = closestStation.Value
                 });
 
                 using (Message message = Message.Create((ushort)NetworkTags.PLAYER_SPAWN_SET, writer))
