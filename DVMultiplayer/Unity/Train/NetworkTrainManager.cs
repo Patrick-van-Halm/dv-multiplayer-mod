@@ -99,14 +99,27 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
     }
 
-    internal void PlayerDisconnect()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         SingletonBehaviour<UnityClient>.Instance.MessageReceived -= OnMessageReceived;
         PlayerManager.CarChanged -= OnPlayerSwitchTrainCarEvent;
         CarSpawner.CarSpawned -= OnCarSpawned;
         CarSpawner.CarAboutToBeDeleted -= OnCarAboutToBeDeleted;
         if (localCars == null)
             return;
+
+        foreach (TrainCar trainCar in localCars)
+        {
+            if (trainCar.GetComponent<NetworkTrainPosSync>())
+                DestroyImmediate(trainCar.GetComponent<NetworkTrainPosSync>());
+            if (trainCar.GetComponent<NetworkTrainSync>())
+                DestroyImmediate(trainCar.GetComponent<NetworkTrainSync>());
+            if (trainCar.frontCoupler.GetComponent<NetworkTrainCouplerSync>())
+                DestroyImmediate(trainCar.frontCoupler.GetComponent<NetworkTrainCouplerSync>());
+            if (trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>())
+                DestroyImmediate(trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>());
+        }
 
         foreach (TrainCar trainCar in localCars)
         {

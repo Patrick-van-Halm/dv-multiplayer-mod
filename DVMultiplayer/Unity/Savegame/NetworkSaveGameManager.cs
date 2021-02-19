@@ -14,10 +14,11 @@ using UnityEngine;
 
 internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 {
-    private SaveGameData offlineSave;
+    private OfflineSaveGame offlineSave;
     public bool IsHostSaveReceived { get; private set; }
+    public bool IsHostSaveLoadedFailed { get; internal set; }
     public bool IsHostSaveLoaded { get; private set; }
-    public bool IsHostSaveLoadedFailed { get; private set; }
+    public bool IsOfflineSaveLoaded { get; private set; }
 
     protected override void Awake()
     {
@@ -33,9 +34,8 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
             Main.Log("[CLIENT] > SAVEGAME_UPDATE");
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
-                writer.Write<SaveGame>(new SaveGame()
+                writer.Write(new SaveGame()
                 {
-                    SaveDataCars = SaveGameManager.data.GetJObject(SaveGameKeys.Cars).ToString(Formatting.None),
                     SaveDataSwitches = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions).ToString(Formatting.None),
                     SaveDataTurntables = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables).ToString(Formatting.None),
                 });
@@ -72,14 +72,21 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
 
     public void PlayerDisconnect()
     {
+        IsOfflineSaveLoaded = false;
         if (offlineSave != null && !NetworkManager.IsHost())
         {
-            SaveGameData onlineSave = SaveGameManager.data;
-            SaveGameManager.data = offlineSave;
+            SaveGameManager.data.SetJObject(SaveGameKeys.Cars, JObject.Parse(offlineSave.SaveDataCars));
+            SaveGameManager.data.SetObject(SaveGameKeys.Jobs, offlineSave.SaveDataJobs, JobSaveManager.serializeSettings);
+            SaveGameManager.data.SetJObject(SaveGameKeys.Junctions, JObject.Parse(offlineSave.SaveDataSwitches));
+            SaveGameManager.data.SetJObject(SaveGameKeys.Turntables, JObject.Parse(offlineSave.SaveDataTurntables));
             offlineSave = null;
             SaveGameUpgrader.Upgrade();
 
             SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave());
+        }
+        else
+        {
+            IsOfflineSaveLoaded = true;
         }
     }
 
@@ -144,6 +151,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         TutorialController.movementAllowed = true;
 
         SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
+        IsOfflineSaveLoaded = true;
     }
 
     private void OnSaveGameReceived(Message message)
@@ -154,9 +162,15 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
             while (reader.Position < reader.Length)
             {
                 SaveGame save = reader.ReadSerializable<SaveGame>();
-                offlineSave = SaveGameManager.data;
-                SaveGameManager.data.SetJObject(SaveGameKeys.Cars, JObject.Parse(save.SaveDataCars));
+                offlineSave = new OfflineSaveGame()
+                {
+                    SaveDataCars = SaveGameManager.data.GetJObject(SaveGameKeys.Cars).ToString(Formatting.None),
+                    SaveDataJobs = SaveGameManager.data.GetObject<JobsSaveGameData>(SaveGameKeys.Jobs, JobSaveManager.serializeSettings),
+                    SaveDataSwitches = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions).ToString(Formatting.None),
+                    SaveDataTurntables = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables) != null ? SaveGameManager.data.GetJObject(SaveGameKeys.Turntables).ToString(Formatting.None) : "",
+                };
                 SaveGameManager.data.SetJObject(SaveGameKeys.Junctions, JObject.Parse(save.SaveDataSwitches));
+                SaveGameManager.data.SetJObject(SaveGameKeys.Turntables, save.SaveDataTurntables != "" ? JObject.Parse(save.SaveDataTurntables) : null);
                 SaveGameUpgrader.Upgrade();
                 IsHostSaveLoaded = false;
                 IsHostSaveReceived = true;
@@ -167,7 +181,6 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
     public void LoadMultiplayerData()
     {
         SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
-        bool carsLoadedSuccessfully = true;
 
         JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
         if (jObject != null)
@@ -176,6 +189,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         }
         else
         {
+            IsHostSaveLoadedFailed = true;
             Main.Log("[WARNING] Turntables data not found!");
         }
         jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
@@ -185,21 +199,9 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         }
         else
         {
+            IsHostSaveLoadedFailed = true;
             Main.Log("[WARNING] Junctions save not found!");
         }
-
-        //jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
-        //if (jObject != null)
-        //{
-        //    carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jObject);
-        //    if (!carsLoadedSuccessfully)
-        //        Debug.LogError((object)"Cars not loaded successfully!");
-        //}
-        //else
-        //    Main.DebugLog("[WARNING] Cars save not found!");
-
-
-        IsHostSaveLoadedFailed = !carsLoadedSuccessfully;
-        IsHostSaveLoaded = carsLoadedSuccessfully;
+        IsHostSaveLoaded = !IsHostSaveLoadedFailed;
     }
 }

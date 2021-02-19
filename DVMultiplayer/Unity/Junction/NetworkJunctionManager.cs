@@ -33,8 +33,9 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
             IsSynced = true;
     }
 
-    public void PlayerDisconnect()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         if (switches == null)
             return;
 

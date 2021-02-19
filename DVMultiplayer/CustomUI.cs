@@ -21,6 +21,7 @@ namespace DVMultiplayer
         internal static MenuScreen ModMismatchScreen;
         internal static MenuScreen PopupUI;
         internal static MenuScreen currentScreen;
+        internal static MenuScreen prevScreen;
         internal static bool readyForCSUpdate = false;
         internal static bool CSUpdateFinished = false;
         internal static float menuOffset = -500;
@@ -64,19 +65,21 @@ namespace DVMultiplayer
         internal static void Open(MenuScreen screen, bool allowedToBeClosedByPlayer = true)
         {
             isAllowedToBeClosedByPlayer = allowedToBeClosedByPlayer;
+            if (currentScreen && currentScreen != InputScreenUI)
+                prevScreen = currentScreen;
             currentScreen = screen;
             SingletonBehaviour<CanvasSpawner>.Instance.Open(screen);
         }
 
         internal static void Open()
         {
-            isAllowedToBeClosedByPlayer = true;
             currentScreen = null;
             SingletonBehaviour<CanvasSpawner>.Instance.Open();
         }
 
         internal static void Close()
         {
+            isAllowedToBeClosedByPlayer = true;
             currentScreen = null;
             SingletonBehaviour<CanvasSpawner>.Instance.Close();
             SingletonBehaviour<CanvasSpawner>.Instance.AllowOutsideClickClose = true;

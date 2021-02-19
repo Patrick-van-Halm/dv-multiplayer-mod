@@ -335,7 +335,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     /// <summary>
     /// This method is called upon the player disconnects.
     /// </summary>
-    public void PlayerDisconnect()
+    protected override void OnDestroy()
     {
         base.OnDestroy();
         SingletonBehaviour<UnityClient>.Instance.MessageReceived -= MessageReceived;

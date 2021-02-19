@@ -58,13 +58,19 @@ namespace DVMultiplayer.Networking
 
         private static void OnClientDisconnected(object sender, DisconnectedEventArgs e)
         {
+            SingletonBehaviour<CoroutineManager>.Instance.Run(DisconnectCoroutine());
+        }
+
+        private static IEnumerator DisconnectCoroutine()
+        {
+            isClient = false;
             UI.HideUI();
+            yield return new WaitUntil(() => !CustomUI.currentScreen);
             if (scriptsInitialized)
             {
-                DeInitializeUnityScripts();
+                yield return DeInitializeUnityScripts();
                 scriptsInitialized = false;
             }
-            isClient = false;
             client.Close();
         }
 
@@ -245,28 +251,24 @@ namespace DVMultiplayer.Networking
             networkManager.AddComponent<NetworkTurntableManager>();
         }
 
-        private static void DeInitializeUnityScripts()
+        private static IEnumerator DeInitializeUnityScripts()
         {
+            Main.Log($"[DISCONNECTING] NetworkPlayerSync Deinitializing");
+            Object.DestroyImmediate(PlayerManager.PlayerTransform.GetComponent<NetworkPlayerSync>());
             Main.Log($"[DISCONNECTING] NetworkPlayerManager Deinitializing");
-            networkManager.GetComponent<NetworkPlayerManager>().PlayerDisconnect();
-            Object.Destroy(networkManager.GetComponent<NetworkPlayerManager>());
-            Main.Log($"[DISCONNECTING] NetworkTrainManager Deinitializing");
-            networkManager.GetComponent<NetworkTrainManager>().PlayerDisconnect();
-            Object.Destroy(networkManager.GetComponent<NetworkTrainManager>());
-            Main.Log($"[DISCONNECTING] NetworkJunctionManager Deinitializing");
-            networkManager.GetComponent<NetworkJunctionManager>().PlayerDisconnect();
-            Object.Destroy(networkManager.GetComponent<NetworkJunctionManager>());
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkPlayerManager>());
             Main.Log($"[DISCONNECTING] NetworkJobsManager Deinitializing");
-            Object.Destroy(networkManager.GetComponent<NetworkJobsManager>());
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkJobsManager>());
+            Main.Log($"[DISCONNECTING] NetworkTrainManager Deinitializing");
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkTrainManager>());
+            Main.Log($"[DISCONNECTING] NetworkJunctionManager Deinitializing");
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkJunctionManager>());
+            Main.Log($"[DISCONNECTING] NetworkTurntableManager Deinitializing");
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkTurntableManager>());
             Main.Log($"[DISCONNECTING] NetworkSaveGameManager Deinitializing");
             networkManager.GetComponent<NetworkSaveGameManager>().PlayerDisconnect();
-            Object.Destroy(networkManager.GetComponent<NetworkSaveGameManager>());
-            Main.Log($"[DISCONNECTING] Initializing NetworkTurntableManager");
-            networkManager.GetComponent<NetworkTurntableManager>().PlayerDisconnect();
-            Object.Destroy(networkManager.GetComponent<NetworkTurntableManager>());
-
-            Main.Log($"[DISCONNECTING] NetworkPlayerSync Deinitializing");
-            Object.Destroy(PlayerManager.PlayerTransform.gameObject.GetComponent<NetworkPlayerSync>());
+            yield return new WaitUntil(() => networkManager.GetComponent<NetworkSaveGameManager>().IsOfflineSaveLoaded);
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkSaveGameManager>());
         }
 
         /// <summary>

@@ -117,6 +117,11 @@ namespace DVMultiplayer.Networking
                 }
             });
 
+            RequestUsernameUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
+            {
+                CustomUI.Open(CustomUI.prevScreen);
+            });
+
             UI.transform.Find("Button Connect").GetComponent<Button>().onClick.AddListener(() =>
             {
                 ConnectUI.transform.Find("TextField IP").GetComponentInChildren<TextMeshProUGUI>().text = "";
