@@ -24,6 +24,7 @@ namespace DVMultiplayer
         internal static bool readyForCSUpdate = false;
         internal static bool CSUpdateFinished = false;
         internal static float menuOffset = -500;
+        internal static bool isAllowedToBeClosedByPlayer = true;
 
         internal static void Initialize()
         {
@@ -60,14 +61,16 @@ namespace DVMultiplayer
             bbase.clickAudio = refBase.clickAudio;
         }
 
-        internal static void Open(MenuScreen screen)
+        internal static void Open(MenuScreen screen, bool allowedToBeClosedByPlayer = true)
         {
+            isAllowedToBeClosedByPlayer = allowedToBeClosedByPlayer;
             currentScreen = screen;
             SingletonBehaviour<CanvasSpawner>.Instance.Open(screen);
         }
 
         internal static void Open()
         {
+            isAllowedToBeClosedByPlayer = true;
             currentScreen = null;
             SingletonBehaviour<CanvasSpawner>.Instance.Open();
         }
@@ -81,6 +84,7 @@ namespace DVMultiplayer
 
         internal static void OpenPopup(string title, string message)
         {
+            isAllowedToBeClosedByPlayer = false;
             SingletonBehaviour<CanvasSpawner>.Instance.AllowOutsideClickClose = false;
             PopupUI.transform.Find("Title").GetComponent<TextMeshProUGUI>().text = title;
             PopupUI.transform.Find("Label Message").GetComponent<TextMeshProUGUI>().text = message;

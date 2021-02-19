@@ -179,6 +179,7 @@
     <Compile Include="Networking\NetworkTags.cs" />
     <Compile Include="Patches\JobValidatorStopAcceptingJobIfNotAllowed.cs" />
     <Compile Include="Patches\StopCreatingLocosAsClient.cs" />
+    <Compile Include="Patches\StopClosingUIIfNotAllowed.cs" />
     <Compile Include="Patches\StopTrainsToPoolWhenClient.cs" />
     <Compile Include="Patches\StopRemovingTrainsWhenClient.cs" />
     <Compile Include="Patches\StopTurntablePushWhenClient.cs" />
