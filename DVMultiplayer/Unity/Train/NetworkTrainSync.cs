@@ -148,6 +148,10 @@ internal class NetworkTrainSync : MonoBehaviour
 
             if (loco.IsInteriorLoaded)
                 loco.UnloadInterior();
+
+            loco.CarDamage.CarEffectiveHealthStateUpdate -= OnBodyDamageTaken;
+            if (!loco.IsLoco)
+                loco.CargoDamage.CargoDamaged -= OnCargoDamageTaken;
         }
     }
 

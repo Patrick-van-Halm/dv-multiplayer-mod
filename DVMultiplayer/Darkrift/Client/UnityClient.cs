@@ -536,8 +536,6 @@ namespace DarkRift.Client.Unity
             Client.Disconnected -= Client_Disconnected;
 
             Client.Dispose();
-            Dispatcher.Dispose();
-
             Client = null;
         }
     }

@@ -40,8 +40,8 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
 
         foreach (VisualSwitch @switch in switches)
         {
-            if (@switch.junction.gameObject.GetComponent<NetworkJunctionSync>())
-                Destroy(@switch.junction.gameObject.GetComponent<NetworkJunctionSync>());
+            if (@switch.junction.GetComponent<NetworkJunctionSync>())
+                Destroy(@switch.junction.GetComponent<NetworkJunctionSync>());
         }
     }
 

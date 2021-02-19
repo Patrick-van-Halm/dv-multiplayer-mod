@@ -20,11 +20,35 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
 
     protected override void Awake()
     {
+        base.Awake();
         jobs = new Dictionary<Job, DV.Logic.Job.Job>();
         Main.Log($"NetworkJobsManager initialized");
-        base.Awake();
         allStations = GameObject.FindObjectsOfType<StationController>();
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
+    }
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+
+        if (allStations == null)
+            return;
+
+        Main.Log("Destroying all NetworkJobsSync");
+        foreach (StationController station in allStations)
+        {
+            if(station.GetComponent<NetworkJobsSync>())
+                DestroyImmediate(station.GetComponent<NetworkJobsSync>());
+        }
+
+        Main.Log("Stop listening to Job events");
+        foreach (DV.Logic.Job.Job job in jobs.Values)
+        {
+            job.JobTaken -= CurrentJobInChain_JobTaken;
+            job.JobCompleted -= Job_JobCompleted;
+        }
+
+        jobs.Clear();
     }
 
     #region Events
@@ -191,8 +215,6 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
             }
         }
     }
-
-    
     #endregion
 
     #region Sending Messages

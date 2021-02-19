@@ -268,12 +268,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                 NetworkManager.Disconnect();
             }
 
-            // Initialize trains on save
-            Main.Log($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
-            SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
-            yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded);
-
-            // Load Train data from server that changed since uptime
+            // Load Junction data from server that changed since uptime
             Main.Log($"Syncing Junctions");
             SingletonBehaviour<NetworkJunctionManager>.Instance.SyncJunction();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkJunctionManager>.Instance.IsSynced);
@@ -310,6 +305,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
             Main.Log($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
             SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
+            yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded);
+
             Main.Log($"Run OnFinishedLoading in NetworkJobsManager");
             SingletonBehaviour<NetworkJobsManager>.Instance.OnFinishLoading();
         }
@@ -341,13 +338,13 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     public void PlayerDisconnect()
     {
         base.OnDestroy();
+        SingletonBehaviour<UnityClient>.Instance.MessageReceived -= MessageReceived;
         foreach (GameObject player in networkPlayers.Values)
         {
-            Destroy(player);
+            DestroyImmediate(player);
         }
         networkPlayers.Clear();
         spawnData = null;
-        SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
     }
 
     private void SpawnNetworkPlayer(Message message)

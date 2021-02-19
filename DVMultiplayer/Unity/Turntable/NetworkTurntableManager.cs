@@ -172,13 +172,14 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
 
     internal void PlayerDisconnect()
     {
+        SingletonBehaviour<UnityClient>.Instance.MessageReceived -= MessageReceived;
         if (turntables == null)
             return;
 
         foreach (TurntableController turntable in turntables)
         {
-            if (turntable.gameObject.GetComponent<NetworkTurntableSync>())
-                DestroyImmediate(turntable.gameObject.GetComponent<NetworkTurntableSync>());
+            if (turntable.GetComponent<NetworkTurntableSync>())
+                DestroyImmediate(turntable.GetComponent<NetworkTurntableSync>());
         }
     }
 

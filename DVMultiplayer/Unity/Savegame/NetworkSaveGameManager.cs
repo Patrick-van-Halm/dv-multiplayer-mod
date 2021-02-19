@@ -1,6 +1,7 @@
 ﻿using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
+using DV;
 using DV.TerrainSystem;
 using DVMultiplayer;
 using DVMultiplayer.DTO.Savegame;
@@ -84,11 +85,13 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
 
     private IEnumerator LoadOfflineSave()
     {
+        CustomUI.OpenPopup("Disconnecting", "Loading offline save");
         UUI.UnlockMouse(true);
+        AppUtil.Instance.PauseGame();
+        yield return new WaitUntil(() => AppUtil.IsPaused);
         TutorialController.movementAllowed = false;
         CarSpawner.useCarPooling = true;
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
-        PlayerManager.PlayerTransform.position = vector3_1 + WorldMover.currentMove;
         bool carsLoadedSuccessfully = false;
         JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
         if (jObject != null)
@@ -132,8 +135,12 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         }
 
         SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
+        AppUtil.Instance.UnpauseGame();
+        UUI.UnlockMouse(true);
+        PlayerManager.TeleportPlayer(vector3_1 + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
         yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
         UUI.UnlockMouse(false);
+        CustomUI.Close();
         TutorialController.movementAllowed = true;
 
         SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;

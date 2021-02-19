@@ -19,6 +19,23 @@ internal class NetworkTrainCouplerSync : MonoBehaviour
         Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Listening to cock changed event");
         coupler.CockChanged += CouplerCockChanged;
     }
+
+    private void OnDestroy()
+    {
+        Main.Log($"NetworkTrainCouplerSync.OnDestroy()");
+        if (!coupler)
+            return;
+
+        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] NetworkTrainCouplerSync OnDestroy called");
+        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to coupled event");
+        coupler.Coupled -= CouplerCoupled;
+        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to uncoupled event");
+        coupler.Uncoupled -= CouplerUncoupled;
+        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to hose connection changed event");
+        coupler.HoseConnectionChanged -= CouplerHoseConChanged;
+        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to cock changed event");
+        coupler.CockChanged -= CouplerCockChanged;
+    }
 #pragma warning restore IDE0051 // Remove unused private members
 
     private void CouplerUncoupled(object sender, UncoupleEventArgs e)

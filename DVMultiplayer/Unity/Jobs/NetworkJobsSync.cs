@@ -9,7 +9,7 @@ using UnityEngine;
 
 class NetworkJobsSync : MonoBehaviour
 {
-    internal event Action<StationController, JobChainController> OnJobGenerated;
+    internal event Action<StationController, JobChainController[]> OnJobsGenerated;
     StationController station;
     List<JobChainController> currentJobs = new List<JobChainController>();
     private void Awake()
@@ -19,14 +19,15 @@ class NetworkJobsSync : MonoBehaviour
         currentJobs.AddRange(station.ProceduralJobsController.GetCurrentJobChains());
     }
 
+    private void OnDestroy()
+    {
+        station.ProceduralJobsController.JobGenerationAttempt -= OnJobGeneratedAttempt;
+    }
+
     private void OnJobGeneratedAttempt()
     {
         JobChainController[] newJobs = currentJobs.Except(station.ProceduralJobsController.GetCurrentJobChains()).ToArray();
-        foreach(JobChainController job in newJobs)
-        {
-            Main.DebugLog($"Job found with id: {job.currentJobInChain.ID}");
-            OnJobGenerated?.Invoke(station, job);
-        }
+        OnJobsGenerated?.Invoke(station, newJobs);
         currentJobs.AddRange(newJobs);
     }
 }
