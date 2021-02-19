@@ -43,6 +43,16 @@ namespace DVMultiplayer
                 GenerateClientNetworkUI();
                 GenerateModMismatchScreenUI();
                 GeneratePopUp();
+
+                ModMismatchScreen.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    Close();
+                });
+
+                ModMismatchScreen.transform.Find("Button Ok").GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    Close();
+                });
             }
             catch (Exception ex)
             {
@@ -62,12 +72,13 @@ namespace DVMultiplayer
             bbase.clickAudio = refBase.clickAudio;
         }
 
-        internal static void Open(MenuScreen screen, bool allowedToBeClosedByPlayer = true)
+        internal static void Open(MenuScreen screen, bool allowedToBeClosedByPlayer = true, bool allowOutsideClickClose = true)
         {
             isAllowedToBeClosedByPlayer = allowedToBeClosedByPlayer;
             if (currentScreen && currentScreen != InputScreenUI)
                 prevScreen = currentScreen;
             currentScreen = screen;
+            SingletonBehaviour<CanvasSpawner>.Instance.AllowOutsideClickClose = allowOutsideClickClose;
             SingletonBehaviour<CanvasSpawner>.Instance.Open(screen);
         }
 
@@ -100,7 +111,7 @@ namespace DVMultiplayer
 
             CreateSection(new Rect(0f, -245, 750, 255), RectTransformAnchoring.TopCenter, menuBuilder.transform);
             //Max 11 mods or if mod amount > 10 show "and {amount} more"
-            CreateLabel("Mismatched", "Your mods and the mods of the host mismatched.\n[MISSING] Mod1\n[MISSING] Mod2\n[MISSING] Mod3\n[MISSING] Mod4\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]\n[REMOVE]", menuBuilder.transform, new Rect(32f, -125, 740, 250), FontStyles.Normal, TextAlignmentOptions.TopLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 1f), Color.white, 18);
+            CreateLabel("Mismatched", "Your mods and the mods of the host mismatched.\n", menuBuilder.transform, new Rect(32f, -125, 740, 250), FontStyles.Normal, TextAlignmentOptions.TopLeft, RectTransformAnchoring.TopLeft, new Vector2(0f, 1f), Color.white, 18);
             CreateSection(new Rect(0f, 115, 750, 91f), RectTransformAnchoring.BottomCenter, menuBuilder.transform, new Vector2(.5f, 1));
             ButtonBuilder buttonBuilder = new ButtonBuilder("Ok", "OK", menuBuilder.transform, new Rect(0f, 107, 608, 76), RectTransformAnchoring.BottomCenter, new Vector2(.5f, 1f), TextAlignmentOptions.Center);
             CreateButton(buttonBuilder);

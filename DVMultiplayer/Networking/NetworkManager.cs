@@ -64,8 +64,8 @@ namespace DVMultiplayer.Networking
         private static IEnumerator DisconnectCoroutine()
         {
             isClient = false;
-            UI.HideUI();
             yield return new WaitUntil(() => !CustomUI.currentScreen);
+            yield return new WaitForEndOfFrame();
             if (scriptsInitialized)
             {
                 yield return DeInitializeUnityScripts();

@@ -12,6 +12,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -161,6 +162,17 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                 string[] missingMods = reader.ReadStrings();
                 string[] extraMods = reader.ReadStrings();
 
+                List<string> mismatches = new List<string>();
+                mismatches.AddRange(missingMods);
+                mismatches.AddRange(extraMods);
+                MenuScreen screen = CustomUI.ModMismatchScreen;
+                for(int i = 0; i < (mismatches.Count > 10 ? 10 : mismatches.Count); i++)
+                {
+                    screen.transform.Find("Label Mismatched").GetComponent<TextMeshProUGUI>().text += "[MISMATCH] " + mismatches[i] + "\n";
+                }
+                if(mismatches.Count > 10)
+                    screen.transform.Find("Label Mismatched").GetComponent<TextMeshProUGUI>().text += $"And {mismatches.Count - 10} more mismatches.";
+
                 if (missingMods.Length > 0)
                     Main.mod.Logger.Error($"[MOD MISMATCH] You are missing the following mods: {string.Join(", ", missingMods)}");
 
@@ -243,9 +255,10 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             yield return new WaitUntil(() => networkPlayers.ContainsKey(0) || modMismatched);
             if (modMismatched)
             {
-                Main.Log($"Mods Mismatched so disconnecting player");
                 UUI.UnlockMouse(false);
                 TutorialController.movementAllowed = true;
+                Main.Log($"Mods Mismatched so disconnecting player");
+                CustomUI.Open(CustomUI.ModMismatchScreen, false, false);
                 NetworkManager.Disconnect();
                 yield break;
             }
