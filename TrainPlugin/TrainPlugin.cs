@@ -1,4 +1,4 @@
-using DarkRift;
+﻿using DarkRift;
 using DarkRift.Server;
 using DVMultiplayer.DTO.Train;
 using DVMultiplayer.Networking;
@@ -13,7 +13,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.4");
+        public override Version Version => new Version("1.6.9");
 
         private readonly List<WorldTrain> worldTrains;
         private bool shouldSendNewTrains = false;
@@ -340,13 +340,13 @@ namespace TrainPlugin
 
             if(sendNewTrainsCheck == null)
             {
-                sendNewTrainsCheck = new Timer(2000);
-                sendNewTrainsCheck.Elapsed += NewTrainsCheck;
+                sendNewTrainsCheck = new Timer(500);
+                sendNewTrainsCheck.Elapsed += NewTrainInitializedTimerElapsed;
                 sendNewTrainsCheck.Start();
             }
         }
 
-        private void NewTrainsCheck(object sender, ElapsedEventArgs e)
+        private void NewTrainInitializedTimerElapsed(object sender, ElapsedEventArgs e)
         {
             if(!shouldSendNewTrains)
             {
@@ -396,9 +396,6 @@ namespace TrainPlugin
                     train.Bogie2PositionAlongTrack = derailed.Bogie2PositionAlongTrack;
                     train.CarHealth = derailed.CarHealth;
                     train.CargoHealth = derailed.CargoHealth;
-
-                    if (train.CarType == TrainCarType.LocoShunter)
-                        train.Shunter.IsEngineOn = false;
                 }
             }
 
@@ -441,10 +438,13 @@ namespace TrainPlugin
                         train.Sander = 0;
                         train.Brake = 0;
                         train.IndepBrake = 1;
-                        train.Reverser = .5f;
+                        train.Reverser = 0f;
                         if (train.Shunter != null)
                         {
                             train.Shunter.IsEngineOn = false;
+                            train.Shunter.IsMainFuseOn = false;
+                            train.Shunter.IsSideFuse1On = false;
+                            train.Shunter.IsSideFuse2On = false;
                         }
                     }
                 }

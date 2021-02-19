@@ -10,13 +10,13 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private TrainCar trainCar;
     private Vector3? newExtraForce = null;
     private bool isOutOfSync = false;
-    private Vector3 hostPos;
     private bool hostStationary;
     private float prevIndepBrakePos;
     private float prevBrakePos;
     private Vector3 prevPos;
     public bool hostDerailed;
     private bool velocityShouldUpdate = false;
+    private Coroutine updatePositionCoroutine;
     public event Action<TrainCar> OnTrainCarInitialized;
 
 #pragma warning disable IDE0051 // Remove unused private members
@@ -25,22 +25,34 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.Log($"NetworkTrainPosSync.Awake()");
         trainCar = GetComponent<TrainCar>();
         Main.Log($"[{trainCar.ID}] NetworkTrainPosSync Awake called");
-        Main.Log($"Starting coroutine for location updating");
 
-        Main.Log($"Listen to derailment events");
+        Main.Log($"Listening to derailment/rerail events");
         trainCar.OnDerailed += TrainDerail;
         trainCar.OnRerailed += TrainRerail;
+        Main.Log($"Listening to LogicCar loaded event");
         trainCar.LogicCarInitialized += TrainCar_LogicCarInitialized;
 
         if (NetworkManager.IsHost())
         {
-            SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
+            Main.Log($"Listening to movement changed event");
+            trainCar.MovementStateChanged += TrainCar_MovementStateChanged;
         }
     }
 
-    private void TrainCar_LogicCarInitialized()
+    private void OnDestroy()
     {
-        OnTrainCarInitialized?.Invoke(trainCar);
+        Main.Log($"NetworkTrainPosSync.OnDestroy()");
+        if (!trainCar)
+            return;
+
+        Main.Log($"[{trainCar.ID}] NetworkTrainPosSync OnDestroy called");
+        Main.Log($"Stop listening to derailment/rerail events");
+        trainCar.OnDerailed -= TrainDerail;
+        trainCar.OnRerailed -= TrainRerail;
+        Main.Log($"Stop listening to LogicCar loaded event");
+        trainCar.LogicCarInitialized -= TrainCar_LogicCarInitialized;
+        Main.Log($"Stop listening to movement changed event");
+        trainCar.MovementStateChanged -= TrainCar_MovementStateChanged;
     }
 
     private void FixedUpdate()
@@ -76,6 +88,25 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
     }
 #pragma warning restore IDE0051 // Remove unused private members
+
+    private void TrainCar_MovementStateChanged(bool isMoving)
+    {
+        if (isMoving)
+        {
+            updatePositionCoroutine = SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
+        }
+        else
+        {
+            SingletonBehaviour<CoroutineManager>.Instance.Stop(updatePositionCoroutine);
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, true);
+            prevPos = trainCar.transform.position;
+        }
+    }
+
+    private void TrainCar_LogicCarInitialized()
+    {
+        OnTrainCarInitialized?.Invoke(trainCar);
+    }
 
     private void TrainRerail()
     {
@@ -142,12 +173,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private void SyncVelocityAndSpeedUpIfDesynced(TrainLocation location)
     {
         float distance = Distance(trainCar.transform, location.Position);
-        hostPos = location.Position;
-        Vector3 newVelocity = Vector3.zero;
+        float curSpeed = trainCar.GetForwardSpeed() * 3.6f;
+        Vector3 newVelocity;
         if (distance > 10f)
         {
             newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z + 1.5f);
-            if(newVelocity != newExtraForce)
+            if (newVelocity != newExtraForce)
             {
                 velocityShouldUpdate = true;
                 newExtraForce = newVelocity;
@@ -166,7 +197,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         else if (distance <= 3f && distance > .1f)
         {
-            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z + .25f);
+            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z + (curSpeed < 25 ? .25f : .19f));
             if (newVelocity != newExtraForce)
             {
                 velocityShouldUpdate = true;
@@ -186,7 +217,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         else if (distance <= -.1f && distance > -3f)
         {
-            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z - .25f);
+            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z - (curSpeed < 25 ? .25f : .19f));
             if (newVelocity != newExtraForce)
             {
                 velocityShouldUpdate = true;

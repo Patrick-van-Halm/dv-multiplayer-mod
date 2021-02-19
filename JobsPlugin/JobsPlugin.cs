@@ -12,7 +12,7 @@ namespace JobsPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.1");
+        public override Version Version => new Version("1.0.2");
 
         private readonly List<Job> jobs;
 
@@ -110,12 +110,15 @@ namespace JobsPlugin
         {
             using (DarkRiftReader reader = message.GetReader())
             {
-                JobCreated job = reader.ReadSerializable<JobCreated>();
-                jobs.Add(new Job()
+                JobCreated[] newJobs = reader.ReadSerializables<JobCreated>();
+                foreach(JobCreated job in newJobs)
                 {
-                    Id = job.Id,
-                    JobData = job.JobData
-                });
+                    jobs.Add(new Job()
+                    {
+                        Id = job.Id,
+                        JobData = job.JobData
+                    });
+                }
             }
 
             ReliableSendToOthers(message, sender);
