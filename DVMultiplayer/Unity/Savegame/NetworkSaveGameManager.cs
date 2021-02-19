@@ -167,10 +167,10 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
                     SaveDataCars = SaveGameManager.data.GetJObject(SaveGameKeys.Cars).ToString(Formatting.None),
                     SaveDataJobs = SaveGameManager.data.GetObject<JobsSaveGameData>(SaveGameKeys.Jobs, JobSaveManager.serializeSettings),
                     SaveDataSwitches = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions).ToString(Formatting.None),
-                    SaveDataTurntables = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables) != null ? SaveGameManager.data.GetJObject(SaveGameKeys.Turntables).ToString(Formatting.None) : "",
+                    SaveDataTurntables = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables).ToString(Formatting.None),
                 };
                 SaveGameManager.data.SetJObject(SaveGameKeys.Junctions, JObject.Parse(save.SaveDataSwitches));
-                SaveGameManager.data.SetJObject(SaveGameKeys.Turntables, save.SaveDataTurntables != "" ? JObject.Parse(save.SaveDataTurntables) : null);
+                SaveGameManager.data.SetJObject(SaveGameKeys.Turntables, JObject.Parse(save.SaveDataTurntables));
                 SaveGameUpgrader.Upgrade();
                 IsHostSaveLoaded = false;
                 IsHostSaveReceived = true;
