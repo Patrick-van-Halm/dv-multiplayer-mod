@@ -98,8 +98,9 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         TutorialController.movementAllowed = false;
         AppUtil.Instance.PauseGame();
         yield return new WaitUntil(() => AppUtil.IsPaused);
+        yield return new WaitForEndOfFrame();
         CustomUI.OpenPopup("Disconnecting", "Loading offline save");
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitUntil(() => CustomUI.currentScreen == CustomUI.PopupUI);
         CarSpawner.useCarPooling = true;
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
         bool carsLoadedSuccessfully = false;
@@ -146,11 +147,14 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
 
         SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
         AppUtil.Instance.UnpauseGame();
+        yield return new WaitUntil(() => !AppUtil.IsPaused);
+        yield return new WaitForEndOfFrame();
         PlayerManager.TeleportPlayer(vector3_1 + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
         UUI.UnlockMouse(true);
         yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
         UUI.UnlockMouse(false);
         CustomUI.Close();
+        yield return new WaitUntil(() => !CustomUI.currentScreen);
         TutorialController.movementAllowed = true;
 
         SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;

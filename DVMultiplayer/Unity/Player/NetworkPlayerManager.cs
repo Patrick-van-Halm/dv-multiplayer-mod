@@ -166,7 +166,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                 mismatches.AddRange(missingMods);
                 mismatches.AddRange(extraMods);
                 MenuScreen screen = CustomUI.ModMismatchScreen;
-                for(int i = 0; i < (mismatches.Count > 10 ? 10 : mismatches.Count); i++)
+                screen.transform.Find("Label Mismatched").GetComponent<TextMeshProUGUI>().text = "Your mods and the mods of the host mismatched.\n";
+                for (int i = 0; i < (mismatches.Count > 10 ? 10 : mismatches.Count); i++)
                 {
                     screen.transform.Find("Label Mismatched").GetComponent<TextMeshProUGUI>().text += "[MISMATCH] " + mismatches[i] + "\n";
                 }
