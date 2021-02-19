@@ -84,11 +84,10 @@ namespace DVMultiplayer
 
         internal static void OpenPopup(string title, string message)
         {
-            isAllowedToBeClosedByPlayer = false;
             SingletonBehaviour<CanvasSpawner>.Instance.AllowOutsideClickClose = false;
             PopupUI.transform.Find("Title").GetComponent<TextMeshProUGUI>().text = title;
             PopupUI.transform.Find("Label Message").GetComponent<TextMeshProUGUI>().text = message;
-            Open(PopupUI);
+            Open(PopupUI, false);
         }
 
         private static void GenerateModMismatchScreenUI()
