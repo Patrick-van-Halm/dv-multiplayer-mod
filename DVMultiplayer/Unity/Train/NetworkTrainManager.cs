@@ -121,9 +121,12 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 DestroyImmediate(trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>());
         }
 
-        foreach (TrainCar trainCar in localCars)
+        if (!NetworkManager.IsHost())
         {
-            CarSpawner.DeleteCar(trainCar);
+            foreach (TrainCar trainCar in localCars)
+            {
+                CarSpawner.DeleteCar(trainCar);
+            }
         }
 
         localCars.Clear();

@@ -40,7 +40,8 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
             if(station.GetComponent<NetworkJobsSync>())
                 DestroyImmediate(station.GetComponent<NetworkJobsSync>());
 
-            station.ExpireAllAvailableJobsInStation();
+            if (!NetworkManager.IsHost())
+                station.ExpireAllAvailableJobsInStation();
         }
 
         Main.Log("Stop listening to Job events");
