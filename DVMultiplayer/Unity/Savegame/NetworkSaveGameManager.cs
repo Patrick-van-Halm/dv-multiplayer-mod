@@ -73,15 +73,17 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
     public void PlayerDisconnect()
     {
         IsOfflineSaveLoaded = false;
-        if (offlineSave != null && !NetworkManager.IsHost())
+        if (!NetworkManager.IsHost())
         {
-            SaveGameManager.data.SetJObject(SaveGameKeys.Cars, JObject.Parse(offlineSave.SaveDataCars));
-            SaveGameManager.data.SetObject(SaveGameKeys.Jobs, offlineSave.SaveDataJobs, JobSaveManager.serializeSettings);
-            SaveGameManager.data.SetJObject(SaveGameKeys.Junctions, JObject.Parse(offlineSave.SaveDataSwitches));
-            SaveGameManager.data.SetJObject(SaveGameKeys.Turntables, JObject.Parse(offlineSave.SaveDataTurntables));
-            offlineSave = null;
-            SaveGameUpgrader.Upgrade();
-
+            if(offlineSave != null)
+            {
+                SaveGameManager.data.SetJObject(SaveGameKeys.Cars, JObject.Parse(offlineSave.SaveDataCars));
+                SaveGameManager.data.SetObject(SaveGameKeys.Jobs, offlineSave.SaveDataJobs, JobSaveManager.serializeSettings);
+                SaveGameManager.data.SetJObject(SaveGameKeys.Junctions, JObject.Parse(offlineSave.SaveDataSwitches));
+                SaveGameManager.data.SetJObject(SaveGameKeys.Turntables, JObject.Parse(offlineSave.SaveDataTurntables));
+                offlineSave = null;
+                SaveGameUpgrader.Upgrade();
+            }
             SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave());
         }
         else
@@ -92,11 +94,12 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
 
     private IEnumerator LoadOfflineSave()
     {
-        CustomUI.OpenPopup("Disconnecting", "Loading offline save");
         UUI.UnlockMouse(true);
+        TutorialController.movementAllowed = false;
         AppUtil.Instance.PauseGame();
         yield return new WaitUntil(() => AppUtil.IsPaused);
-        TutorialController.movementAllowed = false;
+        CustomUI.OpenPopup("Disconnecting", "Loading offline save");
+        yield return new WaitForSeconds(0.5f);
         CarSpawner.useCarPooling = true;
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
         bool carsLoadedSuccessfully = false;
@@ -143,8 +146,8 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
 
         SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
         AppUtil.Instance.UnpauseGame();
-        UUI.UnlockMouse(true);
         PlayerManager.TeleportPlayer(vector3_1 + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
+        UUI.UnlockMouse(true);
         yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
         UUI.UnlockMouse(false);
         CustomUI.Close();
