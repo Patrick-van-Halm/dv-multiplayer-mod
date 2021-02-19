@@ -362,4 +362,9 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
             }
         }
     }
+
+    internal StationController GetStationById(string id)
+    {
+        return allStations.FirstOrDefault(s => s.logicStation.ID == id);
+    }
 }

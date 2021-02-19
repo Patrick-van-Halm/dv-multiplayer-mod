@@ -1,6 +1,7 @@
 ﻿using DV.Logic.Job;
 using DVMultiplayer;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +13,9 @@ class NetworkJobsSync : MonoBehaviour
     internal event Action<StationController, JobChainController[]> OnJobsGenerated;
     StationController station;
     List<JobChainController> currentJobs = new List<JobChainController>();
+    Coroutine sendNewJobsAfterGeneration = null;
+    List<JobChainController> newChains = new List<JobChainController>();
+
     private void Awake()
     {
         station = GetComponent<StationController>();
@@ -26,8 +30,27 @@ class NetworkJobsSync : MonoBehaviour
 
     private void OnJobGeneratedAttempt()
     {
-        JobChainController[] newJobs = currentJobs.Except(station.ProceduralJobsController.GetCurrentJobChains()).ToArray();
-        OnJobsGenerated?.Invoke(station, newJobs);
-        currentJobs.AddRange(newJobs);
+        newChains.AddRange(currentJobs.Except(station.ProceduralJobsController.GetCurrentJobChains()));
+        if (sendNewJobsAfterGeneration == null)
+            sendNewJobsAfterGeneration = SingletonBehaviour<CoroutineManager>.Instance.Run(WaitTillGenerationFinished());
+    }
+
+    private IEnumerator WaitTillGenerationFinished()
+    {
+        do
+        {
+            yield return new WaitUntil(() => station.ProceduralJobsController.IsJobGenerationActive);
+            yield return new WaitForSeconds(.1f);
+        }
+        while (station.ProceduralJobsController.IsJobGenerationActive);
+
+        foreach(JobChainController job in newChains)
+        {
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewJobChainCars(job.trainCarsForJobChain);
+        }
+
+        OnJobsGenerated?.Invoke(station, newChains.ToArray());
+        newChains.Clear();
+        sendNewJobsAfterGeneration = null;
     }
 }

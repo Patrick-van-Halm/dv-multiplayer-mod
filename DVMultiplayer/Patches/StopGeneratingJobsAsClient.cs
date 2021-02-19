@@ -38,9 +38,10 @@ namespace DVMultiplayer.Patches
 					}
 					___attemptJobOverviewGeneration = false;
 				}
+
 				float playerSqrDistanceFromStationCenter = ___stationRange.PlayerSqrDistanceFromStationCenter;
 				bool isPlayerInGenerationZone = ___stationRange.IsPlayerInJobGenerationZone(playerSqrDistanceFromStationCenter);
-				if (isPlayerInGenerationZone && !___playerEnteredJobGenerationZone)
+				if (isPlayerInGenerationZone && !___playerEnteredJobGenerationZone && SingletonBehaviour<NetworkPlayerManager>.Instance.IsSynced)
 				{
 					if(!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().All(p => ___stationRange.IsPlayerInJobGenerationZone((p.transform.position - ___stationRange.stationCenterAnchor.position).sqrMagnitude)))
 						__instance.ProceduralJobsController.TryToGenerateJobs();

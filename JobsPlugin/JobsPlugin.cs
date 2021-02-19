@@ -12,7 +12,7 @@ namespace JobsPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.2");
+        public override Version Version => new Version("1.0.3");
 
         private readonly List<Job> jobs;
 
@@ -121,6 +121,7 @@ namespace JobsPlugin
                 }
             }
 
+            Logger.Trace("[SERVER] > JOB_CREATED");
             ReliableSendToOthers(message, sender);
         }
 

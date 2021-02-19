@@ -30,7 +30,7 @@
         SWITCH_HOSTSYNC,
         TURNTABLE_SNAP,
         PLAYER_LOADED,
-        TRAIN_INIT,
+        TRAINS_INIT,
         TRAIN_REMOVAL,
         JOB_CREATED,
         JOB_SYNC,

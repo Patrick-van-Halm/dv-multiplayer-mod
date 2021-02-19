@@ -5,7 +5,6 @@ using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Timers;
 
 namespace TrainPlugin
 {
@@ -13,17 +12,13 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.9");
+        public override Version Version => new Version("1.6.10");
 
         private readonly List<WorldTrain> worldTrains;
-        private bool shouldSendNewTrains = false;
-        private Timer sendNewTrainsCheck;
-        private readonly Dictionary<IClient, List<WorldTrain>> sendNewTrains;
 
         public TrainPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
             worldTrains = new List<WorldTrain>();
-            sendNewTrains = new Dictionary<IClient, List<WorldTrain>>();
             ClientManager.ClientConnected += OnClientConnected;
         }
 
@@ -37,7 +32,7 @@ namespace TrainPlugin
             using (Message message = e.GetMessage() as Message)
             {
                 NetworkTags tag = (NetworkTags)message.Tag;
-                if (!tag.ToString().StartsWith("TRAIN_"))
+                if (!tag.ToString().StartsWith("TRAIN"))
                     return;
 
                 if (tag != NetworkTags.TRAIN_LOCATION_UPDATE)
@@ -89,8 +84,8 @@ namespace TrainPlugin
                         UpdateTrainPosition(message, e.Client);
                         break;
 
-                    case NetworkTags.TRAIN_INIT:
-                        NewTrainInitialized(message, e.Client);
+                    case NetworkTags.TRAINS_INIT:
+                        NewTrainsInitialized(message, e.Client);
                         break;
 
                     case NetworkTags.TRAIN_REMOVAL:
@@ -325,50 +320,16 @@ namespace TrainPlugin
             }
         }
 
-        private void NewTrainInitialized(Message message, IClient sender)
+        private void NewTrainsInitialized(Message message, IClient sender)
         {
-            shouldSendNewTrains = false;
             using (DarkRiftReader reader = message.GetReader())
             {
-                WorldTrain train = reader.ReadSerializable<WorldTrain>();
-                worldTrains.Add(train);
-                if (sendNewTrains.ContainsKey(sender))
-                    sendNewTrains[sender].Add(train);
-                else
-                    sendNewTrains.Add(sender, new List<WorldTrain>() { train });
+                WorldTrain[] trains = reader.ReadSerializables<WorldTrain>();
+                worldTrains.AddRange(trains);
             }
 
-            if(sendNewTrainsCheck == null)
-            {
-                sendNewTrainsCheck = new Timer(500);
-                sendNewTrainsCheck.Elapsed += NewTrainInitializedTimerElapsed;
-                sendNewTrainsCheck.Start();
-            }
-        }
-
-        private void NewTrainInitializedTimerElapsed(object sender, ElapsedEventArgs e)
-        {
-            if(!shouldSendNewTrains)
-            {
-                shouldSendNewTrains = true;
-            }
-            else
-            {
-                foreach(IClient client in sendNewTrains.Keys)
-                {
-                    using (DarkRiftWriter writer = DarkRiftWriter.Create())
-                    {
-                        Logger.Trace("[SERVER] > TRAIN_INIT");
-
-                        writer.Write(sendNewTrains[client].ToArray());
-
-                        using (Message message = Message.Create((ushort)NetworkTags.TRAIN_INIT, writer))
-                            ReliableSendToOthers(message, client);
-                    }
-                    sendNewTrains.Remove(client);
-                }
-                shouldSendNewTrains = false;
-            }
+            Logger.Trace("[SERVER] > TRAINS_INIT");
+            ReliableSendToOthers(message, sender);
         }
 
         private void UpdateTrainDerailed(Message message, IClient sender)
