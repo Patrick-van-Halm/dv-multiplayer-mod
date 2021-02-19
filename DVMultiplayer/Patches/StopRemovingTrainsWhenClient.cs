@@ -44,6 +44,7 @@ namespace DVMultiplayer.Patches
 				{
 					isPlayerNotNearTrain = (trainCar.transform.position - PlayerManager.PlayerTransform.position).sqrMagnitude > distCheck;
 				}
+
 				__result = isPlayerNotNearTrain;
 			}
         }
