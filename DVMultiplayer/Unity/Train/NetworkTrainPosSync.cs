@@ -93,11 +93,16 @@ internal class NetworkTrainPosSync : MonoBehaviour
     {
         if (isMoving)
         {
-            updatePositionCoroutine = SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
+            if (updatePositionCoroutine == null)
+                updatePositionCoroutine = SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
         }
         else
         {
-            SingletonBehaviour<CoroutineManager>.Instance.Stop(updatePositionCoroutine);
+            if (updatePositionCoroutine != null)
+            {
+                SingletonBehaviour<CoroutineManager>.Instance.Stop(updatePositionCoroutine);
+                updatePositionCoroutine = null;
+            }
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, true);
             prevPos = trainCar.transform.position;
         }
