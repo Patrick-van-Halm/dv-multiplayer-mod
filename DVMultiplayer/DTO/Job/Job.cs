@@ -14,7 +14,6 @@ namespace DVMultiplayer.DTO.Job
         public bool IsTaken { get; set; } = false;
         public bool IsCompleted { get; set; } = false;
         public bool CanTakeJob { get; set; } = true;
-        public List<ushort> TakenBy { get; set; }
         public bool IsTakenByLocalPlayer { get; set; } = false;
 
         public void Deserialize(DeserializeEvent e)

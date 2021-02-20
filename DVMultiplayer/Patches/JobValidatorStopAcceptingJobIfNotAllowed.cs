@@ -13,7 +13,7 @@ namespace DVMultiplayer.Patches
         {
             if (NetworkManager.IsClient())
             {
-                if(jobOverview.job.State == DV.Logic.Job.JobState.Available && SingletonBehaviour<NetworkJobsManager>.Instance.IsAllowedToTakeJob(jobOverview.job.ID))
+                if(jobOverview.job.State != DV.Logic.Job.JobState.Available || !SingletonBehaviour<NetworkJobsManager>.Instance.IsAllowedToTakeJob(jobOverview.job.ID))
                 {
                     ___bookletPrinter.PlayErrorSound();
                     jobOverview.DestroyJobOverview();

@@ -192,7 +192,10 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                     if (jobGO)
                     {
                         StaticJobDefinition jobDef = jobGO.GetComponent<StaticJobDefinition>();
-                        jobDef.job.JobTaken += CurrentJobInChain_JobTaken;
+                        if (!job.IsTaken)
+                            jobDef.job.JobTaken += CurrentJobInChain_JobTaken;
+                        else
+                            job.CanTakeJob = false;
                         this.jobs.Add(job, jobDef.job);
                         Main.Log("Job successfully loaded");
                     }
@@ -244,9 +247,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                 this.jobs.Add(new Job()
                 {
                     Id = newJob.Id,
-                    JobData = newJob.JobData,
-                    IsCompleted = false,
-                    IsTaken = false
+                    JobData = newJob.JobData
                 }, job.currentJobInChain);
             }
             writer.Write(newJobs.ToArray());
@@ -362,9 +363,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                 jobs.Add(new Job()
                 {
                     Id = job.Id,
-                    JobData = job.JobData,
-                    IsTaken = false,
-                    IsCompleted = false
+                    JobData = job.JobData
                 }, jobDef.job);
                 Main.Log("Job successfully loaded");
             }
