@@ -40,7 +40,7 @@ internal class NetworkTrainCouplerSync : MonoBehaviour
 
     private void CouplerUncoupled(object sender, UncoupleEventArgs e)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced || !coupler)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced || !coupler || SingletonBehaviour<NetworkTrainManager>.Instance.IsSpawningTrains)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendCarCoupledChange(e.thisCoupler, e.otherCoupler, e.viaChainInteraction, false);
@@ -48,7 +48,7 @@ internal class NetworkTrainCouplerSync : MonoBehaviour
 
     private void CouplerCockChanged(bool isCockOpen)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced || !coupler)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced || !coupler || SingletonBehaviour<NetworkTrainManager>.Instance.IsSpawningTrains)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendCarCouplerCockChanged(coupler, isCockOpen);
@@ -56,7 +56,7 @@ internal class NetworkTrainCouplerSync : MonoBehaviour
 
     private void CouplerHoseConChanged(bool isConnected, bool audioPlayed)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced || !coupler)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced || !coupler || SingletonBehaviour<NetworkTrainManager>.Instance.IsSpawningTrains)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendCarCouplerHoseConChanged(coupler, isConnected);
@@ -64,7 +64,7 @@ internal class NetworkTrainCouplerSync : MonoBehaviour
 
     private void CouplerCoupled(object sender, CoupleEventArgs e)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced || !coupler)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced || !coupler || SingletonBehaviour<NetworkTrainManager>.Instance.IsSpawningTrains)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendCarCoupledChange(e.thisCoupler, e.otherCoupler, e.viaChainInteraction, true);

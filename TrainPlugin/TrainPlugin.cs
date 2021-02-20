@@ -12,18 +12,29 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.10");
+        public override Version Version => new Version("1.6.11");
 
         private readonly List<WorldTrain> worldTrains;
+        private readonly List<IClient> players;
+        private readonly List<IClient> playerHasInitializedTrain;
 
         public TrainPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
             worldTrains = new List<WorldTrain>();
+            players = new List<IClient>();
+            playerHasInitializedTrain = new List<IClient>();
             ClientManager.ClientConnected += OnClientConnected;
+            ClientManager.ClientDisconnected += OnClientDisconnect;
+        }
+
+        private void OnClientDisconnect(object sender, ClientDisconnectedEventArgs e)
+        {
+            players.Remove(e.Client);
         }
 
         private void OnClientConnected(object sender, ClientConnectedEventArgs e)
         {
+            players.Add(e.Client);
             e.Client.MessageReceived += OnMessageReceived;
         }
 
@@ -88,6 +99,10 @@ namespace TrainPlugin
                         NewTrainsInitialized(message, e.Client);
                         break;
 
+                    case NetworkTags.TRAINS_INIT_FINISHED:
+                        TrainsFinishedInitilizing(e.Client);
+                        break;
+
                     case NetworkTags.TRAIN_REMOVAL:
                         OnCarRemovalMessage(message, e.Client);
                         break;
@@ -95,6 +110,35 @@ namespace TrainPlugin
                     case NetworkTags.TRAIN_DAMAGE:
                         OnCarDamage(message, e.Client);
                         break;
+                }
+            }
+        }
+
+        private void TrainsFinishedInitilizing(IClient sender)
+        {
+            playerHasInitializedTrain.Add(sender);
+
+            bool allPlayersHaveLoadedTrains = true;
+            foreach (IClient client in players)
+            {
+                if (!playerHasInitializedTrain.Contains(client))
+                {
+                    allPlayersHaveLoadedTrains = false;
+                    break;
+                }
+            }
+
+            if (allPlayersHaveLoadedTrains)
+            {
+                using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                {
+                    Logger.Trace("[SERVER] > TRAINS_INIT_FINISHED");
+
+                    writer.Write(true);
+
+                    using (Message msg = Message.Create((ushort)NetworkTags.TRAINS_INIT_FINISHED, writer))
+                        foreach (IClient client in ClientManager.GetAllClients())
+                            client.SendMessage(msg, SendMode.Reliable);
                 }
             }
         }
@@ -327,7 +371,8 @@ namespace TrainPlugin
                 WorldTrain[] trains = reader.ReadSerializables<WorldTrain>();
                 worldTrains.AddRange(trains);
             }
-
+            playerHasInitializedTrain.Clear();
+            playerHasInitializedTrain.Add(sender);
             Logger.Trace("[SERVER] > TRAINS_INIT");
             ReliableSendToOthers(message, sender);
         }

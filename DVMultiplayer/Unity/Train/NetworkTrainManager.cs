@@ -23,7 +23,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     public bool SaveCarsLoaded { get; internal set; }
     public bool IsSpawningTrains { get; set; } = false;
     private readonly BufferQueue buffer = new BufferQueue();
-    private List<TrainCar> newJobCars = new List<TrainCar>();
 
     protected override void Awake()
     {
@@ -69,6 +68,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         if (IsChangeByNetwork || !IsSynced)
             return;
 
+        localCars.Remove(car);
         SendCarBeingRemoved(car);
     }
 
@@ -79,6 +79,21 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         if (car.IsLoco)
         {
+            car.LoadInterior();
+            car.keepInteriorLoaded = true;
+
+            if (!car.GetComponent<NetworkTrainSync>() && car.IsLoco)
+                car.gameObject.AddComponent<NetworkTrainSync>();
+
+            if (!car.GetComponent<NetworkTrainPosSync>())
+                car.gameObject.AddComponent<NetworkTrainPosSync>();
+
+            if (!car.frontCoupler.GetComponent<NetworkTrainCouplerSync>())
+                car.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+
+            if (!car.rearCoupler.GetComponent<NetworkTrainCouplerSync>())
+                car.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+
             SendNewCarSpawned(car);
         }
     }
@@ -106,6 +121,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         foreach (TrainCar trainCar in localCars)
         {
+            if (!trainCar)
+                continue;
+
             if (trainCar.GetComponent<NetworkTrainPosSync>())
                 DestroyImmediate(trainCar.GetComponent<NetworkTrainPosSync>());
             if (trainCar.GetComponent<NetworkTrainSync>())
@@ -120,6 +138,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             foreach (TrainCar trainCar in localCars)
             {
+                if (!trainCar)
+                    continue;
+
                 CarSpawner.DeleteCar(trainCar);
             }
         }
@@ -217,6 +238,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     OnCarInitMessage(message);
                     break;
 
+                case NetworkTags.TRAINS_INIT_FINISHED:
+                    OnAllClientsNewTrainsLoaded();
+                    break;
+
                 case NetworkTags.TRAIN_REMOVAL:
                     OnCarRemovalMessage(message);
                     break;
@@ -230,6 +255,13 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     #endregion
 
     #region Receiving Messages
+    private void OnAllClientsNewTrainsLoaded()
+    {
+        CustomUI.Close();
+        AppUtil.Instance.UnpauseGame();
+        IsSpawningTrains = false;
+    }
+
     private void OnCarDamageMessage(Message message)
     {
         if (buffer.NotSyncedAddToBuffer(IsSynced, OnCarDamageMessage, message))
@@ -277,6 +309,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 if (train)
                 {
                     IsChangeByNetwork = true;
+                    localCars.Remove(train);
                     CarSpawner.DeleteCar(train);
                     IsChangeByNetwork = false;
                 }
@@ -374,9 +407,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             {
                 TrainCarChange changedCar = reader.ReadSerializable<TrainCarChange>();
                 NetworkPlayerSync targetPlayerSync = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayerSyncById(changedCar.PlayerId);
-                Main.Log($"[CLIENT] < TRAIN_SWITCH: {(changedCar.TrainId == "" ? "Player left train" : $"ID: {changedCar.TrainId}")}");
+                
                 if (changedCar.TrainId == "")
                 {
+                    Main.Log($"[CLIENT] < TRAIN_SWITCH: Player left train");
                     targetPlayerSync.Train = null;
                 }
                 else
@@ -847,6 +881,17 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     #endregion
 
     #region Sending Messages
+    private void SendNewTrainsInitializationFinished()
+    {
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write(true);
+
+            using (Message message = Message.Create((ushort)NetworkTags.TRAINS_INIT_FINISHED, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
+    }
+
     internal void SendCarDamaged(string carGUID, DamageType type, float amount)
     {
         if (!IsSynced)
@@ -1200,6 +1245,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     internal void SendNewJobChainCars(List<TrainCar> trainCarsForJobChain)
     {
         SendNewCarsSpawned(trainCarsForJobChain);
+        AppUtil.Instance.PauseGame();
+        CustomUI.OpenPopup("Streaming", "New Area being loaded");
     }
     #endregion
 
@@ -1491,7 +1538,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
     }
 
-    private WorldTrain[] GenerateServerCarsData(IEnumerable<TrainCar> cars)
+    internal WorldTrain[] GenerateServerCarsData(IEnumerable<TrainCar> cars)
     {
         List<WorldTrain> data = new List<WorldTrain>();
         foreach(TrainCar car in cars)
@@ -1581,6 +1628,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     private IEnumerator SpawnSendedTrains(WorldTrain[] trains)
     {
         IsSpawningTrains = true;
+        AppUtil.Instance.PauseGame();
+        CustomUI.OpenPopup("Streaming", "New Area being loaded");
+        yield return new WaitUntil(() => SingletonBehaviour<CanvasSpawner>.Instance.IsOpen);
+        yield return new WaitForFixedUpdate();
         foreach (WorldTrain train in trains)
         {
             Main.Log($"[CLIENT] < TRAIN_INIT: {train.Guid}");
@@ -1589,7 +1640,16 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             yield return RerailDesynced(car, train, true);
             localCars.Add(car);
         }
-        IsSpawningTrains = false;
+        yield return new WaitUntil(() =>
+        {
+            foreach (WorldTrain train in trains)
+            {
+                if (!localCars.Any(t => t.CarGUID == train.Guid && t.AreBogiesFullyInitialized()))
+                    return false;
+            }
+            return true;
+        });
+        SendNewTrainsInitializationFinished();
     }
     #endregion
 }

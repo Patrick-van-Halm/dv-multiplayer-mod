@@ -342,10 +342,18 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
 
     private IEnumerator InitializeNewJobs(JobCreated[] newJobs)
     {
-        yield return new WaitUntil(() => !SingletonBehaviour<NetworkTrainManager>.Instance.IsSpawningTrains);
         foreach(JobCreated job in newJobs)
         {
             JobChainSaveData jobSaveData = JsonConvert.DeserializeObject<JobChainSaveData>(job.JobData, JobSaveManager.serializeSettings);
+            yield return new WaitUntil(() =>
+            {
+                foreach (string guid in jobSaveData.trainCarGuids)
+                {
+                    if (!SingletonBehaviour<NetworkTrainManager>.Instance.localCars.Any(t => t.CarGUID == guid))
+                        return false;
+                }
+                return true;
+            });
             GameObject jobGO = SingletonBehaviour<JobSaveManager>.Instance.LoadJobChain(jobSaveData);
             if (jobGO)
             {

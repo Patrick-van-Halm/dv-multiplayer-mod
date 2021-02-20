@@ -9,7 +9,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 {
     private TrainCar trainCar;
     private Vector3? newExtraForce = null;
-    private bool isOutOfSync = false;
+    public bool isOutOfSync = false;
     private bool hostStationary;
     private float prevIndepBrakePos;
     private float prevBrakePos;

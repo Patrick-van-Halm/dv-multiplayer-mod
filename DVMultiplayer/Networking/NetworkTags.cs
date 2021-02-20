@@ -38,5 +38,6 @@
         JOB_TAKEN,
         JOB_COMPLETED,
         TRAIN_DAMAGE,
+        TRAINS_INIT_FINISHED,
     }
 }

@@ -30,20 +30,23 @@ class NetworkJobsSync : MonoBehaviour
 
     private void OnJobGeneratedAttempt()
     {
-        newChains.AddRange(currentJobs.Except(station.ProceduralJobsController.GetCurrentJobChains()));
+        List<JobChainController> newJobs = station.ProceduralJobsController.GetCurrentJobChains();
+        foreach (JobChainController chain in currentJobs)
+        {
+            newJobs.RemoveAll(j => j.currentJobInChain.ID == chain.currentJobInChain.ID);
+        }
+
+        currentJobs.AddRange(newJobs);
+        newChains.AddRange(newJobs);
         if (sendNewJobsAfterGeneration == null)
             sendNewJobsAfterGeneration = SingletonBehaviour<CoroutineManager>.Instance.Run(WaitTillGenerationFinished());
     }
 
     private IEnumerator WaitTillGenerationFinished()
     {
-        do
-        {
-            yield return new WaitUntil(() => station.ProceduralJobsController.IsJobGenerationActive);
-            yield return new WaitForSeconds(.1f);
-        }
-        while (station.ProceduralJobsController.IsJobGenerationActive);
+        yield return new WaitUntil(() => !station.ProceduralJobsController.IsJobGenerationActive);
 
+        Main.Log("Generation is finished Length = " + newChains.Count);
         foreach(JobChainController job in newChains)
         {
             SingletonBehaviour<NetworkTrainManager>.Instance.SendNewJobChainCars(job.trainCarsForJobChain);
