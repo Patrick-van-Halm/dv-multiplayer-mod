@@ -418,6 +418,23 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == changedCar.TrainId);
                     if (train)
                     {
+                        if (!train.GetComponent<NetworkTrainSync>() && train.IsLoco)
+                            train.gameObject.AddComponent<NetworkTrainSync>();
+
+                        if (!train.GetComponent<NetworkTrainPosSync>())
+                            train.gameObject.AddComponent<NetworkTrainPosSync>();
+
+                        if (!train.frontCoupler.GetComponent<NetworkTrainCouplerSync>())
+                            train.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+
+                        if (!train.rearCoupler.GetComponent<NetworkTrainCouplerSync>())
+                            train.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+
+                        if (!train.IsInteriorLoaded)
+                        {
+                            train.LoadInterior();
+                            train.keepInteriorLoaded = true;
+                        }
                         Main.Log($"[CLIENT] < TRAIN_SWITCH: Train found: {train}, ID: {train.ID}, GUID: {train.CarGUID}");
                         targetPlayerSync.Train = train;
                     }
@@ -1072,9 +1089,21 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
-            Bogie bogie1 = trainCar.Bogies[0];
-            Bogie bogie2 = trainCar.Bogies[trainCar.Bogies.Length - 1];
-            writer.Write<TrainLocation>(new TrainLocation()
+            string bogie1TrackName = "";
+            string bogie2TrackName = "";
+            double bogie1PositionAlongTrack = 0;
+            double bogie2PositionAlongTrack = 0;
+            if (!trainCar.derailed)
+            {
+                Bogie bogie1 = trainCar.Bogies[0];
+                Bogie bogie2 = trainCar.Bogies[trainCar.Bogies.Length - 1];
+                bogie1TrackName = bogie1.track.name;
+                bogie2TrackName = bogie2.track.name;
+                bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span;
+                bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span;
+            }
+
+            writer.Write(new TrainLocation()
             {
                 TrainId = trainCar.CarGUID,
                 Forward = trainCar.transform.forward,
@@ -1082,10 +1111,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 AngularVelocity = trainCar.rb.angularVelocity,
                 Position = trainCar.transform.position - WorldMover.currentMove,
                 Rotation = trainCar.transform.rotation,
-                Bogie1TrackName = bogie1.track.name,
-                Bogie2TrackName = bogie2.track.name,
-                Bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
-                Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
+                Bogie1TrackName = bogie1TrackName,
+                Bogie2TrackName = bogie2TrackName,
+                Bogie1PositionAlongTrack = bogie1PositionAlongTrack,
+                Bogie2PositionAlongTrack = bogie2PositionAlongTrack,
                 IsStationary = trainCar.isStationary
             });
 
