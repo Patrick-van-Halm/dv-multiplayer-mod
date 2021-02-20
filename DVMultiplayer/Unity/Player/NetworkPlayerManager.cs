@@ -409,7 +409,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
     private IEnumerator WaitForAllPlayersLoaded()
     {
-        CustomUI.OpenPopup("Player is connecting", "A new player is connecting");
+        CustomUI.OpenPopup("Incoming connection", "A new player is connecting");
         AppUtil.Instance.PauseGame();
         yield return new WaitUntil(() => networkPlayers.All(p => p.Value.GetComponent<NetworkPlayerSync>().IsLoaded));
         AppUtil.Instance.UnpauseGame();
