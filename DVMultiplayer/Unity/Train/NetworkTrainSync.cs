@@ -227,7 +227,7 @@ internal class NetworkTrainSync : MonoBehaviour
 
     private void OnTrainIndependentBrakeChanged(float value)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs || GetComponent<NetworkTrainPosSync>().isOutOfSync)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.IndependentBrake, value);
@@ -235,7 +235,7 @@ internal class NetworkTrainSync : MonoBehaviour
 
     private void OnTrainBrakeChanged(float value)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs || GetComponent<NetworkTrainPosSync>().isOutOfSync)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(Levers.Brake, value);
