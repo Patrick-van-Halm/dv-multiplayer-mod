@@ -39,14 +39,29 @@ namespace DVMultiplayer.Patches
 					___attemptJobOverviewGeneration = false;
 				}
 
-				float playerSqrDistanceFromStationCenter = ___stationRange.PlayerSqrDistanceFromStationCenter;
-				bool isPlayerInGenerationZone = ___stationRange.IsPlayerInJobGenerationZone(playerSqrDistanceFromStationCenter);
-				if (isPlayerInGenerationZone && !___playerEnteredJobGenerationZone && SingletonBehaviour<NetworkPlayerManager>.Instance.IsSynced)
-				{
-					if(!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().All(p => ___stationRange.IsPlayerInJobGenerationZone((p.transform.position - ___stationRange.stationCenterAnchor.position).sqrMagnitude)))
-						__instance.ProceduralJobsController.TryToGenerateJobs();
-					___playerEnteredJobGenerationZone = true;
-					return false;
+
+                if (NetworkManager.IsHost() && SingletonBehaviour<NetworkPlayerManager>.Instance.IsSynced)
+                {
+					float playerSqrDistanceFromStationCenter = ___stationRange.PlayerSqrDistanceFromStationCenter;
+					bool isHostInGenerationZone = ___stationRange.IsPlayerInJobGenerationZone(playerSqrDistanceFromStationCenter);
+					if (isHostInGenerationZone && !___playerEnteredJobGenerationZone)
+					{
+						if (!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().All(p => ___stationRange.IsPlayerInJobGenerationZone((p.transform.position - ___stationRange.stationCenterAnchor.position).sqrMagnitude)))
+							__instance.ProceduralJobsController.TryToGenerateJobs();
+						___playerEnteredJobGenerationZone = true;
+						return false;
+					}
+					else if(!isHostInGenerationZone && !___playerEnteredJobGenerationZone)
+                    {
+						if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().Any(p => ___stationRange.IsPlayerInJobGenerationZone((p.transform.position - ___stationRange.stationCenterAnchor.position).sqrMagnitude)))
+							__instance.ProceduralJobsController.TryToGenerateJobs();
+						___playerEnteredJobGenerationZone = true;
+					}
+					else if(!isHostInGenerationZone && ___playerEnteredJobGenerationZone)
+                    {
+						if (!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().All(p => ___stationRange.IsPlayerInJobGenerationZone((p.transform.position - ___stationRange.stationCenterAnchor.position).sqrMagnitude)))
+							___playerEnteredJobGenerationZone = false;
+					}
 				}
 				return false;
             }
