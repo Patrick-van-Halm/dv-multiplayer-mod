@@ -43,6 +43,7 @@ namespace DVMultiplayer.Networking
             UI.transform.Find("Button Connect to Favorite").GetComponent<Button>().onClick.AddListener(() =>
             {
                 selectedFav = null;
+                pagination = 0;
                 LoadFavorites(pagination);
                 CustomUI.Open(FavoritesListUI);
             });
@@ -119,7 +120,9 @@ namespace DVMultiplayer.Networking
 
             RequestUsernameUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
             {
-                CustomUI.Open(CustomUI.prevScreen);
+                selectedFav = null;
+                LoadFavorites(pagination);
+                CustomUI.Open(FavoritesListUI);
             });
 
             UI.transform.Find("Button Connect").GetComponent<Button>().onClick.AddListener(() =>
