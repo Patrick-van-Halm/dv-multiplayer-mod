@@ -1,5 +1,6 @@
 ﻿using DarkRift;
 using DarkRift.Server;
+using DVMultiplayer.Darkrift;
 using DVMultiplayer.DTO.Player;
 using DVMultiplayer.Networking;
 using System;
@@ -13,10 +14,12 @@ namespace PlayerPlugin
     {
         private readonly Dictionary<IClient, Player> players = new Dictionary<IClient, Player>();
         private SetSpawn playerSpawn;
+        private bool isPlayerConnecting = false;
+        private readonly BufferQueue buffer = new BufferQueue();
 
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("2.6.8");
+        public override Version Version => new Version("2.6.11");
 
         public PlayerPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -87,6 +90,9 @@ namespace PlayerPlugin
             }
             else
                 Logger.Error($"Client with ID {sender.ID} not found");
+
+            isPlayerConnecting = false;
+            buffer.RunNext();
         }
 
         private void ServerPlayerInitializer(Message message, IClient sender)
@@ -94,87 +100,99 @@ namespace PlayerPlugin
             using (DarkRiftReader reader = message.GetReader())
             {
                 NPlayer player = reader.ReadSerializable<NPlayer>();
-                bool succesfullyConnected = true;
-                if (players.Count > 0)
+                if (isPlayerConnecting)
                 {
-                    Player host = players.Values.First();
-                    List<string> missingMods = GetMissingMods(host.mods, player.Mods);
-                    List<string> extraMods = GetMissingMods(player.Mods, host.mods);
-                    if (missingMods.Count != 0 || extraMods.Count != 0)
+                    buffer.AddToBuffer(InitializePlayer, player, sender);
+                    return;
+                }
+
+                InitializePlayer(player, sender);
+            }
+        }
+
+        private void InitializePlayer(NPlayer player, IClient sender)
+        {
+            isPlayerConnecting = true;
+            bool succesfullyConnected = true;
+            if (players.Count > 0)
+            {
+                Player host = players.Values.First();
+                List<string> missingMods = GetMissingMods(host.mods, player.Mods);
+                List<string> extraMods = GetMissingMods(player.Mods, host.mods);
+                if (missingMods.Count != 0 || extraMods.Count != 0)
+                {
+                    succesfullyConnected = false;
+                    using (DarkRiftWriter writer = DarkRiftWriter.Create())
                     {
-                        succesfullyConnected = false;
+                        writer.Write(missingMods.ToArray());
+                        writer.Write(extraMods.ToArray());
+
+                        using (Message msg = Message.Create((ushort)NetworkTags.PLAYER_MODS_MISMATCH, writer))
+                            sender.SendMessage(msg, SendMode.Reliable);
+                    }
+                }
+                else
+                {
+                    if (playerSpawn != null)
+                    {
                         using (DarkRiftWriter writer = DarkRiftWriter.Create())
                         {
-                            writer.Write(missingMods.ToArray());
-                            writer.Write(extraMods.ToArray());
+                            writer.Write(playerSpawn);
 
-                            using (Message msg = Message.Create((ushort)NetworkTags.PLAYER_MODS_MISMATCH, writer))
-                                sender.SendMessage(msg, SendMode.Reliable);
+                            using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_SPAWN_SET, writer))
+                                sender.SendMessage(outMessage, SendMode.Reliable);
+                        }
+
+                        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                        {
+                            writer.Write(new NPlayer()
+                            {
+                                Id = player.Id,
+                                Username = player.Username,
+                                Mods = player.Mods
+                            });
+
+                            writer.Write(new Location()
+                            {
+                                Position = playerSpawn.Position
+                            });
+
+                            using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_SPAWN, writer))
+                                foreach (IClient client in ClientManager.GetAllClients().Where(client => client != sender))
+                                    client.SendMessage(outMessage, SendMode.Reliable);
                         }
                     }
-                    else
+
+                    foreach (Player p in players.Values)
                     {
-                        if (playerSpawn != null)
+                        using (DarkRiftWriter writer = DarkRiftWriter.Create())
                         {
-                            using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                            writer.Write(new NPlayer()
                             {
-                                writer.Write(playerSpawn);
+                                Id = p.id,
+                                Username = p.username,
+                                Mods = p.mods,
+                                IsLoaded = p.isLoaded
+                            });
 
-                                using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_SPAWN_SET, writer))
-                                    sender.SendMessage(outMessage, SendMode.Reliable);
-                            }
-
-                            using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                            writer.Write(new Location()
                             {
-                                writer.Write(new NPlayer()
-                                {
-                                    Id = player.Id,
-                                    Username = player.Username,
-                                    Mods = player.Mods
-                                });
+                                Position = p.position,
+                                Rotation = p.rotation
+                            });
 
-                                writer.Write(new Location()
-                                {
-                                    Position = playerSpawn.Position
-                                });
-
-                                using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_SPAWN, writer))
-                                    foreach (IClient client in ClientManager.GetAllClients().Where(client => client != sender))
-                                        client.SendMessage(outMessage, SendMode.Reliable);
-                            }
-                        }
-
-                        foreach (Player p in players.Values)
-                        {
-                            using (DarkRiftWriter writer = DarkRiftWriter.Create())
-                            {
-                                writer.Write(new NPlayer()
-                                {
-                                    Id = p.id,
-                                    Username = p.username,
-                                    Mods = p.mods,
-                                    IsLoaded = p.isLoaded
-                                });
-
-                                writer.Write(new Location()
-                                {
-                                    Position = p.position,
-                                    Rotation = p.rotation
-                                });
-
-                                using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_SPAWN, writer))
-                                    sender.SendMessage(outMessage, SendMode.Reliable);
-                            }
+                            using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_SPAWN, writer))
+                                sender.SendMessage(outMessage, SendMode.Reliable);
                         }
                     }
                 }
-                if (succesfullyConnected)
-                {
-                    if (players.ContainsKey(sender))
-                        sender.Disconnect();
-                    else
-                        players.Add(sender, new Player(player.Id, player.Username, player.Mods));
-                }
+            }
+            if (succesfullyConnected)
+            {
+                if (players.ContainsKey(sender))
+                    sender.Disconnect();
+                else
+                    players.Add(sender, new Player(player.Id, player.Username, player.Mods));
             }
         }
 
