@@ -12,43 +12,46 @@ namespace DVMultiplayer.Patches
     {
         private static void Postfix(TrainCar trainCar, ref bool __result)
         {
-			if (!SingletonBehaviour<NetworkTrainManager>.Exists)
-				return;
-
-            if (NetworkManager.IsClient() && !NetworkManager.IsHost() && SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded)
+            if (NetworkManager.IsClient())
             {
-                __result = false;
-			}
-            else if(NetworkManager.IsHost() && SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded)
-            {
-				bool isPlayerNotNearTrain = true;
-				float distCheck;
-				if (CarTypes.IsAnyLocomotiveOrTender(trainCar.carType))
-				{
-					distCheck = 16000000f;
-				}
-				else if (!trainCar.playerSpawnedCar)
-				{
-					distCheck = 360000f;
-				}
-				else
-				{
-					distCheck = 9000000f;
-				}
+				if (!SingletonBehaviour<NetworkTrainManager>.Exists)
+					return;
 
-				foreach (GameObject player in SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers())
+				if (NetworkManager.IsClient() && !NetworkManager.IsHost() && SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded)
 				{
-					isPlayerNotNearTrain = (trainCar.transform.position - player.transform.position).sqrMagnitude > distCheck;
-					if(!isPlayerNotNearTrain)
-						break;
+					__result = false;
 				}
-
-				if (isPlayerNotNearTrain)
+				else if (NetworkManager.IsHost() && SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded)
 				{
-					isPlayerNotNearTrain = (trainCar.transform.position - PlayerManager.PlayerTransform.position).sqrMagnitude > distCheck;
-				}
+					bool isPlayerNotNearTrain = true;
+					float distCheck;
+					if (CarTypes.IsAnyLocomotiveOrTender(trainCar.carType))
+					{
+						distCheck = 16000000f;
+					}
+					else if (!trainCar.playerSpawnedCar)
+					{
+						distCheck = 360000f;
+					}
+					else
+					{
+						distCheck = 9000000f;
+					}
 
-				__result = isPlayerNotNearTrain;
+					foreach (GameObject player in SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers())
+					{
+						isPlayerNotNearTrain = (trainCar.transform.position - player.transform.position).sqrMagnitude > distCheck;
+						if (!isPlayerNotNearTrain)
+							break;
+					}
+
+					if (isPlayerNotNearTrain)
+					{
+						isPlayerNotNearTrain = (trainCar.transform.position - PlayerManager.PlayerTransform.position).sqrMagnitude > distCheck;
+					}
+
+					__result = isPlayerNotNearTrain;
+				}
 			}
         }
     }

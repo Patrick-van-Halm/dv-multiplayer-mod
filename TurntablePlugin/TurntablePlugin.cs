@@ -12,7 +12,7 @@ namespace TurntablePlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.4");
+        public override Version Version => new Version("1.0.7");
 
         private readonly List<Turntable> turntableStates = new List<Turntable>();
 
@@ -49,8 +49,46 @@ namespace TurntablePlugin
                     case NetworkTags.TURNTABLE_SNAP:
                         OnTurntableSnap(message, e.Client);
                         break;
+
+                    case NetworkTags.TURNTABLE_AUTH_RELEASE:
+                        OnTurntableReleaseAuth(message, e.Client);
+                        break;
+
+                    case NetworkTags.TURNTABLE_AUTH_REQUEST:
+                        OnTurntableRequestAuth(message, e.Client);
+                        break;
                 }
             }
+        }
+
+        private void OnTurntableRequestAuth(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                RequestAuthority info = reader.ReadSerializable<RequestAuthority>();
+                Turntable turntable = turntableStates.FirstOrDefault(t => t.Position == info.Position);
+                if (turntable != null)
+                {
+                    turntable.playerAuthId = info.PlayerId;
+                }
+            }
+
+            ReliableSendToOthers(message, client);
+        }
+
+        private void OnTurntableReleaseAuth(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                ReleaseAuthority info = reader.ReadSerializable<ReleaseAuthority>();
+                Turntable turntable = turntableStates.FirstOrDefault(t => t.Position == info.Position);
+                if (turntable != null)
+                {
+                    turntable.playerAuthId = 0;
+                }
+            }
+
+            ReliableSendToOthers(message, client);
         }
 
         private void SendAllTurntableStates(IClient sender)
@@ -73,7 +111,7 @@ namespace TurntablePlugin
                 if (turntable != null)
                 {
                     turntable.Rotation = turntableInfo.Rotation;
-                    turntable.LeverAngle = turntableInfo.LeverAngle;
+                    turntable.playerAuthId = turntableInfo.playerAuthId;
                 }
                 else
                 {
@@ -93,7 +131,7 @@ namespace TurntablePlugin
                 if (turntable != null)
                 {
                     turntable.Rotation = turntableInfo.Rotation;
-                    turntable.LeverAngle = turntableInfo.LeverAngle;
+                    turntable.playerAuthId = turntableInfo.playerAuthId;
                 }
                 else
                 {

@@ -37,6 +37,20 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         CarSpawner.CarAboutToBeDeleted += OnCarAboutToBeDeleted;
     }
 
+    private void Update()
+    {
+        if (IsSpawningTrains || IsSynced)
+            return;
+
+        foreach(TrainCar car in localCars.ToList())
+        {
+            if(car.logicCar == null)
+            {
+                localCars.Remove(car);
+            }
+        }
+    }
+
     #region Events
     public void OnFinishedLoading()
     {
@@ -251,6 +265,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 case NetworkTags.TRAIN_DAMAGE:
                     OnCarDamageMessage(message);
                     break;
+
+                case NetworkTags.TRAIN_AUTH_CHANGE:
+                    OnAuthorityChangeMessage(message);
+                    break;
             }
         }
     }
@@ -333,7 +351,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             while (reader.Position < reader.Length)
             {
-                Main.Log($"[CLIENT] < TRAINs_INIT");
+                Main.Log($"[CLIENT] < TRAINS_INIT");
                 IsChangeByNetwork = true;
                 WorldTrain[] trains = reader.ReadSerializables<WorldTrain>();
                 SingletonBehaviour<CoroutineManager>.Instance.Run(SpawnSendedTrains(trains));
@@ -1547,10 +1565,22 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     private TrainCar InitializeNewTrainCar(WorldTrain train)
     {
         GameObject carPrefab = CarTypes.GetCarPrefab(train.CarType);
-        TrainCar newTrain = CarSpawner.SpawnLoadedCar(carPrefab, train.Id, train.Guid, train.IsPlayerSpawned, train.Position + WorldMover.currentMove, train.Rotation,
-            train.IsBogie1Derailed, RailTrackRegistry.GetTrackWithName(train.Bogie1RailTrackName), train.Bogie1PositionAlongTrack,
-            train.IsBogie2Derailed, RailTrackRegistry.GetTrackWithName(train.Bogie2RailTrackName), train.Bogie2PositionAlongTrack,
-            false, false);
+        TrainCar newTrain;
+        if (!train.IsBogie1Derailed && !train.IsBogie2Derailed)
+        {
+            newTrain = CarSpawner.SpawnLoadedCar(carPrefab, train.Id, train.Guid, train.IsPlayerSpawned, train.Position + WorldMover.currentMove, train.Rotation,
+           train.IsBogie1Derailed, RailTrackRegistry.GetTrackWithName(train.Bogie1RailTrackName), train.Bogie1PositionAlongTrack,
+           train.IsBogie2Derailed, RailTrackRegistry.GetTrackWithName(train.Bogie2RailTrackName), train.Bogie2PositionAlongTrack,
+           false, false);
+        }
+        else
+        {
+            newTrain = CarSpawner.SpawnLoadedCar(carPrefab, train.Id, train.Guid, train.IsPlayerSpawned, train.Position + WorldMover.currentMove, train.Rotation,
+           true, RailTrackRegistry.GetTrackWithName(train.Bogie1RailTrackName), train.Bogie1PositionAlongTrack,
+           true, RailTrackRegistry.GetTrackWithName(train.Bogie2RailTrackName), train.Bogie2PositionAlongTrack,
+           false, false);
+        }
+        
 
         newTrain.LoadInterior();
         newTrain.keepInteriorLoaded = true;
@@ -1719,6 +1749,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             TrainCar car = InitializeNewTrainCar(train);
             yield return RerailDesynced(car, train, true);
             localCars.Add(car);
+            Main.Log($"Initializing: {train.Guid} in area [DONE]");
         }
         yield return new WaitUntil(() =>
         {
@@ -1726,6 +1757,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             {
                 if (localCars.Any(t => t.logicCar == null))
                     return false;
+
                 if (!localCars.Any(t => t.CarGUID == train.Guid && t.AreBogiesFullyInitialized()))
                     return false;
             }

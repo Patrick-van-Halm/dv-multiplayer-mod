@@ -249,6 +249,13 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     {
         UUI.UnlockMouse(true);
         TutorialController.movementAllowed = false;
+
+        GamePreferences.Set(Preferences.CommsRadioSpawnMode, false);
+        GamePreferences.RegisterToPreferenceUpdated(Preferences.CommsRadioSpawnMode, () =>
+        {
+            GamePreferences.Set(Preferences.CommsRadioSpawnMode, false);
+        });
+
         if (!NetworkManager.IsHost())
         {
             AppUtil.Instance.PauseGame();

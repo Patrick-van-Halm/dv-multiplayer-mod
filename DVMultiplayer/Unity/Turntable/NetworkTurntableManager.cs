@@ -7,6 +7,7 @@ using DVMultiplayer;
 using DVMultiplayer.Darkrift;
 using DVMultiplayer.DTO.Turntable;
 using DVMultiplayer.Networking;
+using System;
 using System.Collections;
 using System.Linq;
 using UnityEngine;
@@ -66,6 +67,14 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                 case NetworkTags.TURNTABLE_SNAP:
                     ReceiveTurntableOnSnap(message);
                     break;
+
+                case NetworkTags.TURNTABLE_AUTH_RELEASE:
+                    ReceiveAuthorityRelease(message);
+                    break;
+
+                case NetworkTags.TURNTABLE_AUTH_REQUEST:
+                    ReceiveAuthorityRequest(message);
+                    break;
             }
         }
     }
@@ -85,13 +94,34 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                     TurntableController turntableController = turntables.FirstOrDefault(j => j.transform.position == turntable.Position + WorldMover.currentMove);
                     if (turntableController)
                     {
-                        SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntableController, turntable.Rotation.Value));
+                        turntableController.GetComponent<NetworkTurntableSync>().playerAuthId = turntable.playerAuthId;
+                        SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntableController, turntable.Rotation));
                     }
                 }
             }
         }
         IsSynced = true;
         buffer.RunBuffer();
+    }
+
+    internal void SendRequestAuthority(TurntableController turntable, ushort id)
+    {
+        if (!IsSynced)
+            return;
+        Main.Log($"[CLIENT] > TURNTABLE_AUTH_REQUEST: PlayerId: {id}");
+
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write(new RequestAuthority()
+            {
+                Position = turntable.transform.position - WorldMover.currentMove,
+                PlayerId = id
+            });
+
+
+            using (Message message = Message.Create((ushort)NetworkTags.TURNTABLE_AUTH_REQUEST, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Unreliable);
+        }
     }
 
     private IEnumerator RotateTurntableTowardsByNetwork(TurntableController turntableController, float angle, bool moveSlow = false)
@@ -117,19 +147,38 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
         IsChangeByNetwork = false;
     }
 
+    internal void SendReleaseAuthority(TurntableController turntable)
+    {
+        if (!IsSynced)
+            return;
+        Main.Log($"[CLIENT] > TURNTABLE_AUTH_RELEASE");
+
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write(new ReleaseAuthority()
+            {
+                Position = turntable.transform.position - WorldMover.currentMove
+            });
+
+            using (Message message = Message.Create((ushort)NetworkTags.TURNTABLE_AUTH_RELEASE, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Unreliable);
+        }
+    }
+
     internal void OnTurntableRotationChanged(TurntableController turntable, float value)
     {
         if (!IsSynced)
             return;
         //Main.Log($"[CLIENT] > TURNTABLE_ANGLE_CHANGED");
-
+        ushort playerId = SingletonBehaviour<UnityClient>.Instance.ID;
+        turntable.GetComponent<NetworkTurntableSync>().playerAuthId = playerId;
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write(new Turntable()
             {
                 Position = turntable.transform.position - WorldMover.currentMove,
                 Rotation = value,
-                LeverAngle = null
+                playerAuthId = playerId
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.TURNTABLE_ANGLE_CHANGED, writer))
@@ -143,14 +192,15 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
             return;
 
         Main.Log($"[CLIENT] > TURNTABLE_SNAP");
-
+        ushort playerId = SingletonBehaviour<UnityClient>.Instance.ID;
+        turntable.GetComponent<NetworkTurntableSync>().playerAuthId = playerId;
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write(new Turntable()
             {
                 Position = turntable.transform.position - WorldMover.currentMove,
                 Rotation = value,
-                LeverAngle = null
+                playerAuthId = SingletonBehaviour<UnityClient>.Instance.ID
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.TURNTABLE_SNAP, writer))
@@ -179,16 +229,61 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
 
         using (DarkRiftReader reader = message.GetReader())
         {
-            Main.Log($"[CLIENT] < TURNTABLE_ANGLE_CHANGED");
+            //Main.Log($"[CLIENT] < TURNTABLE_ANGLE_CHANGED");
 
             while (reader.Position < reader.Length)
             {
                 Turntable turntableInfo = reader.ReadSerializable<Turntable>();
 
                 TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == turntableInfo.Position + WorldMover.currentMove);
-                if (turntable && turntableInfo.Rotation.HasValue)
+                if (turntable)
                 {
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation.Value));
+                    turntable.GetComponent<NetworkTurntableSync>().playerAuthId = turntableInfo.playerAuthId;
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation));
+                }
+            }
+        }
+    }
+
+    public void ReceiveAuthorityRelease(Message message)
+    {
+        if (buffer.NotSyncedAddToBuffer(IsSynced, ReceiveAuthorityRelease, message))
+            return;
+
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            Main.Log($"[CLIENT] < TURNTABLE_AUTH_RELEASE");
+
+            while (reader.Position < reader.Length)
+            {
+                ReleaseAuthority authReset = reader.ReadSerializable<ReleaseAuthority>();
+
+                TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == authReset.Position + WorldMover.currentMove);
+                if (turntable)
+                {
+                    turntable.GetComponent<NetworkTurntableSync>().playerAuthId = 0;
+                }
+            }
+        }
+    }
+
+    public void ReceiveAuthorityRequest(Message message)
+    {
+        if (buffer.NotSyncedAddToBuffer(IsSynced, ReceiveAuthorityRequest, message))
+            return;
+
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            Main.Log($"[CLIENT] < TURNTABLE_AUTH_REQUEST");
+
+            while (reader.Position < reader.Length)
+            {
+                RequestAuthority authRequest = reader.ReadSerializable<RequestAuthority>();
+
+                TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == authRequest.Position + WorldMover.currentMove);
+                if (turntable)
+                {
+                    turntable.GetComponent<NetworkTurntableSync>().playerAuthId = authRequest.PlayerId;
                 }
             }
         }
@@ -208,13 +303,12 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                 Turntable turntableInfo = reader.ReadSerializable<Turntable>();
 
                 TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == turntableInfo.Position + WorldMover.currentMove);
-                if (turntable && turntableInfo.Rotation.HasValue)
+                if (turntable)
                 {
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation.Value, true));
+                    turntable.GetComponent<NetworkTurntableSync>().playerAuthId = turntableInfo.playerAuthId;
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation, true));
                 }
             }
         }
     }
-
-
 }

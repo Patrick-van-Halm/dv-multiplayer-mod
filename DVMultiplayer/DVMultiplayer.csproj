@@ -173,6 +173,8 @@
     <Compile Include="DTO\Train\TrainDerail.cs" />
     <Compile Include="DTO\Train\TrainLocation.cs" />
     <Compile Include="DTO\Train\WorldTrain.cs" />
+    <Compile Include="DTO\Turntable\RequestAuthority.cs" />
+    <Compile Include="DTO\Turntable\ReleaseAuthority.cs" />
     <Compile Include="DTO\Turntable\Turntable.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Networking\FavoritesManager.cs" />
@@ -180,6 +182,7 @@
     <Compile Include="Networking\NetworkManager.cs" />
     <Compile Include="Networking\NetworkTags.cs" />
     <Compile Include="Patches\JobValidatorStopAcceptingJobIfNotAllowed.cs" />
+    <Compile Include="Patches\AllowUpdateWhenKinematic.cs" />
     <Compile Include="Patches\StopCreatingLocosAsClient.cs" />
     <Compile Include="Patches\StopClosingUIIfNotAllowed.cs" />
     <Compile Include="Patches\RemoveScriptsBeforeCarDeletion.cs" />

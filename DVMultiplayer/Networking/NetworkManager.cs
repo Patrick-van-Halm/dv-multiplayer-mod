@@ -236,6 +236,7 @@ namespace DVMultiplayer.Networking
             NetworkPlayerSync playerSync = PlayerManager.PlayerTransform.gameObject.AddComponent<NetworkPlayerSync>();
             playerSync.IsLocal = true;
             playerSync.Username = username;
+            playerSync.Id = client.ID;
 
             Main.Log($"[CLIENT] Initializing NetworkPlayerManager");
             networkManager.AddComponent<NetworkPlayerManager>();
