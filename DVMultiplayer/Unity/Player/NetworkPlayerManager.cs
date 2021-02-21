@@ -193,10 +193,11 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             {
                 Disconnect disconnectedPlayer = reader.ReadSerializable<Disconnect>();
 
-                if (disconnectedPlayer.PlayerId != SingletonBehaviour<UnityClient>.Instance.ID)
+                if (disconnectedPlayer.PlayerId != SingletonBehaviour<UnityClient>.Instance.ID && networkPlayers.ContainsKey(disconnectedPlayer.PlayerId))
                 {
                     Main.Log($"[CLIENT] < PLAYER_DISCONNECT: Username: {networkPlayers[disconnectedPlayer.PlayerId].GetComponent<NetworkPlayerSync>().Username}");
-                    Destroy(networkPlayers[disconnectedPlayer.PlayerId]);
+                    if(networkPlayers[disconnectedPlayer.PlayerId])
+                        Destroy(networkPlayers[disconnectedPlayer.PlayerId]);
                     networkPlayers.Remove(disconnectedPlayer.PlayerId);
                 }
             }
@@ -298,6 +299,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             Main.Log($"Syncing traincars");
             SingletonBehaviour<NetworkTrainManager>.Instance.SendInitCarsRequest();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced);
+            SingletonBehaviour<NetworkSaveGameManager>.Instance.LoadDataAfterTrainsInit();
 
             // Load Job data from server that changed since uptime
             Main.Log($"Syncing jobs");

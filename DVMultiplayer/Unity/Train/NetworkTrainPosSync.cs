@@ -3,11 +3,13 @@ using DVMultiplayer.DTO.Train;
 using DVMultiplayer.Networking;
 using System;
 using System.Collections;
+using System.Linq;
 using UnityEngine;
 
 internal class NetworkTrainPosSync : MonoBehaviour
 {
     private TrainCar trainCar;
+    private WorldTrain serverState;
     private Vector3? newExtraForce = null;
     public bool isOutOfSync = false;
     private bool hostStationary;
@@ -18,12 +20,15 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private bool velocityShouldUpdate = false;
     private Coroutine updatePositionCoroutine;
     public event Action<TrainCar> OnTrainCarInitialized;
+    public bool hasLocalPlayerAuthority = false;
+    private float authoritySwitchDistance = 50;
 
 #pragma warning disable IDE0051 // Remove unused private members
     private void Awake()
     {
         Main.Log($"NetworkTrainPosSync.Awake()");
         trainCar = GetComponent<TrainCar>();
+        
         Main.Log($"[{trainCar.ID}] NetworkTrainPosSync Awake called");
 
         Main.Log($"Listening to derailment/rerail events");
@@ -34,9 +39,31 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         if (NetworkManager.IsHost())
         {
-            Main.Log($"Listening to movement changed event");
-            trainCar.MovementStateChanged += TrainCar_MovementStateChanged;
+            SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
         }
+    }
+
+    private IEnumerator CheckAuthorityChange()
+    {
+        yield return new WaitForSeconds(1f);
+        bool authNeedsChange = true;
+        foreach (TrainCar car in trainCar.trainset.cars)
+        {
+            if (serverState.AuthorityPlayerId != 0 && Vector3.Distance(SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayerById(serverState.AuthorityPlayerId).transform.position, car.transform.position) <= authoritySwitchDistance)
+            {
+                authNeedsChange = false;
+                break;
+            }
+        }
+        if (authNeedsChange && trainCar.trainset.firstCar == trainCar)
+        {
+            GameObject player = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().FirstOrDefault(p => Vector3.Distance(p.transform.position, trainCar.transform.position) <= authoritySwitchDistance);
+            if (!player)
+                player = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
+            if(player.GetComponent<NetworkPlayerSync>().Id != serverState.AuthorityPlayerId)
+                SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, player.GetComponent<NetworkPlayerSync>().Id);
+        }
+        yield return CheckAuthorityChange();
     }
 
     private void OnDestroy()
@@ -45,7 +72,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (!trainCar)
             return;
 
-        Main.Log($"[{trainCar.ID}] NetworkTrainPosSync OnDestroy called");
+        if(trainCar.logicCar != null)
+            Main.Log($"[{trainCar.ID}] NetworkTrainPosSync OnDestroy called");
         Main.Log($"Stop listening to derailment/rerail events");
         trainCar.OnDerailed -= TrainDerail;
         trainCar.OnRerailed -= TrainRerail;
@@ -55,12 +83,44 @@ internal class NetworkTrainPosSync : MonoBehaviour
         trainCar.MovementStateChanged -= TrainCar_MovementStateChanged;
     }
 
+    private void Update()
+    {
+        if (!SingletonBehaviour<NetworkPlayerManager>.Exists)
+            return;
+
+        if(serverState == null)
+        {
+            serverState = SingletonBehaviour<NetworkTrainManager>.Instance.GetServerStateById(trainCar.CarGUID);
+            return;
+        }
+
+        bool willLocalPlayerGetAuthority = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id == serverState.AuthorityPlayerId;
+
+        if (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)
+        {
+            hasLocalPlayerAuthority = true;
+            Main.Log($"Listening to movement changed event");
+            trainCar.MovementStateChanged += TrainCar_MovementStateChanged;
+        }
+        else if (!willLocalPlayerGetAuthority && hasLocalPlayerAuthority)
+        {
+            hasLocalPlayerAuthority = false;
+            Main.Log($"Stop listening to movement changed event");
+            trainCar.MovementStateChanged -= TrainCar_MovementStateChanged;
+            if (updatePositionCoroutine != null)
+            {
+                SingletonBehaviour<CoroutineManager>.Instance.Stop(updatePositionCoroutine);
+                updatePositionCoroutine = null;
+            }
+        }
+    }
+
     private void FixedUpdate()
     {
         if (!SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced)
             return;
 
-        if (!NetworkManager.IsHost() && newExtraForce.HasValue && !trainCar.derailed)
+        if (!hasLocalPlayerAuthority && newExtraForce.HasValue && !trainCar.derailed)
         {
             if(isOutOfSync && hostStationary && ((trainCar.brakeSystem.hasIndependentBrake && trainCar.brakeSystem.independentBrakePosition > 0) || trainCar.brakeSystem.trainBrakePosition > 0))
             {
@@ -123,7 +183,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainDerail(TrainCar derailedCar)
     {
-        if (!NetworkManager.IsHost() || SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
+        if (!hasLocalPlayerAuthority || SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendDerailCarUpdate(trainCar);
@@ -132,7 +192,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private IEnumerator UpdateLocation()
     {
         yield return new WaitUntil(() => Vector3.Distance(trainCar.transform.position, prevPos) > .01f);
-        if (NetworkManager.IsHost())
+        if (hasLocalPlayerAuthority)
         {
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar);
             prevPos = trainCar.transform.position;

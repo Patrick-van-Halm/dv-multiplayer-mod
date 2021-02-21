@@ -14,6 +14,9 @@ namespace DVMultiplayer.Patches
         {
             if (NetworkManager.IsClient())
             {
+                if (!trainCar)
+                    return;
+
                 if (trainCar.GetComponent<NetworkTrainPosSync>())
                     Object.DestroyImmediate(trainCar.GetComponent<NetworkTrainPosSync>());
                 if (trainCar.GetComponent<NetworkTrainSync>())

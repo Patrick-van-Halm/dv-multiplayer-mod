@@ -11,6 +11,7 @@ internal class NetworkTrainSync : MonoBehaviour
     public TrainCar loco;
     public bool listenToLocalPlayerInputs = false;
     private LocoControllerBase baseController;
+    internal bool CanTakeDamage { get; set; } = false;
 
     public void ListenToTrainInputEvents()
     {
@@ -55,6 +56,8 @@ internal class NetworkTrainSync : MonoBehaviour
                 SingletonBehaviour<CoroutineManager>.Instance.Run(RotaryAmplitudeCheckerStartListen(fuseBox));
                 break;
         }
+
+        CanTakeDamage = true;
     }
 
     public void StopListeningToTrainInputEvents()
@@ -120,7 +123,7 @@ internal class NetworkTrainSync : MonoBehaviour
 
     private void OnCargoDamageTaken(float _)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !NetworkManager.IsHost())
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !loco.GetComponent<NetworkTrainPosSync>().hasLocalPlayerAuthority || !CanTakeDamage)
             return;
         
         SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(loco.CarGUID, DamageType.Cargo, loco.CargoDamage.currentHealth);
@@ -128,7 +131,7 @@ internal class NetworkTrainSync : MonoBehaviour
 
     private void OnBodyDamageTaken(float _)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !NetworkManager.IsHost())
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !loco.GetComponent<NetworkTrainPosSync>().hasLocalPlayerAuthority || !CanTakeDamage)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(loco.CarGUID, DamageType.Car, loco.CarDamage.currentHealth);
@@ -138,13 +141,16 @@ internal class NetworkTrainSync : MonoBehaviour
     {
         if (loco)
         {
-            Main.Log($"[{loco.ID}] NetworkTrainSync.OnDestroy()");
-            Main.Log($"[{loco.ID}] Stop listening to input");
+            if (loco.logicCar != null)
+                Main.Log($"[{loco.ID}] NetworkTrainSync.OnDestroy()");
+            if (loco.logicCar != null)
+                Main.Log($"[{loco.ID}] Stop listening to input");
             StopListeningToTrainInputEvents();
-            Main.Log($"[{loco.ID}] Stop keeping interior loaded");
+            if (loco.logicCar != null)
+                Main.Log($"[{loco.ID}] Stop keeping interior loaded");
             loco.keepInteriorLoaded = false;
-
-            Main.Log($"[{loco.ID}] Unload interior if player is not in car");
+            if (loco.logicCar != null)
+                Main.Log($"[{loco.ID}] Unload interior if player is not in car");
 
             if (loco.IsInteriorLoaded)
                 loco.UnloadInterior();

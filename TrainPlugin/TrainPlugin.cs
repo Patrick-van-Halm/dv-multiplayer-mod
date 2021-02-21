@@ -5,6 +5,7 @@ using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Timers;
 
 namespace TrainPlugin
 {
@@ -12,11 +13,12 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.11");
+        public override Version Version => new Version("1.6.23");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> players;
         private readonly List<IClient> playerHasInitializedTrain;
+        private bool isLoadingTrain = false;
 
         public TrainPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -30,12 +32,16 @@ namespace TrainPlugin
         private void OnClientDisconnect(object sender, ClientDisconnectedEventArgs e)
         {
             players.Remove(e.Client);
+            if (isLoadingTrain)
+                CheckIfAllPlayersLoadedTrain();
         }
 
         private void OnClientConnected(object sender, ClientConnectedEventArgs e)
         {
-            players.Add(e.Client);
             e.Client.MessageReceived += OnMessageReceived;
+            players.Add(e.Client);
+            if (isLoadingTrain)
+                playerHasInitializedTrain.Add(e.Client);
         }
 
         private void OnMessageReceived(object sender, MessageReceivedEventArgs e)
@@ -110,14 +116,46 @@ namespace TrainPlugin
                     case NetworkTags.TRAIN_DAMAGE:
                         OnCarDamage(message, e.Client);
                         break;
+
+                    case NetworkTags.TRAIN_AUTH_CHANGE:
+                        OnAuthChange(message, e.Client);
+                        break;
                 }
             }
         }
 
+        private void OnAuthChange(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                CarsAuthChange authChange = reader.ReadSerializable<CarsAuthChange>();
+                foreach(string guid in authChange.Guids)
+                {
+                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == guid);
+                    if (train != null)
+                    {
+                        train.AuthorityPlayerId = authChange.PlayerId;
+                    }
+                }
+            }
+
+            Logger.Trace("[SERVER] > TRAIN_AUTH_CHANGE");
+            ReliableSendToOthers(message, client);
+        }
+
         private void TrainsFinishedInitilizing(IClient sender)
         {
+            if (!isLoadingTrain)
+                return;
+
+            Logger.Trace($"[SERVER] < TRAINS_INIT_FINISHED: {sender.ID}");
             playerHasInitializedTrain.Add(sender);
 
+            CheckIfAllPlayersLoadedTrain();
+        }
+
+        private void CheckIfAllPlayersLoadedTrain()
+        {
             bool allPlayersHaveLoadedTrains = true;
             foreach (IClient client in players)
             {
@@ -128,18 +166,92 @@ namespace TrainPlugin
                 }
             }
 
+            Logger.Trace($"[SERVER] TRAINS_INIT_FINISHED All players loaded Train? {allPlayersHaveLoadedTrains}");
             if (allPlayersHaveLoadedTrains)
+            {
+                Logger.Trace("[SERVER] > TRAINS_INIT_FINISHED");
+                List<IClient> playersOrderedByPing = playerHasInitializedTrain.OrderBy(c => c.RoundTripTime.SmoothedRtt).ToList();
+                isLoadingTrain = false;
+                for(int i = 0; i < playersOrderedByPing.Count; i++)
+                {
+                    SendDelayedMessage(true, NetworkTags.TRAINS_INIT_FINISHED, playersOrderedByPing[i], (int)(playersOrderedByPing[0].RoundTripTime.SmoothedRtt - playersOrderedByPing[i].RoundTripTime.SmoothedRtt));
+                }
+            }
+            else
+            {
+                foreach (IClient client in players)
+                {
+                    if (!playerHasInitializedTrain.Contains(client))
+                    {
+                        Logger.Trace($"[SERVER] TRAINS_INIT_FINISHED Missing player {client.ID}");
+                    }
+                }
+            }
+        }
+
+        private void SendDelayedMessage<T>(T item, NetworkTags tag, IClient client, int interval) where T : IDarkRiftSerializable
+        {
+            if(interval == 0)
             {
                 using (DarkRiftWriter writer = DarkRiftWriter.Create())
                 {
-                    Logger.Trace("[SERVER] > TRAINS_INIT_FINISHED");
-
-                    writer.Write(true);
-
-                    using (Message msg = Message.Create((ushort)NetworkTags.TRAINS_INIT_FINISHED, writer))
-                        foreach (IClient client in ClientManager.GetAllClients())
-                            client.SendMessage(msg, SendMode.Reliable);
+                    writer.Write(item);
+                    using (Message msg = Message.Create((ushort)tag, writer))
+                    {
+                        client.SendMessage(msg, SendMode.Reliable);
+                    }
                 }
+            }
+            else
+            {
+                Timer timer = new Timer();
+                timer.Elapsed += (object sender, ElapsedEventArgs e) =>
+                {
+                    using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                    {
+                        writer.Write(item);
+                        using (Message msg = Message.Create((ushort)tag, writer))
+                        {
+                            client.SendMessage(msg, SendMode.Reliable);
+                        }
+                    }
+                };
+                timer.Interval = interval;
+                timer.AutoReset = false;
+                timer.Start();
+            }
+        }
+
+        private void SendDelayedMessage(bool item, NetworkTags tag, IClient client, int interval)
+        {
+            if (interval == 0)
+            {
+                using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                {
+                    writer.Write(item);
+                    using (Message msg = Message.Create((ushort)tag, writer))
+                    {
+                        client.SendMessage(msg, SendMode.Reliable);
+                    }
+                }
+            }
+            else
+            {
+                Timer timer = new Timer();
+                timer.Elapsed += (object sender, ElapsedEventArgs e) =>
+                {
+                    using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                    {
+                        writer.Write(item);
+                        using (Message msg = Message.Create((ushort)tag, writer))
+                        {
+                            client.SendMessage(msg, SendMode.Reliable);
+                        }
+                    }
+                };
+                timer.Interval = interval;
+                timer.AutoReset = false;
+                timer.Start();
             }
         }
 
@@ -371,8 +483,10 @@ namespace TrainPlugin
                 WorldTrain[] trains = reader.ReadSerializables<WorldTrain>();
                 worldTrains.AddRange(trains);
             }
+            isLoadingTrain = true;
             playerHasInitializedTrain.Clear();
             playerHasInitializedTrain.Add(sender);
+            CheckIfAllPlayersLoadedTrain();
             Logger.Trace("[SERVER] > TRAINS_INIT");
             ReliableSendToOthers(message, sender);
         }

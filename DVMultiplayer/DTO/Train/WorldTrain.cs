@@ -16,6 +16,7 @@ namespace DVMultiplayer.DTO.Train
 
         // Player
         public bool IsPlayerSpawned { get; set; }
+        public ushort AuthorityPlayerId { get; set; } = 0;
 
         // Position and physics
         public Vector3 Position { get; set; }
@@ -91,6 +92,7 @@ namespace DVMultiplayer.DTO.Train
             IsRearCouplerHoseConnected = e.Reader.ReadNullableBoolean();
 
             IsPlayerSpawned = e.Reader.ReadBoolean();
+            AuthorityPlayerId = e.Reader.ReadUInt16();
 
             if (IsLoco)
             {
@@ -147,6 +149,7 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(IsRearCouplerHoseConnected);
 
             e.Writer.Write(IsPlayerSpawned);
+            e.Writer.Write(AuthorityPlayerId);
 
             if (IsLoco)
             {

@@ -39,5 +39,6 @@
         JOB_COMPLETED,
         TRAIN_DAMAGE,
         TRAINS_INIT_FINISHED,
+        TRAIN_AUTH_CHANGE,
     }
 }

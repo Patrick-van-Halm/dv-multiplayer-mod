@@ -26,14 +26,18 @@ internal class NetworkTrainCouplerSync : MonoBehaviour
         if (!coupler)
             return;
 
-        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] NetworkTrainCouplerSync OnDestroy called");
-        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to coupled event");
+        if (coupler.train.logicCar != null)
+        {
+            Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] NetworkTrainCouplerSync OnDestroy called");
+            Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to coupled event");
+            Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to uncoupled event");
+            Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to hose connection changed event");
+            Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to cock changed event");
+        }
+            
         coupler.Coupled -= CouplerCoupled;
-        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to uncoupled event");
         coupler.Uncoupled -= CouplerUncoupled;
-        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to hose connection changed event");
         coupler.HoseConnectionChanged -= CouplerHoseConChanged;
-        Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to cock changed event");
         coupler.CockChanged -= CouplerCockChanged;
     }
 #pragma warning restore IDE0051 // Remove unused private members

@@ -12,5 +12,9 @@ namespace DVMultiplayer.DTO.Savegame
         public JobsSaveGameData SaveDataJobs { get; set; }
         public string SaveDataSwitches { get; set; } = "";
         public string SaveDataTurntables { get; set; } = "";
+        public string SaveDataDestroyedLocoDebt { get; internal set; }
+        public string SaveDataStagedJobDebt { get; internal set; }
+        public string SaveDataDeletedJoblessCarsDept { get; internal set; }
+        public string SaveDataInsuranceDept { get; internal set; }
     }
 }

@@ -140,7 +140,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CustomUI.cs" />
-    <Compile Include="Darkrift\Buffer.cs" />
+    <Compile Include="Darkrift\BufferQueue.cs" />
     <Compile Include="Darkrift\Client\SerializableObjectCacheSettings.cs" />
     <Compile Include="Darkrift\Client\UnityClient.cs" />
     <Compile Include="Darkrift\Server\UnityModManagerWriter.cs" />
@@ -161,6 +161,7 @@
     <Compile Include="DTO\Savegame\OfflineSave.cs" />
     <Compile Include="DTO\Savegame\Savegame.cs" />
     <Compile Include="DTO\Train\CarDamage.cs" />
+    <Compile Include="DTO\Train\CarsAuthChange.cs" />
     <Compile Include="DTO\Train\CarRemoval.cs" />
     <Compile Include="DTO\Train\Shunter.cs" />
     <Compile Include="DTO\Train\TrainCouplerCockChange.cs" />

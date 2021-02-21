@@ -100,10 +100,10 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
         if (moveSlow)
         {
             bool addToAngle = angle > turntableController.turntable.currentYRotation;
-            turntableController.turntable.targetYRotation += addToAngle ? .5f : -.5f;
+            turntableController.turntable.targetYRotation += addToAngle ? .1f : -.1f;
             turntableController.turntable.RotateToTargetRotation();
             yield return new WaitUntil(() => turntableController.turntable.targetYRotation == turntableController.turntable.currentYRotation);
-            if (!(Mathf.Abs(turntableController.turntable.currentYRotation - angle) < .01f))
+            if (Mathf.Abs(turntableController.turntable.currentYRotation - angle) > .25f)
             {
                 yield return RotateTurntableTowardsByNetwork(turntableController, angle, moveSlow);
             }
@@ -117,35 +117,23 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
         IsChangeByNetwork = false;
     }
 
-    internal void OnTurntableRotationChanged(TurntableController turntable, float value, bool isLever)
+    internal void OnTurntableRotationChanged(TurntableController turntable, float value)
     {
         if (!IsSynced)
             return;
-        Main.Log($"[CLIENT] > TURNTABLE_ANGLE_CHANGED");
+        //Main.Log($"[CLIENT] > TURNTABLE_ANGLE_CHANGED");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
-            if (!isLever)
+            writer.Write(new Turntable()
             {
-                writer.Write(new Turntable()
-                {
-                    Position = turntable.transform.position - WorldMover.currentMove,
-                    Rotation = value,
-                    LeverAngle = null
-                });
-            }
-            else
-            {
-                writer.Write(new Turntable()
-                {
-                    Position = turntable.transform.position - WorldMover.currentMove,
-                    Rotation = null,
-                    LeverAngle = value
-                });
-            }
+                Position = turntable.transform.position - WorldMover.currentMove,
+                Rotation = value,
+                LeverAngle = null
+            });
 
             using (Message message = Message.Create((ushort)NetworkTags.TURNTABLE_ANGLE_CHANGED, writer))
-                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Unreliable);
         }
     }
 
@@ -200,11 +188,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                 TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == turntableInfo.Position + WorldMover.currentMove);
                 if (turntable && turntableInfo.Rotation.HasValue)
                 {
-                    turntable.leverGO.GetComponent<LeverBase>().MoveLeverAndReset(.5f);
-                }
-                else if (turntable && turntableInfo.LeverAngle.HasValue)
-                {
-                    turntable.leverGO.GetComponent<LeverBase>().SetValue(turntableInfo.LeverAngle.Value);
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation.Value));
                 }
             }
         }
@@ -226,8 +210,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                 TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == turntableInfo.Position + WorldMover.currentMove);
                 if (turntable && turntableInfo.Rotation.HasValue)
                 {
-                    turntable.leverGO.GetComponent<LeverBase>().SetValue(.5f);
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation.Value, !SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(turntable.transform.position)));
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation.Value, true));
                 }
             }
         }

@@ -74,10 +74,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void OnCarSpawned(TrainCar car)
     {
-        if (IsChangeByNetwork || !IsSynced)
+        if (IsChangeByNetwork || !IsSynced || IsSpawningTrains)
             return;
 
-        if (car.IsLoco)
+        if (car.IsLoco || car.playerSpawnedCar)
         {
             car.LoadInterior();
             car.keepInteriorLoaded = true;
@@ -95,6 +95,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 car.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
 
             SendNewCarSpawned(car);
+            AppUtil.Instance.PauseGame();
+            CustomUI.OpenPopup("Streaming", "New Area being loaded");
         }
     }
 
@@ -257,6 +259,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     #region Receiving Messages
     private void OnAllClientsNewTrainsLoaded()
     {
+        Main.Log("[CLIENT] < TRAINS_INIT_FINISHED");
         CustomUI.Close();
         AppUtil.Instance.UnpauseGame();
         IsSpawningTrains = false;
@@ -309,8 +312,12 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 if (train)
                 {
                     IsChangeByNetwork = true;
-                    localCars.Remove(train);
                     CarSpawner.DeleteCar(train);
+                    for(int i = localCars.Count - 1; i >= 0 ; i--)
+                    {
+                        if (!localCars[i])
+                            localCars.RemoveAt(i);
+                    }
                     IsChangeByNetwork = false;
                 }
             }
@@ -326,6 +333,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             while (reader.Position < reader.Length)
             {
+                Main.Log($"[CLIENT] < TRAINs_INIT");
                 IsChangeByNetwork = true;
                 WorldTrain[] trains = reader.ReadSerializables<WorldTrain>();
                 SingletonBehaviour<CoroutineManager>.Instance.Run(SpawnSendedTrains(trains));
@@ -895,6 +903,28 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             }
         }
     }
+
+    private void OnAuthorityChangeMessage(Message message)
+    {
+        if (buffer.NotSyncedAddToBuffer(IsSynced, OnAuthorityChangeMessage, message))
+            return;
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            while (reader.Position < reader.Length)
+            {
+                CarsAuthChange authChange = reader.ReadSerializable<CarsAuthChange>();
+                Main.Log($"[CLIENT] < TRAIN_AUTH_CHANGE: Train: {authChange.Guids[0]}, PlayerId: {authChange.PlayerId}");
+                foreach(string guid in authChange.Guids)
+                {
+                    WorldTrain train = serverCarStates.FirstOrDefault(t => t.Guid == guid);
+                    if (train != null)
+                    {
+                        train.AuthorityPlayerId = authChange.PlayerId;
+                    }
+                }
+            }
+        }
+    }
     #endregion
 
     #region Sending Messages
@@ -903,7 +933,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write(true);
-
+            Main.Log("[CLIENT] > TRAINS_INIT_FINISHED");
             using (Message message = Message.Create((ushort)NetworkTags.TRAINS_INIT_FINISHED, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
@@ -954,8 +984,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
-            writer.Write(GenerateServerCarsData(cars));
-            Main.Log($"[CLIENT] > TRAINS_INIT: {cars.Count()}");
+            WorldTrain[] newServerTrains = GenerateServerCarsData(cars);
+            writer.Write(newServerTrains);
+            Main.Log($"[CLIENT] > TRAINS_INIT: {newServerTrains.Length}");
 
             using (Message message = Message.Create((ushort)NetworkTags.TRAINS_INIT, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
@@ -1277,6 +1308,29 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         AppUtil.Instance.PauseGame();
         CustomUI.OpenPopup("Streaming", "New Area being loaded");
     }
+
+    internal void SendAuthorityChange(Trainset set, ushort id)
+    {
+        if (!IsSynced)
+            return;
+
+        Main.Log($"[CLIENT] > TRAIN_AUTH_CHANGE: Train: {set.firstCar.CarGUID}, PlayerId: {id}");
+
+        string[] carGuids = new string[set.cars.Count];
+        for(int i = 0; i < set.cars.Count; i++)
+        {
+            WorldTrain train = serverCarStates.FirstOrDefault(t => t.Guid == set.cars[i].CarGUID);
+            train.AuthorityPlayerId = id;
+            carGuids[i] = set.cars[i].CarGUID;
+        }
+
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write(new CarsAuthChange() { Guids = carGuids, PlayerId = id });
+            using (Message message = Message.Create((ushort)NetworkTags.TRAIN_AUTH_CHANGE, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
+    }
     #endregion
 
     #region Car Functions
@@ -1480,19 +1534,11 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     ShunterDashboardControls shunterDashboard = train.interior.GetComponentInChildren<ShunterDashboardControls>();
                     Main.Log($"Shunter dashboard found {shunterDashboard != null}");
                     Main.Log($"Sync engine state");
-                    if ((shunter.IsSideFuse1On && shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 0) || (!shunter.IsSideFuse1On && shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1))
-                        train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Use();
 
-                    if ((shunter.IsSideFuse2On && shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Value == 0) || (!shunter.IsSideFuse2On && shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Value == 1))
-                        train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Use();
-
-                    if ((shunter.IsMainFuseOn && shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 0) || (!shunter.IsMainFuseOn && shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1))
-                        shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Use();
-
-                    if((controllerShunter.GetEngineRunning() && !shunter.IsEngineOn) || (!controllerShunter.GetEngineRunning() && shunter.IsEngineOn))
-                        controllerShunter.SetEngineRunning(shunter.IsEngineOn);
-
-                    shunterDashboard.mainFuseLamp.SetLampState(shunter.IsMainFuseOn ? LampControl.LampState.On : LampControl.LampState.Off);
+                    shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse1On ? 1 : 0);
+                    shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse2On ? 1 : 0);
+                    shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().SetValue(shunter.IsMainFuseOn ? 1 : 0);
+                    controllerShunter.SetEngineRunning(shunter.IsEngineOn);
                 }
                 break;
         }
@@ -1607,7 +1653,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 CarHealth = car.CarDamage.currentHealth
             };
 
-            if (car.IsLoco)
+            if (car.IsLoco && car.carType != TrainCarType.HandCar)
             {
                 Main.Log($"Set locomotive defaults");
                 LocoControllerBase loco = car.GetComponent<LocoControllerBase>();
@@ -1623,7 +1669,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 train.Sander = loco.IsSandOn() ? 1 : 0;
                 Main.Log($"Sander set: {train.Sander}");
             }
-            else
+            else if(car.carType != TrainCarType.HandCar)
             {
                 train.CargoType = car.LoadedCargo;
                 train.CargoAmount = car.LoadedCargoAmount;
@@ -1654,6 +1700,11 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         return data.ToArray();
     }
 
+    internal WorldTrain GetServerStateById(string guid)
+    {
+        return serverCarStates.FirstOrDefault(t => t.Guid == guid);
+    }
+
     private IEnumerator SpawnSendedTrains(WorldTrain[] trains)
     {
         IsSpawningTrains = true;
@@ -1663,7 +1714,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         yield return new WaitForFixedUpdate();
         foreach (WorldTrain train in trains)
         {
-            Main.Log($"[CLIENT] < TRAIN_INIT: {train.Guid}");
+            Main.Log($"Initializing: {train.Guid} in area");
             serverCarStates.Add(train);
             TrainCar car = InitializeNewTrainCar(train);
             yield return RerailDesynced(car, train, true);
@@ -1673,6 +1724,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             foreach (WorldTrain train in trains)
             {
+                if (localCars.Any(t => t.logicCar == null))
+                    return false;
                 if (!localCars.Any(t => t.CarGUID == train.Guid && t.AreBogiesFullyInitialized()))
                     return false;
             }
