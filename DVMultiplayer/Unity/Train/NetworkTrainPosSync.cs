@@ -21,6 +21,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private Coroutine updatePositionCoroutine;
     public event Action<TrainCar> OnTrainCarInitialized;
     public bool hasLocalPlayerAuthority = false;
+    internal bool resetAuthority = false;
     internal NetworkTurntableSync turntable = null;
 
 #pragma warning disable IDE0051 // Remove unused private members
@@ -37,39 +38,46 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.Log($"Listening to LogicCar loaded event");
         trainCar.LogicCarInitialized += TrainCar_LogicCarInitialized;
 
+        trainCar.CarDamage.IgnoreDamage(true);
         trainCar.rb.isKinematic = true;
 
         if (NetworkManager.IsHost())
         {
-            trainCar.rb.isKinematic = false;
             SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
         }
     }
 
     private IEnumerator CheckAuthorityChange()
     {
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(.1f);
         if (turntable == null)
         {
             bool authNeedsChange = true;
-            foreach (TrainCar car in trainCar.trainset.cars)
+            if (!resetAuthority) 
             {
-                if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(car).Select(p => p.GetComponent<NetworkPlayerSync>().Id).Contains(serverState.AuthorityPlayerId))
+                foreach (TrainCar car in trainCar.trainset.cars)
                 {
-                    authNeedsChange = false;
-                    break;
+                    if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(car).Select(p => p.GetComponent<NetworkPlayerSync>().Id).Contains(serverState.AuthorityPlayerId))
+                    {
+                        authNeedsChange = false;
+                        break;
+                    }
                 }
             }
+
             if (authNeedsChange)
             {
+                resetAuthority = false;
                 GameObject player = null;
                 foreach (TrainCar car in trainCar.trainset.cars)
                 {
                     if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(trainCar).Length > 0)
                         player = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(trainCar)[0];
                 }
+
                 if (!player)
                     player = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
+
                 if (player.GetComponent<NetworkPlayerSync>().Id != serverState.AuthorityPlayerId)
                     SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, player.GetComponent<NetworkPlayerSync>().Id);
             }
@@ -116,12 +124,23 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             trainCar.rb.isKinematic = false;
             hasLocalPlayerAuthority = true;
+            trainCar.stress.enabled = true;
+            trainCar.stress.DisableStressCheckForTwoSeconds();
+            if(!turntable)
+                trainCar.CarDamage.IgnoreDamage(false);
             Main.Log($"Listening to movement changed event");
+            if (!trainCar.isStationary && updatePositionCoroutine == null)
+            {
+                updatePositionCoroutine = SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
+            }
             trainCar.MovementStateChanged += TrainCar_MovementStateChanged;
         }
         else if (!willLocalPlayerGetAuthority && hasLocalPlayerAuthority)
         {
+            SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
             trainCar.rb.isKinematic = true;
+            trainCar.stress.enabled = false;
+            trainCar.CarDamage.IgnoreDamage(true);
             hasLocalPlayerAuthority = false;
             Main.Log($"Stop listening to movement changed event");
             trainCar.MovementStateChanged -= TrainCar_MovementStateChanged;
@@ -129,39 +148,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
             {
                 SingletonBehaviour<CoroutineManager>.Instance.Stop(updatePositionCoroutine);
                 updatePositionCoroutine = null;
-            }
-        }
-    }
-
-    private void FixedUpdate()
-    {
-        if (!SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced)
-            return;
-
-        if (!hasLocalPlayerAuthority && newExtraForce.HasValue && !trainCar.derailed && !trainCar.rb.isKinematic)
-        {
-            if(isOutOfSync && hostStationary && ((trainCar.brakeSystem.hasIndependentBrake && trainCar.brakeSystem.independentBrakePosition > 0) || trainCar.brakeSystem.trainBrakePosition > 0))
-            {
-                prevIndepBrakePos = trainCar.brakeSystem.hasIndependentBrake ? trainCar.brakeSystem.independentBrakePosition : 0;
-                prevBrakePos = trainCar.brakeSystem.trainBrakePosition;
-                if (trainCar.brakeSystem.hasIndependentBrake)
-                    trainCar.brakeSystem.independentBrakePosition = 0;
-                trainCar.brakeSystem.trainBrakePosition = 0;
-                velocityShouldUpdate = true;
-            }
-            else if (!isOutOfSync && hostStationary && prevBrakePos != 0 && prevIndepBrakePos != 0)
-            {
-                prevIndepBrakePos = 0;
-                prevBrakePos = 0;
-                if (trainCar.brakeSystem.hasIndependentBrake)
-                    trainCar.brakeSystem.independentBrakePosition = prevIndepBrakePos;
-                trainCar.brakeSystem.trainBrakePosition = prevBrakePos;
-            }
-
-            if(velocityShouldUpdate)
-            {
-                trainCar.rb.velocity = newExtraForce.Value;
-                velocityShouldUpdate = false;
             }
         }
     }
@@ -209,8 +195,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private IEnumerator UpdateLocation()
     {
-        yield return new WaitUntil(() => Vector3.Distance(trainCar.transform.position, prevPos) > .01f);
-        if (hasLocalPlayerAuthority)
+        yield return new WaitUntil(() => Vector3.Distance(trainCar.transform.position, prevPos) > .001f);
+        if (hasLocalPlayerAuthority && !trainCar.frontCoupler.coupledTo)
         {
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar);
             prevPos = trainCar.transform.position;
@@ -220,6 +206,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     internal IEnumerator UpdateLocation(TrainLocation location)
     {
+        if (hasLocalPlayerAuthority)
+            yield break;
+
         if (trainCar.derailed && !hostDerailed)
         {
             trainCar.transform.position = location.Position + WorldMover.currentMove;
@@ -232,113 +221,104 @@ internal class NetworkTrainPosSync : MonoBehaviour
             location.Position += WorldMover.currentMove;
             trainCar.transform.position = location.Position;
             trainCar.transform.rotation = location.Rotation;
-            trainCar.rb.velocity = location.Velocity;
-            trainCar.rb.angularVelocity = location.AngularVelocity;
             trainCar.transform.forward = location.Forward;
             yield break;
         }
         location.Position += WorldMover.currentMove;
         hostStationary = location.IsStationary;
-        if (!trainCar.rb.isKinematic)
-        {
-            SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(location);
-        }
-        else
-        {
-            trainCar.rb.MovePosition(location.Position);
-            trainCar.rb.MoveRotation(location.Rotation);
-        }
+        trainCar.rb.MovePosition(location.Position);
+        trainCar.rb.MoveRotation(location.Rotation);
     }
 
-    private void SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(TrainLocation location)
-    {
-        if (trainCar.frontCoupler.IsCoupled())
-        {
-            return;
-        }
+    //private void SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(TrainLocation location)
+    //{
+    //    if (trainCar.frontCoupler.IsCoupled())
+    //    {
+    //        return;
+    //    }
 
-        SyncVelocityAndSpeedUpIfDesynced(location);
-    }
+    //    SyncVelocityAndSpeedUpIfDesynced(location);
+    //}
 
-    private void SyncVelocityAndSpeedUpIfDesynced(TrainLocation location)
-    {
-        float distance = Distance(trainCar.transform, location.Position);
-        float curSpeed = trainCar.GetForwardSpeed() * 3.6f;
-        Vector3 newVelocity;
-        if (distance > 10f)
-        {
-            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z + 1.5f);
-            if (newVelocity != newExtraForce)
-            {
-                velocityShouldUpdate = true;
-                newExtraForce = newVelocity;
-            }
-            isOutOfSync = true;
-        }
-        else if (distance > 3f)
-        {
-            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z + .86f);
-            if (newVelocity != newExtraForce)
-            {
-                velocityShouldUpdate = true;
-                newExtraForce = newVelocity;
-            }
-            isOutOfSync = true;
-        }
-        else if (distance <= 3f && distance > .1f)
-        {
-            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z + (curSpeed < 25 ? .25f : .19f));
-            if (newVelocity != newExtraForce)
-            {
-                velocityShouldUpdate = true;
-                newExtraForce = newVelocity;
-            }
-            isOutOfSync = true;
-        }
-        else if (distance < .1f && distance > -.1f)
-        {
-            newVelocity = location.Velocity;
-            if (newVelocity != newExtraForce)
-            {
-                velocityShouldUpdate = true;
-                newExtraForce = newVelocity;
-            }
-            isOutOfSync = false;
-        }
-        else if (distance <= -.1f && distance > -3f)
-        {
-            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z - (curSpeed < 25 ? .25f : .19f));
-            if (newVelocity != newExtraForce)
-            {
-                velocityShouldUpdate = true;
-                newExtraForce = newVelocity;
-            }
-            isOutOfSync = true;
-        }
-        else if (distance <= -3f && distance >= -10f)
-        {
-            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z - .86f);
-            if (newVelocity != newExtraForce)
-            {
-                velocityShouldUpdate = true;
-                newExtraForce = newVelocity;
-            }
-            isOutOfSync = true;
-        }
-        else if (distance > -10f)
-        {
-            newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z - 1.5f);
-            if (newVelocity != newExtraForce)
-            {
-                velocityShouldUpdate = true;
-                newExtraForce = newVelocity;
-            }
-            isOutOfSync = true;
-        }
+    //private void SyncVelocityAndSpeedUpIfDesynced(TrainLocation location)
+    //{
+    //    float distance = Distance(trainCar.transform, location.Position);
+    //    float curSpeed = trainCar.GetForwardSpeed() * 3.6f;
+    //    Vector3 newVelocity;
+    //    if (distance > 10f)
+    //    {
+    //        newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z + 1.5f);
+    //        if (newVelocity != newExtraForce)
+    //        {
+    //            velocityShouldUpdate = true;
+    //            newExtraForce = newVelocity;
+    //        }
+    //        isOutOfSync = true;
+    //    }
+    //    else if (distance > 3f)
+    //    {
+    //        newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z + .86f);
+    //        if (newVelocity != newExtraForce)
+    //        {
+    //            velocityShouldUpdate = true;
+    //            newExtraForce = newVelocity;
+    //        }
+    //        isOutOfSync = true;
+    //    }
+    //    else if (distance <= 3f && distance > .1f)
+    //    {
+    //        newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z + (curSpeed < 25 ? .25f : .19f));
+    //        if (newVelocity != newExtraForce)
+    //        {
+    //            velocityShouldUpdate = true;
+    //            newExtraForce = newVelocity;
+    //        }
+    //        isOutOfSync = true;
+    //    }
+    //    else if (distance < .1f && distance > -.1f)
+    //    {
+    //        newVelocity = location.Velocity;
+    //        if (newVelocity != newExtraForce)
+    //        {
+    //            velocityShouldUpdate = true;
+    //            newExtraForce = newVelocity;
+    //        }
+    //        isOutOfSync = false;
+    //    }
+    //    else if (distance <= -.1f && distance > -3f)
+    //    {
+    //        newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z - (curSpeed < 25 ? .25f : .19f));
+    //        if (newVelocity != newExtraForce)
+    //        {
+    //            velocityShouldUpdate = true;
+    //            newExtraForce = newVelocity;
+    //        }
+    //        isOutOfSync = true;
+    //    }
+    //    else if (distance <= -3f && distance >= -10f)
+    //    {
+    //        newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z - .86f);
+    //        if (newVelocity != newExtraForce)
+    //        {
+    //            velocityShouldUpdate = true;
+    //            newExtraForce = newVelocity;
+    //        }
+    //        isOutOfSync = true;
+    //    }
+    //    else if (distance > -10f)
+    //    {
+    //        newVelocity = new Vector3(trainCar.rb.velocity.x, trainCar.rb.velocity.y, trainCar.rb.velocity.z - 1.5f);
+    //        if (newVelocity != newExtraForce)
+    //        {
+    //            velocityShouldUpdate = true;
+    //            newExtraForce = newVelocity;
+    //        }
+    //        isOutOfSync = true;
+    //    }
 
-        if (isOutOfSync)
-            Main.mod.Logger.Log($"{trainCar.ID} Is out of sync difference is {distance}m");
-    }
+    //    if (isOutOfSync)
+    //        Main.mod.Logger.Log($"{trainCar.ID} Is out of sync difference is {distance}m");
+    //}
 
     private float Distance(Transform a, Vector3 b)
     {

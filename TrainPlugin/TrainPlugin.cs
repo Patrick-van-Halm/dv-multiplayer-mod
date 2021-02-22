@@ -13,7 +13,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.23");
+        public override Version Version => new Version("1.6.25");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> players;
@@ -681,27 +681,19 @@ namespace TrainPlugin
             {
                 using (DarkRiftReader reader = message.GetReader())
                 {
-                    TrainLocation newLocation = reader.ReadSerializable<TrainLocation>();
-                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == newLocation.TrainId);
-                    if (train == null)
+                    TrainLocation[] newLocations = reader.ReadSerializables<TrainLocation>();
+                    foreach(TrainLocation newLocation in newLocations)
                     {
-                        train = new WorldTrain()
-                        {
-                            Guid = newLocation.TrainId,
-                        };
-                        worldTrains.Add(train);
+                        WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == newLocation.TrainId);
+                        train.Position = newLocation.Position;
+                        train.Rotation = newLocation.Rotation;
+                        train.Forward = newLocation.Forward;
+                        train.Bogie1PositionAlongTrack = newLocation.Bogie1PositionAlongTrack;
+                        train.Bogie1RailTrackName = newLocation.Bogie1TrackName;
+                        train.Bogie2PositionAlongTrack = newLocation.Bogie2PositionAlongTrack;
+                        train.Bogie2RailTrackName = newLocation.Bogie2TrackName;
+                        train.IsStationary = newLocation.IsStationary;
                     }
-
-                    train.Position = newLocation.Position;
-                    train.Rotation = newLocation.Rotation;
-                    train.Velocity = newLocation.Velocity;
-                    train.AngularVelocity = newLocation.AngularVelocity;
-                    train.Forward = newLocation.Forward;
-                    train.Bogie1PositionAlongTrack = newLocation.Bogie1PositionAlongTrack;
-                    train.Bogie1RailTrackName = newLocation.Bogie1TrackName;
-                    train.Bogie2PositionAlongTrack = newLocation.Bogie2PositionAlongTrack;
-                    train.Bogie2RailTrackName = newLocation.Bogie2TrackName;
-                    train.IsStationary = newLocation.IsStationary;
                 }
             }
             //Logger.Trace("[SERVER] > TRAIN_LOCATION_UPDATE");

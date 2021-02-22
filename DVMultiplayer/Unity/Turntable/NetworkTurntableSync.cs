@@ -11,23 +11,17 @@ using UnityEngine;
 internal class NetworkTurntableSync : MonoBehaviour
 {
     private TurntableController turntable;
-    private LeverBase lever;
-    private float prevLeverAngle;
-    private Transform playerCameraTransform;
     private TurntableControlKeyboardInput keyboardInput;
-    private Coroutine releaseAuthorityCoroutine;
-    private readonly List<TrainCar> trainsOnTurntable = new List<TrainCar>();
     private float prevRotation;
     private List<TrainCar> carsOnTurntable = new List<TrainCar>();
-    private bool isLocalPlayerAuthority = false;
     internal Turntable serverState = null;
     internal ushort playerAuthId = 0;
 
     private void Awake()
     {
         turntable = GetComponent<TurntableController>();
-        lever = turntable.leverGO.GetComponent<LeverBase>();
-        playerCameraTransform = PlayerManager.PlayerCamera.transform;
+        //lever = turntable.leverGO.GetComponent<LeverBase>();
+        //playerCameraTransform = PlayerManager.PlayerCamera.transform;
         //coroutineInputLever = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckInputLever());
         //turntable.Snapped += Turntable_Snapped;
         prevRotation = turntable.turntable.currentYRotation;
@@ -40,7 +34,7 @@ internal class NetworkTurntableSync : MonoBehaviour
 
     private IEnumerator CheckAuthorityChange()
     {
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(.05f);
         GameObject newAuthorityPlayer = null;
         if (keyboardInput)
         {
@@ -65,13 +59,13 @@ internal class NetworkTurntableSync : MonoBehaviour
 
             if (newAuthorityPlayer)
             {
-                if (newAuthorityPlayer.GetComponent<NetworkPlayerSync>() && playerAuthId != newAuthorityPlayer.GetComponent<NetworkPlayerSync>().Id)
+                if (playerAuthId != newAuthorityPlayer.GetComponent<NetworkPlayerSync>().Id)
                 {
                     playerAuthId = newAuthorityPlayer.GetComponent<NetworkPlayerSync>().Id;
                     SingletonBehaviour<NetworkTurntableManager>.Instance.SendRequestAuthority(turntable, playerAuthId);
                 }
             }
-            if (!newAuthorityPlayer)
+            else
             {
                 if(playerAuthId != 0)
                 {

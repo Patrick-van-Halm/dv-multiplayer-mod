@@ -8,8 +8,6 @@ namespace DVMultiplayer.DTO.Train
     {
         public string TrainId { get; set; }
         public Vector3 Forward { get; set; }
-        public Vector3 Velocity { get; set; }
-        public Vector3 AngularVelocity { get; set; }
         public Vector3 Position { get; set; }
         public Quaternion Rotation { get; set; }
         public string Bogie1TrackName { get; set; }
@@ -22,8 +20,6 @@ namespace DVMultiplayer.DTO.Train
         {
             TrainId = e.Reader.ReadString();
             Forward = e.Reader.ReadVector3();
-            Velocity = e.Reader.ReadVector3();
-            AngularVelocity = e.Reader.ReadVector3();
             Position = e.Reader.ReadVector3();
             Rotation = e.Reader.ReadQuaternion();
             Bogie1PositionAlongTrack = e.Reader.ReadDouble();
@@ -37,8 +33,6 @@ namespace DVMultiplayer.DTO.Train
         {
             e.Writer.Write(TrainId);
             e.Writer.Write(Forward);
-            e.Writer.Write(Velocity);
-            e.Writer.Write(AngularVelocity);
             e.Writer.Write(Position);
             e.Writer.Write(Rotation);
             e.Writer.Write(Bogie1PositionAlongTrack);

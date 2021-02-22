@@ -22,8 +22,6 @@ namespace DVMultiplayer.DTO.Train
         public Vector3 Position { get; set; }
         public Vector3 Forward { get; set; }
         public Quaternion Rotation { get; set; }
-        public Vector3 Velocity { get; set; } = new Vector3();
-        public Vector3 AngularVelocity { get; set; } = new Vector3();
         public bool IsStationary { get; set; }
 
         // Bogies
@@ -71,8 +69,6 @@ namespace DVMultiplayer.DTO.Train
             Position = e.Reader.ReadVector3();
             Forward = e.Reader.ReadVector3();
             Rotation = e.Reader.ReadQuaternion();
-            Velocity = e.Reader.ReadVector3();
-            AngularVelocity = e.Reader.ReadVector3();
             IsStationary = e.Reader.ReadBoolean();
 
             IsBogie1Derailed = e.Reader.ReadBoolean();
@@ -128,8 +124,6 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(Position);
             e.Writer.Write(Forward);
             e.Writer.Write(Rotation);
-            e.Writer.Write(Velocity);
-            e.Writer.Write(AngularVelocity);
             e.Writer.Write(IsStationary);
 
             e.Writer.Write(IsBogie1Derailed);
