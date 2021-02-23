@@ -11,7 +11,7 @@ namespace DVMultiplayer.Patches
     [HarmonyPatch(typeof(GarageCarSpawner), "Update")]
     internal class StopCreatingCarsAsClient
     {
-		private static bool Prefix(GarageCarSpawner __instance, bool ___spawnAllowed, ref bool ___playerEnteredLocoSpawnRange, Action<TrainCar> ___OnGarageCarDeleted)
+		private static bool Prefix(GarageCarSpawner __instance, bool ___spawnAllowed, ref bool ___playerEnteredLocoSpawnRange)
         {
             if (NetworkManager.IsClient() && !NetworkManager.IsHost())
             {
@@ -51,7 +51,14 @@ namespace DVMultiplayer.Patches
 						if (__instance.garageSpawnedCar != null)
 						{
 							SingletonBehaviour<UnusedTrainCarDeleter>.Instance.MarkForDelete(__instance.garageSpawnedCar);
-							__instance.garageSpawnedCar.OnDestroyCar += ___OnGarageCarDeleted;
+							__instance.garageSpawnedCar.OnDestroyCar += (TrainCar deletedCar) => {
+								if (__instance.garageSpawnedCar != null && __instance.garageSpawnedCar == deletedCar)
+								{
+									__instance.garageSpawnedCar = null;
+									return;
+								}
+								Main.Log("[ERROR] Unexpected state: garageSpawnedCar is either null, or not matching deletedCar!");
+							};
 							return false;
 						}
 						Main.Log("[ERROR] Couldn't spawn garage car!");
