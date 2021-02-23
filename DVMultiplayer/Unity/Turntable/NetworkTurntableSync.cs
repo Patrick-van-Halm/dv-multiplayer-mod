@@ -14,7 +14,7 @@ internal class NetworkTurntableSync : MonoBehaviour
     private TurntableControlKeyboardInput keyboardInput;
     private float prevRotation;
     private List<TrainCar> carsOnTurntable = new List<TrainCar>();
-    private bool hasLocalPlayerAuthority;
+    private bool hasLocalPlayerAuthority = false;
     internal Turntable serverState = null;
     internal ushort playerAuthId = 0;
 
@@ -90,7 +90,11 @@ internal class NetworkTurntableSync : MonoBehaviour
                 currentCarsOnTurntable.Add(bogie.Car);
         }
 
-        foreach(TrainCar car in carsOnTurntable.ToList())
+        bool willHaveAuthority = playerAuthId == SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id;
+
+        hasLocalPlayerAuthority = willHaveAuthority;
+
+        foreach (TrainCar car in carsOnTurntable.ToList())
         {
             if(!currentCarsOnTurntable.Contains(car))
             {
@@ -118,20 +122,16 @@ internal class NetworkTurntableSync : MonoBehaviour
                 }
             }
 
-            bool willHaveAuthority = playerAuthId == SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id;
-
-            if (!willHaveAuthority && hasLocalPlayerAuthority)
+            if (!hasLocalPlayerAuthority)
             {
-                hasLocalPlayerAuthority = false;
                 if (!car.rb.isKinematic)
                 {
                     Main.Log("You're not controlling the turntable so setting trains physics off");
                     car.rb.isKinematic = true;
                 }
             }
-            else if(willHaveAuthority && !hasLocalPlayerAuthority)
+            else if(hasLocalPlayerAuthority)
             {
-                hasLocalPlayerAuthority = true;
                 if (car.rb.isKinematic)
                 {
                     Main.Log("You're controlling the turntable so setting trains physics on");
@@ -172,7 +172,7 @@ internal class NetworkTurntableSync : MonoBehaviour
     private void OnDestroy()
     {
         //SingletonBehaviour<CoroutineManager>.Instance.Stop(coroutineInputLever);
-        //turntable.Snapped -= Turntable_Snapped;
+        turntable.Snapped -= Turntable_Snapped;
         if (keyboardInput)
             keyboardInput.enabled = true;
     }

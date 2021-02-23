@@ -109,7 +109,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
         if (!IsSynced)
             return;
         Main.Log($"[CLIENT] > TURNTABLE_AUTH_REQUEST: PlayerId: {id}");
-
+        
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write(new RequestAuthority()
@@ -170,7 +170,6 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
         if (!IsSynced)
             return;
         //Main.Log($"[CLIENT] > TURNTABLE_ANGLE_CHANGED");
-        ushort playerId = SingletonBehaviour<UnityClient>.Instance.ID;
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write(new Turntable()
@@ -190,7 +189,6 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
             return;
 
         Main.Log($"[CLIENT] > TURNTABLE_SNAP");
-        ushort playerId = SingletonBehaviour<UnityClient>.Instance.ID;
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write(new Turntable()
@@ -234,7 +232,6 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                 TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == turntableInfo.Position + WorldMover.currentMove);
                 if (turntable)
                 {
-                    turntable.GetComponent<NetworkTurntableSync>().playerAuthId = turntableInfo.playerAuthId;
                     SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation));
                 }
             }
