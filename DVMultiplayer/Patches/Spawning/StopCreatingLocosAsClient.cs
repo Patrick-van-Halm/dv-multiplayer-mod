@@ -14,15 +14,15 @@ namespace DVMultiplayer.Patches
     {
 		private static bool Prefix(StationLocoSpawner __instance, GameObject ___spawnTrackMiddleAnchor, ref bool ___playerEnteredLocoSpawnRange, ref int ___nextLocoGroupSpawnIndex)
         {
-			if (!SingletonBehaviour<NetworkPlayerManager>.Exists || !SingletonBehaviour<NetworkPlayerManager>.Instance)
-				return true;
-
             if (NetworkManager.IsClient() && !NetworkManager.IsHost())
             {
                 return false;
             }
             else if (NetworkManager.IsHost())
             {
+				if (!SingletonBehaviour<NetworkPlayerManager>.Exists || !SingletonBehaviour<NetworkPlayerManager>.Instance)
+					return true;
+
 				bool shouldSpawn = false;
 				if (!SaveLoadController.carsAndJobsLoadingFinished)
 				{
@@ -35,7 +35,6 @@ namespace DVMultiplayer.Patches
 					if (!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().All(p => (p.transform.position - ___spawnTrackMiddleAnchor.transform.position).sqrMagnitude < __instance.spawnLocoPlayerSqrDistanceFromTrack))
 						shouldSpawn = true;
 				}
-
 				else if (!___playerEnteredLocoSpawnRange && !isHostInArea)
 				{
 					___playerEnteredLocoSpawnRange = true;
@@ -67,6 +66,7 @@ namespace DVMultiplayer.Patches
 						return false;
 					}
 				}
+				return false;
 			}
             return true;
         }

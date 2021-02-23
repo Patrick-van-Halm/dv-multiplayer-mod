@@ -13,15 +13,15 @@ namespace DVMultiplayer.Patches
     {
 		private static bool Prefix(GarageCarSpawner __instance, bool ___spawnAllowed, ref bool ___playerEnteredLocoSpawnRange)
         {
-			if (!SingletonBehaviour<NetworkPlayerManager>.Exists || !SingletonBehaviour<NetworkPlayerManager>.Instance)
-				return true;
-
 			if (NetworkManager.IsClient() && !NetworkManager.IsHost())
             {
                 return false;
             }
             else if (NetworkManager.IsHost())
             {
+				if (!SingletonBehaviour<NetworkPlayerManager>.Exists || !SingletonBehaviour<NetworkPlayerManager>.Instance)
+					return true;
+
 				bool shouldSpawn = false;
 				if (!___spawnAllowed || !SaveLoadController.carsAndJobsLoadingFinished)
 				{
@@ -68,6 +68,7 @@ namespace DVMultiplayer.Patches
 						return false;
 					}
 				}
+				return false;
 			}
             return true;
         }
