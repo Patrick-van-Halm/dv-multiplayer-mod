@@ -1161,7 +1161,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     Bogie1PositionAlongTrack = bogie1PositionAlongTrack,
                     Bogie2PositionAlongTrack = bogie2PositionAlongTrack,
                     IsStationary = car.isStationary,
-                    Speed = car.rb.velocity.magnitude * 3.6f
+                    Velocity = car.rb.velocity
                 });
             }
 

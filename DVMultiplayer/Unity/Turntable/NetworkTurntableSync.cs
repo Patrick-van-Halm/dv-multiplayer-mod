@@ -105,7 +105,7 @@ internal class NetworkTurntableSync : MonoBehaviour
                 {
                     Main.Log($"Train: {car.CarGUID} left turntable");
                     car.rb.isKinematic = false;
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(OverrideDamageSeconds(car, 1));
+                    car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = true;
                     car.GetComponent<NetworkTrainPosSync>().turntable = null;
                 }
                 carsOnTurntable.Remove(car);

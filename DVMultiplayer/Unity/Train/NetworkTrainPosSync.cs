@@ -14,7 +14,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private bool hostStationary;
     private Vector3 prevPos;
     public bool isDerailed;
-    internal float speed = 0;
+    internal Vector3 velocity = Vector3.zero;
     private Coroutine updatePositionCoroutine;
     public event Action<TrainCar> OnTrainCarInitialized;
     public bool hasLocalPlayerAuthority = false;
@@ -64,7 +64,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
             if (authNeedsChange)
             {
-                resetAuthority = false;
                 GameObject player = null;
                 foreach (TrainCar car in trainCar.trainset.cars)
                 {
@@ -75,8 +74,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 if (!player)
                     player = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
 
-                if (player.GetComponent<NetworkPlayerSync>().Id != serverState.AuthorityPlayerId)
+                if (player.GetComponent<NetworkPlayerSync>().Id != serverState.AuthorityPlayerId || resetAuthority)
                     SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, player.GetComponent<NetworkPlayerSync>().Id);
+
+                resetAuthority = false;
             }
         }
         else
@@ -120,6 +121,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)
         {
             trainCar.rb.isKinematic = false;
+            trainCar.rb.velocity = velocity;
             hasLocalPlayerAuthority = true;
             trainCar.stress.enabled = true;
             trainCar.stress.DisableStressCheckForTwoSeconds();
@@ -227,7 +229,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (hasLocalPlayerAuthority)
             yield break;
 
-        speed = location.Speed;
+        velocity = location.Velocity;
 
         if (trainCar.derailed && !isDerailed)
         {

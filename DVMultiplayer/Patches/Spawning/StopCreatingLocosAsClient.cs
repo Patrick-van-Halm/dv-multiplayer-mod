@@ -1,5 +1,8 @@
-﻿using DVMultiplayer.Networking;
+﻿using DV.Logic.Job;
+using DVMultiplayer.Networking;
 using HarmonyLib;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DVMultiplayer.Patches
@@ -9,28 +12,60 @@ namespace DVMultiplayer.Patches
     [HarmonyPatch(typeof(StationLocoSpawner), "Update")]
     internal class StopCreatingLocosAsClient
     {
-        private static bool Prefix(StationLocoSpawner __instance, GameObject ___spawnTrackMiddleAnchor)
+		private static bool shouldSpawn = false;
+
+		private static bool Prefix(StationLocoSpawner __instance, GameObject ___spawnTrackMiddleAnchor, ref bool ___playerEnteredLocoSpawnRange, ref int ___nextLocoGroupSpawnIndex)
         {
-            if (NetworkManager.IsClient())
+            if (NetworkManager.IsClient() && !NetworkManager.IsHost())
             {
-                if((PlayerManager.PlayerTransform.position - ___spawnTrackMiddleAnchor.transform.position).sqrMagnitude < __instance.spawnLocoPlayerSqrDistanceFromTrack)
-                {
-                    bool allowedToSpawn = true;
-                    foreach (GameObject player in SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers())
-                    {
-                        if ((player.transform.position - ___spawnTrackMiddleAnchor.transform.position).sqrMagnitude < __instance.spawnLocoPlayerSqrDistanceFromTrack)
-                        {
-                            allowedToSpawn = false;
-                            break;
-                        }
-                    }
-                    return allowedToSpawn;
-                }
-                else
-                {
-                    return false;
-                }
+                return false;
             }
+            else if (NetworkManager.IsHost())
+            {
+				if (!SaveLoadController.carsAndJobsLoadingFinished)
+				{
+					return false;
+				}
+				bool isHostInArea = (PlayerManager.PlayerTransform.position - ___spawnTrackMiddleAnchor.transform.position).sqrMagnitude < __instance.spawnLocoPlayerSqrDistanceFromTrack;
+				if (!___playerEnteredLocoSpawnRange && isHostInArea)
+				{
+					___playerEnteredLocoSpawnRange = true;
+					if (!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().All(p => (p.transform.position - ___spawnTrackMiddleAnchor.transform.position).sqrMagnitude < __instance.spawnLocoPlayerSqrDistanceFromTrack))
+						shouldSpawn = true;
+				}
+
+				else if (!___playerEnteredLocoSpawnRange && !isHostInArea)
+				{
+					___playerEnteredLocoSpawnRange = true;
+					if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().Any(p => (p.transform.position - ___spawnTrackMiddleAnchor.transform.position).sqrMagnitude < __instance.spawnLocoPlayerSqrDistanceFromTrack))
+						shouldSpawn = true;
+				}
+				else if (___playerEnteredLocoSpawnRange && !isHostInArea)
+				{
+					if (!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().Any(p => (p.transform.position - ___spawnTrackMiddleAnchor.transform.position).sqrMagnitude < __instance.spawnLocoPlayerSqrDistanceFromTrack))
+						___playerEnteredLocoSpawnRange = false;
+				}
+
+                if (shouldSpawn)
+                {
+					List<Car> carsFullyOnTrack = __instance.locoSpawnTrack.logicTrack.GetCarsFullyOnTrack();
+					if (carsFullyOnTrack.Count != 0)
+					{
+						if (carsFullyOnTrack.Any((Car car) => CarTypes.IsLocomotive(car.carType)))
+						{
+							return false;
+						}
+					}
+					List<TrainCarType> trainCarTypes = new List<TrainCarType>(__instance.locoTypeGroupsToSpawn[___nextLocoGroupSpawnIndex].trainCarTypes);
+					___nextLocoGroupSpawnIndex = UnityEngine.Random.Range(0, __instance.locoTypeGroupsToSpawn.Count);
+					List<TrainCar> list = CarSpawner.SpawnCarTypesOnTrack(trainCarTypes, __instance.locoSpawnTrack, true, 0.0, __instance.spawnRotationFlipped, false);
+					if (list != null)
+					{
+						SingletonBehaviour<UnusedTrainCarDeleter>.Instance.MarkForDelete(list);
+						return false;
+					}
+				}
+			}
             return true;
         }
     }

@@ -19,7 +19,7 @@ namespace DVMultiplayer.Patches
                 NetworkTrainPosSync networking = __instance.GetComponent<NetworkTrainPosSync>();
                 if (networking)
                 {
-                    __result = networking.speed;
+                    __result = networking.velocity.magnitude * 3.6f;
                 }
 			}
 		}
