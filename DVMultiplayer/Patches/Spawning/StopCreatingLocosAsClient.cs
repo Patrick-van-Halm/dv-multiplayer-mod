@@ -12,8 +12,6 @@ namespace DVMultiplayer.Patches
     [HarmonyPatch(typeof(StationLocoSpawner), "Update")]
     internal class StopCreatingLocosAsClient
     {
-		private static bool shouldSpawn = false;
-
 		private static bool Prefix(StationLocoSpawner __instance, GameObject ___spawnTrackMiddleAnchor, ref bool ___playerEnteredLocoSpawnRange, ref int ___nextLocoGroupSpawnIndex)
         {
             if (NetworkManager.IsClient() && !NetworkManager.IsHost())
@@ -22,6 +20,7 @@ namespace DVMultiplayer.Patches
             }
             else if (NetworkManager.IsHost())
             {
+				bool shouldSpawn = false;
 				if (!SaveLoadController.carsAndJobsLoadingFinished)
 				{
 					return false;

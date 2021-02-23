@@ -11,7 +11,6 @@ namespace DVMultiplayer.Patches
     [HarmonyPatch(typeof(GarageCarSpawner), "Update")]
     internal class StopCreatingCarsAsClient
     {
-		private static bool shouldSpawn = false;
 		private static bool Prefix(GarageCarSpawner __instance, bool ___spawnAllowed, ref bool ___playerEnteredLocoSpawnRange, Action<TrainCar> ___OnGarageCarDeleted)
         {
             if (NetworkManager.IsClient() && !NetworkManager.IsHost())
@@ -20,7 +19,8 @@ namespace DVMultiplayer.Patches
             }
             else if (NetworkManager.IsHost())
             {
-				if(!___spawnAllowed || !SaveLoadController.carsAndJobsLoadingFinished)
+				bool shouldSpawn = false;
+				if (!___spawnAllowed || !SaveLoadController.carsAndJobsLoadingFinished)
 				{
 					return false;
 				}
