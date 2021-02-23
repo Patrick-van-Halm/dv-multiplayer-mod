@@ -39,7 +39,7 @@ namespace DVMultiplayer.Patches
 				}
 				else if (___playerEnteredLocoSpawnRange && !isHostInSpawnArea)
 				{
-					if (!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().Any(p => (p.transform.position - __instance.locoSpawnPoint.transform.position).sqrMagnitude < __instance.spawnLocoPlayerSqrDistanceFromTrack))
+					if (!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().All(p => (p.transform.position - __instance.locoSpawnPoint.transform.position).sqrMagnitude < __instance.spawnLocoPlayerSqrDistanceFromTrack))
 						___playerEnteredLocoSpawnRange = false;
 				}
 
