@@ -86,8 +86,11 @@ internal class NetworkTurntableSync : MonoBehaviour
         List<TrainCar> currentCarsOnTurntable = new List<TrainCar>();
         foreach(Bogie bogie in turntable.turntable.Track.onTrackBogies)
         {
-            if(!currentCarsOnTurntable.Contains(bogie.Car))
-                currentCarsOnTurntable.Add(bogie.Car);
+            if (!currentCarsOnTurntable.Contains(bogie.Car))
+            {
+                if(turntable.turntable.Track.onTrackBogies.Contains(bogie.Car.Bogies[0]) && turntable.turntable.Track.onTrackBogies.Contains(bogie.Car.Bogies[bogie.Car.Bogies.Length - 1]))
+                    currentCarsOnTurntable.Add(bogie.Car);
+            }
         }
 
         bool willHaveAuthority = playerAuthId == SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id;
@@ -102,7 +105,7 @@ internal class NetworkTurntableSync : MonoBehaviour
                 {
                     Main.Log($"Train: {car.CarGUID} left turntable");
                     car.rb.isKinematic = false;
-                    car.GetComponent<NetworkTrainSync>().CanTakeDamage = true;
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(OverrideDamageSeconds(car, 1));
                     car.GetComponent<NetworkTrainPosSync>().turntable = null;
                 }
                 carsOnTurntable.Remove(car);
@@ -116,8 +119,8 @@ internal class NetworkTurntableSync : MonoBehaviour
                 if (car.logicCar != null)
                 {
                     Main.Log($"Train: {car.CarGUID} entered turntable");
-                    car.GetComponent<NetworkTrainSync>().CanTakeDamage = false;
                     car.GetComponent<NetworkTrainPosSync>().turntable = this;
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(OverrideDamageSeconds(car, 1));
                     carsOnTurntable.Add(car);
                 }
             }
@@ -152,6 +155,13 @@ internal class NetworkTurntableSync : MonoBehaviour
                 SendRotationChange();
             prevRotation = turntable.turntable.currentYRotation;
         }
+    }
+
+    private IEnumerator OverrideDamageSeconds(TrainCar car, float seconds)
+    {
+        car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = true;
+        yield return new WaitForSeconds(seconds);
+        car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = false;
     }
 
     private void SendRotationChange()

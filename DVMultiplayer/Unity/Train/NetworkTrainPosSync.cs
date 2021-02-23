@@ -20,6 +20,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
     public bool hasLocalPlayerAuthority = false;
     internal bool resetAuthority = false;
     internal NetworkTurntableSync turntable = null;
+    internal bool overrideDamageDisabled = false;
 
 #pragma warning disable IDE0051 // Remove unused private members
     private void Awake()
@@ -36,7 +37,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         trainCar.LogicCarInitialized += TrainCar_LogicCarInitialized;
 
         trainCar.CarDamage.IgnoreDamage(true);
-        trainCar.rb.isKinematic = true;
 
         if (NetworkManager.IsHost())
         {
@@ -123,24 +123,29 @@ internal class NetworkTrainPosSync : MonoBehaviour
             hasLocalPlayerAuthority = true;
             trainCar.stress.enabled = true;
             trainCar.stress.DisableStressCheckForTwoSeconds();
-            if(!turntable)
-                trainCar.CarDamage.IgnoreDamage(false);
+            trainCar.CarDamage.IgnoreDamage(false);
             Main.Log($"Listening to movement changed event");
             if (!trainCar.isStationary && updatePositionCoroutine == null)
             {
                 updatePositionCoroutine = SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
             }
             trainCar.MovementStateChanged += TrainCar_MovementStateChanged;
+            trainCar.CarDamage.CarEffectiveHealthStateUpdate += OnBodyDamageTaken;
+            if (!trainCar.IsLoco)
+                trainCar.CargoDamage.CargoDamaged += OnCargoDamageTaken;
         }
         else if (!willLocalPlayerGetAuthority && hasLocalPlayerAuthority)
         {
+            trainCar.CarDamage.IgnoreDamage(true);
+            trainCar.stress.enabled = false;
             SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
             trainCar.rb.isKinematic = true;
-            trainCar.stress.enabled = false;
-            trainCar.CarDamage.IgnoreDamage(true);
             hasLocalPlayerAuthority = false;
             Main.Log($"Stop listening to movement changed event");
             trainCar.MovementStateChanged -= TrainCar_MovementStateChanged;
+            trainCar.CarDamage.CarEffectiveHealthStateUpdate -= OnBodyDamageTaken;
+            if (!trainCar.IsLoco)
+                trainCar.CargoDamage.CargoDamaged -= OnCargoDamageTaken;
             if (updatePositionCoroutine != null)
             {
                 SingletonBehaviour<CoroutineManager>.Instance.Stop(updatePositionCoroutine);
@@ -188,6 +193,22 @@ internal class NetworkTrainPosSync : MonoBehaviour
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendDerailCarUpdate(trainCar);
+    }
+
+    private void OnCargoDamageTaken(float _)
+    {
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || overrideDamageDisabled)
+            return;
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(trainCar.CarGUID, DamageType.Cargo, trainCar.CargoDamage.currentHealth);
+    }
+
+    private void OnBodyDamageTaken(float _)
+    {
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || overrideDamageDisabled)
+            return;
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(trainCar.CarGUID, DamageType.Car, trainCar.CarDamage.currentHealth);
     }
 
     private IEnumerator UpdateLocation()

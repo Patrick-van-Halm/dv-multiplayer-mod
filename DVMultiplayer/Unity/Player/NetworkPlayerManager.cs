@@ -19,6 +19,7 @@ using UnityEngine.UI;
 public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 {
     private Dictionary<ushort, GameObject> networkPlayers = new Dictionary<ushort, GameObject>();
+    private Dictionary<ushort, GameObject> allPlayers = new Dictionary<ushort, GameObject>();
     private SetSpawn spawnData;
     private Coroutine playersLoaded;
     private bool modMismatched = false;
@@ -221,6 +222,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                     Main.Log($"[CLIENT] < PLAYER_DISCONNECT: Username: {networkPlayers[disconnectedPlayer.PlayerId].GetComponent<NetworkPlayerSync>().Username}");
                     if(networkPlayers[disconnectedPlayer.PlayerId])
                         Destroy(networkPlayers[disconnectedPlayer.PlayerId]);
+
+                    allPlayers.Remove(disconnectedPlayer.PlayerId);
                     networkPlayers.Remove(disconnectedPlayer.PlayerId);
                 }
             }
@@ -232,6 +235,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     /// </summary>
     public void PlayerConnect()
     {
+        allPlayers.Add(SingletonBehaviour<UnityClient>.Instance.ID, PlayerManager.PlayerTransform.gameObject);
         Vector3 pos = PlayerManager.PlayerTransform.position - WorldMover.currentMove;
         if (NetworkManager.IsHost())
         {
@@ -424,6 +428,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                     playerSync.IsLoaded = player.IsLoaded;
 
                     networkPlayers.Add(player.Id, playerObject);
+                    allPlayers.Add(player.Id, playerObject);
                     if (!player.IsLoaded)
                         WaitForPlayerLoaded();
                 }
@@ -570,7 +575,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     /// <returns>An array containing all the players gameobjects in/on the given traincar</returns>
     internal GameObject[] GetPlayersInTrain(TrainCar train)
     {
-        return networkPlayers.Values.Where(p => p.GetComponent<NetworkPlayerSync>().Train?.CarGUID == train.CarGUID).ToArray();
+        return allPlayers.Values.Where(p => p.GetComponent<NetworkPlayerSync>().Train?.CarGUID == train.CarGUID).ToArray();
     }
 
     internal bool IsAnyoneInLocalPlayerRegion()

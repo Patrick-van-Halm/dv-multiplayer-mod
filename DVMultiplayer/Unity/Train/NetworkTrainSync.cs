@@ -11,7 +11,6 @@ internal class NetworkTrainSync : MonoBehaviour
     public TrainCar loco;
     public bool listenToLocalPlayerInputs = false;
     private LocoControllerBase baseController;
-    internal bool CanTakeDamage { get; set; } = false;
 
     public void ListenToTrainInputEvents()
     {
@@ -56,8 +55,6 @@ internal class NetworkTrainSync : MonoBehaviour
                 SingletonBehaviour<CoroutineManager>.Instance.Run(RotaryAmplitudeCheckerStartListen(fuseBox));
                 break;
         }
-
-        CanTakeDamage = true;
     }
 
     public void StopListeningToTrainInputEvents()
@@ -115,27 +112,9 @@ internal class NetworkTrainSync : MonoBehaviour
 
         Main.Log($"[{loco.ID}] Listen to inputEvents");
         ListenToTrainInputEvents();
-
-        loco.CarDamage.CarEffectiveHealthStateUpdate += OnBodyDamageTaken;
-        if (!loco.IsLoco)
-            loco.CargoDamage.CargoDamaged += OnCargoDamageTaken;
     }
 
-    private void OnCargoDamageTaken(float _)
-    {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !loco.GetComponent<NetworkTrainPosSync>().hasLocalPlayerAuthority || !CanTakeDamage)
-            return;
-        
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(loco.CarGUID, DamageType.Cargo, loco.CargoDamage.currentHealth);
-    }
-
-    private void OnBodyDamageTaken(float _)
-    {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !loco.GetComponent<NetworkTrainPosSync>().hasLocalPlayerAuthority || !CanTakeDamage)
-            return;
-
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(loco.CarGUID, DamageType.Car, loco.CarDamage.currentHealth);
-    }
+    
 
     public void OnDestroy()
     {
@@ -154,10 +133,6 @@ internal class NetworkTrainSync : MonoBehaviour
 
             if (loco.IsInteriorLoaded)
                 loco.UnloadInterior();
-
-            loco.CarDamage.CarEffectiveHealthStateUpdate -= OnBodyDamageTaken;
-            if (!loco.IsLoco)
-                loco.CargoDamage.CargoDamaged -= OnCargoDamageTaken;
         }
     }
 

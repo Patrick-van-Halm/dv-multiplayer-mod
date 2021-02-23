@@ -302,22 +302,23 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             while (reader.Position < reader.Length)
             {
+                Main.Log($"[CLIENT] < TRAIN_DAMAGE");
                 CarDamage damage = reader.ReadSerializable<CarDamage>();
                 TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == damage.Guid);
                 if (train)
                 {
                     IsChangeByNetwork = true;
                     WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == damage.Guid);
+                    UpdateServerStateDamage(serverState, damage.DamageType, damage.NewHealth);
+                    SyncLocomotiveWithServerState(train, serverState);
                     switch (damage.DamageType)
                     {
                         case DamageType.Car:
                             train.CarDamage.LoadCarDamageState(damage.NewHealth);
-                            serverState.CarHealth = damage.NewHealth;
                             break;
 
                         case DamageType.Cargo:
                             train.CargoDamage.LoadCargoDamageState(damage.NewHealth);
-                            serverState.CargoHealth = damage.NewHealth;
                             break;
                     }
                     IsChangeByNetwork = false;
@@ -593,16 +594,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 if (train && train.IsLoco)
                 {
                     WorldTrain serverTrainState = serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID);
-                    if (serverTrainState == null)
+                    if (serverTrainState != null)
                     {
-                        serverTrainState = new WorldTrain()
-                        {
-                            Guid = train.CarGUID,
-                            IsLoco = true,
-                        };
-                        if (train.carType == TrainCarType.LocoShunter)
-                            serverTrainState.Shunter = new Shunter();
-                        serverCarStates.Add(serverTrainState);
+                        UpdateServerStateLeverChange(serverTrainState, lever.Lever, lever.Value);
                     }
                     Main.Log($"[CLIENT] < TRAIN_LEVER: Packet size: {reader.Length}, TrainID: {train.ID}, Lever: {lever.Lever}, Value: {lever.Value}");
                     IsChangeByNetwork = true;
@@ -611,36 +605,28 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     {
                         case Levers.Throttle:
                             baseController.SetThrottle(lever.Value);
-                            serverTrainState.Throttle = lever.Value;
                             break;
 
                         case Levers.Brake:
                             baseController.SetBrake(lever.Value);
-                            serverTrainState.Brake = lever.Value;
                             break;
 
                         case Levers.IndependentBrake:
                             baseController.SetIndependentBrake(lever.Value);
-                            serverTrainState.IndepBrake = lever.Value;
                             break;
 
                         case Levers.Reverser:
                             baseController.SetReverser(lever.Value);
-                            serverTrainState.Reverser = lever.Value;
                             break;
 
                         case Levers.Sander:
                             baseController.SetSanders(lever.Value);
-                            serverTrainState.Sander = lever.Value;
                             break;
 
                         case Levers.SideFuse_1:
                             if (train.carType == TrainCarType.LocoShunter)
                             {
                                 train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Use();
-                                serverTrainState.Shunter.IsSideFuse1On = lever.Value == 1;
-                                if (lever.Value == 0)
-                                    serverTrainState.Shunter.IsEngineOn = false;
                             }
                             break;
 
@@ -648,9 +634,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             if (train.carType == TrainCarType.LocoShunter)
                             {
                                 train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Use();
-                                serverTrainState.Shunter.IsSideFuse2On = lever.Value == 1;
-                                if (lever.Value == 0)
-                                    serverTrainState.Shunter.IsEngineOn = false;
                             }
                             break;
 
@@ -658,9 +641,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             if (train.carType == TrainCarType.LocoShunter)
                             {
                                 train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Use();
-                                serverTrainState.Shunter.IsMainFuseOn = lever.Value == 1;
-                                if (lever.Value == 0)
-                                    serverTrainState.Shunter.IsEngineOn = false;
                             }
                             break;
 
@@ -668,10 +648,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             if (train.carType == TrainCarType.LocoShunter)
                             {
                                 train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.powerRotaryObj.GetComponent<RotaryBase>().SetValue(lever.Value);
-                                if (serverTrainState.Shunter.IsSideFuse1On && serverTrainState.Shunter.IsSideFuse2On && serverTrainState.Shunter.IsMainFuseOn && lever.Value == 1)
-                                    serverTrainState.Shunter.IsEngineOn = true;
-                                else if (lever.Value == 0)
-                                    serverTrainState.Shunter.IsEngineOn = false;
                             }
                             break;
 
@@ -978,6 +954,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         if (!IsSynced)
             return;
 
+        WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == carGUID);
+        UpdateServerStateDamage(serverState, type, amount);
+
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write(new CarDamage()
@@ -986,7 +965,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 DamageType = type,
                 NewHealth = amount
             });
-
+            Main.Log($"[CLIENT] > TRAIN_DAMAGE");
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_DAMAGE, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
@@ -1199,6 +1178,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             return;
 
         TrainCar curTrain = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Train;
+        UpdateServerStateLeverChange(serverCarStates.FirstOrDefault(t => t.Guid == curTrain.CarGUID), lever, value);
         Main.Log($"[CLIENT] > TRAIN_LEVER: TrainID: {curTrain.ID}, Lever: {lever}, value: {value}");
         if (!curTrain.IsLoco)
             return;
@@ -1504,6 +1484,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 catch (Exception) { }
                 yield return FullResyncCar(train, selectedTrain);
             }
+
+            train.rb.isKinematic = true;
             IsChangeByNetwork = false;
         }
 
@@ -1561,9 +1543,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     ShunterDashboardControls shunterDashboard = train.interior.GetComponentInChildren<ShunterDashboardControls>();
                     Main.Log($"Shunter dashboard found {shunterDashboard != null}");
                     Main.Log($"Sync engine state");
-                    if(shunter.IsEngineOn)
-                        controllerShunter.SetEngineRunning(shunter.IsEngineOn);
-                    else
+                    controllerShunter.SetEngineRunning(shunter.IsEngineOn);
+                    if (!shunter.IsEngineOn)
                     {
                         shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse1On ? 1 : 0);
                         shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse2On ? 1 : 0);
@@ -1774,6 +1755,90 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             return true;
         });
         SendNewTrainsInitializationFinished();
+    }
+
+    private void UpdateServerStateLeverChange(WorldTrain serverState, Levers lever, float value)
+    {
+        switch (lever)
+        {
+            case Levers.Throttle:
+                serverState.Throttle = value;
+                break;
+
+            case Levers.Brake:
+                serverState.Brake = value;
+                break;
+
+            case Levers.IndependentBrake:
+                serverState.IndepBrake = value;
+                break;
+
+            case Levers.Reverser:
+                serverState.Reverser = value;
+                break;
+
+            case Levers.Sander:
+                serverState.Sander = value;
+                break;
+
+            case Levers.SideFuse_1:
+                if (serverState.CarType == TrainCarType.LocoShunter)
+                {
+                    serverState.Shunter.IsSideFuse1On = value == 1;
+                    if (value == 0)
+                        serverState.Shunter.IsEngineOn = false;
+                }
+                break;
+
+            case Levers.SideFuse_2:
+                if (serverState.CarType == TrainCarType.LocoShunter)
+                {
+                    serverState.Shunter.IsSideFuse2On = value == 1;
+                    if (value == 0)
+                        serverState.Shunter.IsEngineOn = false;
+                }
+                break;
+
+            case Levers.MainFuse:
+                if (serverState.CarType == TrainCarType.LocoShunter)
+                {
+                    serverState.Shunter.IsMainFuseOn = value == 1;
+                    if (value == 0)
+                        serverState.Shunter.IsEngineOn = false;
+                }
+                break;
+
+            case Levers.FusePowerStarter:
+                if (serverState.CarType == TrainCarType.LocoShunter)
+                {
+                    if (serverState.Shunter.IsSideFuse1On && serverState.Shunter.IsSideFuse2On && serverState.Shunter.IsMainFuseOn && value == 1)
+                        serverState.Shunter.IsEngineOn = true;
+                    else if (value == 0)
+                        serverState.Shunter.IsEngineOn = false;
+                }
+                break;
+        }
+    }
+
+    private void UpdateServerStateDamage(WorldTrain serverState, DamageType type, float value)
+    {
+        switch (type)
+        {
+            case DamageType.Car:
+                serverState.CargoHealth = value;
+                break;
+
+            case DamageType.Cargo:
+                serverState.CargoHealth = value;
+                break;
+        }
+
+        switch (serverState.CarType)
+        {
+            case TrainCarType.LocoShunter:
+                serverState.Shunter.IsEngineOn = false;
+                break;
+        }
     }
     #endregion
 }
