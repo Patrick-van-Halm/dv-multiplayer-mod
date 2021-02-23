@@ -65,20 +65,43 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
         GameObject nametag = new GameObject("Nametag");
         nametag.transform.parent = nametagCanvas.transform;
-        nametag.transform.localPosition = new Vector3(0, 0, 0);
+        nametag.transform.localPosition = new Vector3(775, 0, 0);
 
         Text tag = nametag.AddComponent<Text>();
         tag.font = Font.CreateDynamicFontFromOSFont("Arial", 16);
         tag.fontSize = 200;
         tag.alignment = TextAnchor.MiddleCenter;
+        tag.resizeTextForBestFit = true;
         tag.text = username;
 
         rectTransform = nametag.GetComponent<RectTransform>();
         rectTransform.localScale = new Vector3(1f, 3f, 0);
-        rectTransform.anchorMin = new Vector2(0, 0);
-        rectTransform.anchorMax = new Vector2(1, 1);
+        rectTransform.anchorMin = new Vector2(0, .5f);
+        rectTransform.anchorMax = new Vector2(0, .5f);
         rectTransform.offsetMin = new Vector2(rectTransform.offsetMin.x, 350);
         rectTransform.offsetMax = new Vector2(rectTransform.offsetMax.x, -350);
+        rectTransform.sizeDelta = new Vector2(1575, 350);
+
+        GameObject ping = new GameObject("Ping");
+        ping.transform.parent = nametagCanvas.transform;
+        ping.transform.localPosition = new Vector3(25, 0, 0);
+
+        Text pingTxt = ping.AddComponent<Text>();
+
+        pingTxt.font = Font.CreateDynamicFontFromOSFont("Arial", 16);
+        pingTxt.fontSize = 130;
+        pingTxt.alignment = TextAnchor.MiddleRight;
+        pingTxt.resizeTextForBestFit = true;
+        pingTxt.text = "0ms";
+
+        rectTransform = ping.GetComponent<RectTransform>();
+        rectTransform.localScale = new Vector3(1f, 3f, 0);
+        rectTransform.anchorMin = new Vector2(1, .5f);
+        rectTransform.anchorMax = new Vector2(1, .5f);
+        rectTransform.pivot = new Vector2(1, .5f);
+        rectTransform.offsetMin = new Vector2(rectTransform.offsetMin.x, 350);
+        rectTransform.offsetMax = new Vector2(rectTransform.offsetMax.x, -350);
+        rectTransform.sizeDelta = new Vector2(350, 350);
 
         GameObject p = Instantiate(player);
         Destroy(player);
@@ -462,7 +485,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                     Vector3 pos = location.Position;
                     pos = new Vector3(pos.x, pos.y + 1, pos.z);
                     NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
-                    playerSync.UpdateLocation(pos, location.Rotation);
+                    playerSync.UpdateLocation(pos, location.RTT, location.Rotation);
                 }
             }
         }

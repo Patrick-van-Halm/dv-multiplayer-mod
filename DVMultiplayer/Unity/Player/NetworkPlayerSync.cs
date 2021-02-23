@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 internal class NetworkPlayerSync : MonoBehaviour
 {
@@ -12,6 +13,7 @@ internal class NetworkPlayerSync : MonoBehaviour
     private Vector3 absPosition;
     internal bool IsLoaded;
     private const float SYNC_THRESHOLD = 0.1f;
+    private int ping = 0;
 
 #pragma warning disable IDE0051 // Remove unused private members
     private void Start()
@@ -25,6 +27,7 @@ internal class NetworkPlayerSync : MonoBehaviour
         if (!IsLocal)
         {
             transform.position = Vector3.Lerp(transform.position, newPosition + WorldMover.currentMove, 15 * (Time.deltaTime / 2));
+            transform.GetChild(0).Find("Ping").GetComponent<Text>().text = $"{ping}ms";
             return;
         }
 
@@ -37,9 +40,10 @@ internal class NetworkPlayerSync : MonoBehaviour
     }
 #pragma warning restore IDE0051 // Remove unused private members
 
-    public void UpdateLocation(Vector3 pos, Quaternion? rot = null)
+    public void UpdateLocation(Vector3 pos, int ping, Quaternion? rot = null)
     {
         newPosition = pos;
+        this.ping = ping;
         if (rot.HasValue)
             transform.rotation = rot.Value;
     }
