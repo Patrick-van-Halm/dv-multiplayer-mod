@@ -521,7 +521,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     if (!serverTrainState.IsLoco)
                         serverTrainState.CargoHealth = derailed.CargoHealth;
 
-                    train.GetComponent<NetworkTrainPosSync>().hostDerailed = true;
+                    train.GetComponent<NetworkTrainPosSync>().isDerailed = true;
                     train.Derail();
                     SyncDamageWithServerState(train, serverTrainState);
                     IsChangeByNetwork = false;
@@ -1181,7 +1181,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     Bogie2TrackName = bogie2TrackName,
                     Bogie1PositionAlongTrack = bogie1PositionAlongTrack,
                     Bogie2PositionAlongTrack = bogie2PositionAlongTrack,
-                    IsStationary = car.isStationary
+                    IsStationary = car.isStationary,
+                    Speed = car.rb.velocity.magnitude * 3.6f
                 });
             }
 

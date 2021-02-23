@@ -15,6 +15,7 @@ namespace DVMultiplayer.DTO.Train
         public string Bogie2TrackName { get; set; }
         public double Bogie2PositionAlongTrack { get; set; }
         public bool IsStationary { get; set; }
+        public float Speed { get; internal set; }
 
         public void Deserialize(DeserializeEvent e)
         {
@@ -27,6 +28,7 @@ namespace DVMultiplayer.DTO.Train
             Bogie2PositionAlongTrack = e.Reader.ReadDouble();
             Bogie2TrackName = e.Reader.ReadString();
             IsStationary = e.Reader.ReadBoolean();
+            Speed = e.Reader.ReadSingle();
         }
 
         public void Serialize(SerializeEvent e)
@@ -40,6 +42,7 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(Bogie2PositionAlongTrack);
             e.Writer.Write(Bogie2TrackName);
             e.Writer.Write(IsStationary);
+            e.Writer.Write(Speed);
         }
     }
 }

@@ -10,14 +10,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
 {
     private TrainCar trainCar;
     private WorldTrain serverState;
-    private Vector3? newExtraForce = null;
     public bool isOutOfSync = false;
     private bool hostStationary;
-    private float prevIndepBrakePos;
-    private float prevBrakePos;
     private Vector3 prevPos;
-    public bool hostDerailed;
-    private bool velocityShouldUpdate = false;
+    public bool isDerailed;
+    internal float speed = 0;
     private Coroutine updatePositionCoroutine;
     public event Action<TrainCar> OnTrainCarInitialized;
     public bool hasLocalPlayerAuthority = false;
@@ -209,14 +206,16 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (hasLocalPlayerAuthority)
             yield break;
 
-        if (trainCar.derailed && !hostDerailed)
+        speed = location.Speed;
+
+        if (trainCar.derailed && !isDerailed)
         {
             trainCar.transform.position = location.Position + WorldMover.currentMove;
             trainCar.transform.rotation = location.Rotation;
             trainCar.transform.forward = location.Forward;
             yield return SingletonBehaviour<NetworkTrainManager>.Instance.RerailDesynced(trainCar, location.Position, location.Forward);
         }
-        else if (trainCar.derailed && hostDerailed)
+        else if (trainCar.derailed && isDerailed)
         {
             location.Position += WorldMover.currentMove;
             trainCar.transform.position = location.Position;
