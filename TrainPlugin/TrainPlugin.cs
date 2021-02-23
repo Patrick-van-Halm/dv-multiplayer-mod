@@ -13,7 +13,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.25");
+        public override Version Version => new Version("1.6.26");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> players;
@@ -129,18 +129,24 @@ namespace TrainPlugin
             using (DarkRiftReader reader = message.GetReader())
             {
                 CarsAuthChange authChange = reader.ReadSerializable<CarsAuthChange>();
+                List<IClient> sentTo = new List<IClient>();
                 foreach(string guid in authChange.Guids)
                 {
                     WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == guid);
                     if (train != null)
                     {
+                        if (!sentTo.Any(c => c.ID == train.AuthorityPlayerId))
+                        {
+                            IClient ocl = players.FirstOrDefault(c => c.ID == train.AuthorityPlayerId);
+                            ocl.SendMessage(message, SendMode.Reliable);
+                            sentTo.Add(ocl);
+                        }
                         train.AuthorityPlayerId = authChange.PlayerId;
                     }
                 }
+                IClient cl = players.FirstOrDefault(c => c.ID == authChange.PlayerId);
+                SendDelayedMessage(authChange, NetworkTags.TRAIN_AUTH_CHANGE, cl, (int)sentTo.OrderByDescending(c => c.RoundTripTime.SmoothedRtt).First().RoundTripTime.SmoothedRtt);
             }
-
-            Logger.Trace("[SERVER] > TRAIN_AUTH_CHANGE");
-            ReliableSendToOthers(message, client);
         }
 
         private void TrainsFinishedInitilizing(IClient sender)
