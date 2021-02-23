@@ -12,7 +12,7 @@ namespace TurntablePlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.7");
+        public override Version Version => new Version("1.0.8");
 
         private readonly List<Turntable> turntableStates = new List<Turntable>();
 
@@ -111,7 +111,6 @@ namespace TurntablePlugin
                 if (turntable != null)
                 {
                     turntable.Rotation = turntableInfo.Rotation;
-                    turntable.playerAuthId = turntableInfo.playerAuthId;
                 }
                 else
                 {
@@ -131,7 +130,6 @@ namespace TurntablePlugin
                 if (turntable != null)
                 {
                     turntable.Rotation = turntableInfo.Rotation;
-                    turntable.playerAuthId = turntableInfo.playerAuthId;
                 }
                 else
                 {

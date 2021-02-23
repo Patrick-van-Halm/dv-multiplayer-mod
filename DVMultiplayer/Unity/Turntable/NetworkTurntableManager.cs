@@ -171,14 +171,12 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
             return;
         //Main.Log($"[CLIENT] > TURNTABLE_ANGLE_CHANGED");
         ushort playerId = SingletonBehaviour<UnityClient>.Instance.ID;
-        turntable.GetComponent<NetworkTurntableSync>().playerAuthId = playerId;
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write(new Turntable()
             {
                 Position = turntable.transform.position - WorldMover.currentMove,
-                Rotation = value,
-                playerAuthId = playerId
+                Rotation = value
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.TURNTABLE_ANGLE_CHANGED, writer))
@@ -193,14 +191,12 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
 
         Main.Log($"[CLIENT] > TURNTABLE_SNAP");
         ushort playerId = SingletonBehaviour<UnityClient>.Instance.ID;
-        turntable.GetComponent<NetworkTurntableSync>().playerAuthId = playerId;
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write(new Turntable()
             {
                 Position = turntable.transform.position - WorldMover.currentMove,
-                Rotation = value,
-                playerAuthId = SingletonBehaviour<UnityClient>.Instance.ID
+                Rotation = value
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.TURNTABLE_SNAP, writer))
@@ -306,7 +302,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                 if (turntable)
                 {
                     turntable.GetComponent<NetworkTurntableSync>().playerAuthId = turntableInfo.playerAuthId;
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation, true));
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation));
                 }
             }
         }

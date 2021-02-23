@@ -14,6 +14,7 @@ internal class NetworkTurntableSync : MonoBehaviour
     private TurntableControlKeyboardInput keyboardInput;
     private float prevRotation;
     private List<TrainCar> carsOnTurntable = new List<TrainCar>();
+    private bool hasLocalPlayerAuthority;
     internal Turntable serverState = null;
     internal ushort playerAuthId = 0;
 
@@ -23,7 +24,7 @@ internal class NetworkTurntableSync : MonoBehaviour
         //lever = turntable.leverGO.GetComponent<LeverBase>();
         //playerCameraTransform = PlayerManager.PlayerCamera.transform;
         //coroutineInputLever = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckInputLever());
-        //turntable.Snapped += Turntable_Snapped;
+        turntable.Snapped += Turntable_Snapped;
         prevRotation = turntable.turntable.currentYRotation;
         SingletonBehaviour<CoroutineManager>.Instance.Run(DisableKeyboardInput());
         if (NetworkManager.IsHost())
@@ -117,16 +118,20 @@ internal class NetworkTurntableSync : MonoBehaviour
                 }
             }
 
-            if (playerAuthId != SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id)
+            bool willHaveAuthority = playerAuthId == SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id;
+
+            if (!willHaveAuthority && hasLocalPlayerAuthority)
             {
+                hasLocalPlayerAuthority = false;
                 if (!car.rb.isKinematic)
                 {
                     Main.Log("You're not controlling the turntable so setting trains physics off");
                     car.rb.isKinematic = true;
                 }
             }
-            else
+            else if(willHaveAuthority && !hasLocalPlayerAuthority)
             {
+                hasLocalPlayerAuthority = true;
                 if (car.rb.isKinematic)
                 {
                     Main.Log("You're controlling the turntable so setting trains physics on");
@@ -135,7 +140,7 @@ internal class NetworkTurntableSync : MonoBehaviour
             }
         }
 
-        if (SingletonBehaviour<NetworkTurntableManager>.Instance.IsChangeByNetwork)
+        if (SingletonBehaviour<NetworkTurntableManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority)
         {
             prevRotation = turntable.turntable.currentYRotation;
             return;
@@ -172,11 +177,11 @@ internal class NetworkTurntableSync : MonoBehaviour
             keyboardInput.enabled = true;
     }
 
-    //private void Turntable_Snapped()
-    //{
-    //    if (!SingletonBehaviour<NetworkTurntableManager>.Instance.IsChangeByNetwork)
-    //        SingletonBehaviour<NetworkTurntableManager>.Instance.OnTurntableSnap(turntable, turntable.turntable.currentYRotation);
-    //}
+    private void Turntable_Snapped()
+    {
+        if (!SingletonBehaviour<NetworkTurntableManager>.Instance.IsChangeByNetwork && hasLocalPlayerAuthority)
+            SingletonBehaviour<NetworkTurntableManager>.Instance.OnTurntableSnap(turntable, turntable.turntable.currentYRotation);
+    }
 
     //private IEnumerator CheckInputLever()
     //{
