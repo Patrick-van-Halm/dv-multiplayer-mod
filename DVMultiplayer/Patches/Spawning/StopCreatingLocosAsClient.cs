@@ -14,6 +14,9 @@ namespace DVMultiplayer.Patches
     {
 		private static bool Prefix(StationLocoSpawner __instance, GameObject ___spawnTrackMiddleAnchor, ref bool ___playerEnteredLocoSpawnRange, ref int ___nextLocoGroupSpawnIndex)
         {
+			if (!SingletonBehaviour<NetworkPlayerManager>.Exists)
+				return true;
+
             if (NetworkManager.IsClient() && !NetworkManager.IsHost())
             {
                 return false;

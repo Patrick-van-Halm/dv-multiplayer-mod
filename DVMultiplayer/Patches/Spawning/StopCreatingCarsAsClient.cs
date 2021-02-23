@@ -13,7 +13,10 @@ namespace DVMultiplayer.Patches
     {
 		private static bool Prefix(GarageCarSpawner __instance, bool ___spawnAllowed, ref bool ___playerEnteredLocoSpawnRange)
         {
-            if (NetworkManager.IsClient() && !NetworkManager.IsHost())
+			if (!SingletonBehaviour<NetworkPlayerManager>.Exists)
+				return true;
+
+			if (NetworkManager.IsClient() && !NetworkManager.IsHost())
             {
                 return false;
             }
