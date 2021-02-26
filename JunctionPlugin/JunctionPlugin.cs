@@ -12,7 +12,7 @@ namespace JunctionPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.4");
+        public override Version Version => new Version("1.0.5");
 
         private readonly List<Switch> switchStates;
 
@@ -46,6 +46,10 @@ namespace JunctionPlugin
                     case NetworkTags.SWITCH_SYNC:
                         SyncSwitchStatesWithClient(e.Client);
                         break;
+
+                    case NetworkTags.SWITCH_HOST_SYNC:
+                        SyncHostSwitches(message);
+                        break;
                 }
             }
         }
@@ -67,6 +71,15 @@ namespace JunctionPlugin
             }
 
             ReliableSendToOthers(message, client);
+        }
+
+        private void SyncHostSwitches(Message message)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                Switch[] switches = reader.ReadSerializables<Switch>();
+                switchStates.AddRange(switches);
+            }
         }
 
         private void SyncSwitchStatesWithClient(IClient sender)

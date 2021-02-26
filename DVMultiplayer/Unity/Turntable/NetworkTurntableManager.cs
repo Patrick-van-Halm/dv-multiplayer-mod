@@ -9,6 +9,7 @@ using DVMultiplayer.DTO.Turntable;
 using DVMultiplayer.Networking;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -33,7 +34,7 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
 
         if (NetworkManager.IsHost())
-            IsSynced = true;
+            HostSyncTurntables();
     }
 
     internal void SyncTurntables()
@@ -48,6 +49,29 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
             using (Message message = Message.Create((ushort)NetworkTags.TURNTABLE_SYNC, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
+    }
+
+    internal void HostSyncTurntables()
+    {
+        Main.Log($"[CLIENT] > TURNTABLE_HOST_SYNC");
+
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            List<Turntable> serverTurntables = new List<Turntable>();
+            foreach(TurntableController controller in turntables)
+            {
+                serverTurntables.Add(new Turntable()
+                {
+                    Position = controller.transform.position - WorldMover.currentMove,
+                    Rotation = controller.turntable.currentYRotation
+                });
+            }
+            writer.Write(serverTurntables.ToArray());
+
+            using (Message message = Message.Create((ushort)NetworkTags.TURNTABLE_HOST_SYNC, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
+        IsSynced = true;
     }
 
     private void MessageReceived(object sender, MessageReceivedEventArgs e)

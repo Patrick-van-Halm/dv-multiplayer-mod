@@ -31,7 +31,20 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         base.Awake();
         networkPlayers = new Dictionary<ushort, GameObject>();
 
+        SingletonBehaviour<CoroutineManager>.Instance.Run(SendPingSignal());
+
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
+    }
+
+    private IEnumerator SendPingSignal()
+    {
+        yield return new WaitForSeconds(.2f);
+        using (Message ping = Message.Create((ushort)NetworkTags.PING, DarkRiftWriter.Create()))
+        {
+            ping.MakePingMessage();
+            SingletonBehaviour<UnityClient>.Instance.SendMessage(ping, SendMode.Reliable);
+        }
+        yield return SendPingSignal();
     }
 
     private GameObject GetNewPlayerObject(Vector3 pos, Quaternion rotation, string username)
@@ -113,6 +126,15 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     {
         using (Message message = e.GetMessage())
         {
+            if (message.IsPingMessage)
+            {
+                using (Message acknowledgementMessage = Message.Create((ushort)NetworkTags.PING, DarkRiftWriter.Create()))
+                {
+                    acknowledgementMessage.MakePingAcknowledgementMessage(message);
+                    SingletonBehaviour<UnityClient>.Instance.SendMessage(acknowledgementMessage, SendMode.Reliable);
+                }
+            }
+
             switch ((NetworkTags)message.Tag)
             {
                 case NetworkTags.PLAYER_DISCONNECT:
@@ -309,16 +331,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveReceived);
 
-            // Load the online save game
-            Main.Log($"Syncing Loading save");
-            SingletonBehaviour<NetworkSaveGameManager>.Instance.LoadMultiplayerData();
-            yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoaded || SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed);
-            if (SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveLoadedFailed)
-            {
-                Main.Log("Connection failed syncing savegame");
-                NetworkManager.Disconnect();
-            }
-
             // Load Junction data from server that changed since uptime
             Main.Log($"Syncing Junctions");
             SingletonBehaviour<NetworkJunctionManager>.Instance.SyncJunction();
@@ -346,8 +358,15 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             yield return new WaitForEndOfFrame();
             PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
             UUI.UnlockMouse(true);
+            AppUtil.Instance.PauseGame();
+            yield return new WaitUntil(() => AppUtil.IsPaused);
+            yield return new WaitForEndOfFrame();
+
             // Wait till world is loaded
             yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
+            AppUtil.Instance.UnpauseGame();
+            yield return new WaitUntil(() => !AppUtil.IsPaused);
+            yield return new WaitForEndOfFrame();
             CustomUI.Close();
         }
         else

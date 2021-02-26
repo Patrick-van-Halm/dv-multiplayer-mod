@@ -5,6 +5,7 @@ using DVMultiplayer;
 using DVMultiplayer.Darkrift;
 using DVMultiplayer.DTO.Junction;
 using DVMultiplayer.Networking;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -30,7 +31,7 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
 
         if (NetworkManager.IsHost())
-            IsSynced = true;
+            HostSentJunctions();
     }
 
     protected override void OnDestroy()
@@ -143,10 +144,34 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
         IsSynced = false;
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
+            Main.Log($"[CLIENT] > SWITCH_SYNC");
             writer.Write(true);
 
             using (Message message = Message.Create((ushort)NetworkTags.SWITCH_SYNC, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
+    }
+
+    internal void HostSentJunctions()
+    {
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            List<Switch> serverSwitches = new List<Switch>();
+            foreach(VisualSwitch visualSwitch in switches)
+            {
+                serverSwitches.Add(new Switch()
+                {
+                    Position = visualSwitch.transform.position - WorldMover.currentMove,
+                    Mode = SwitchMode.NO_SOUND,
+                    SwitchToLeft = visualSwitch.junction.selectedBranch == 0
+                });
+            }
+            Main.Log($"[CLIENT] > SWITCH_HOST_SYNC");
+            writer.Write(serverSwitches.ToArray());
+
+            using (Message message = Message.Create((ushort)NetworkTags.SWITCH_HOST_SYNC, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
+        IsSynced = true;
     }
 }

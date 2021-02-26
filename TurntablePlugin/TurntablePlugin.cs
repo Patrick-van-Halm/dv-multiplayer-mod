@@ -12,7 +12,7 @@ namespace TurntablePlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.8");
+        public override Version Version => new Version("1.0.9");
 
         private readonly List<Turntable> turntableStates = new List<Turntable>();
 
@@ -56,6 +56,10 @@ namespace TurntablePlugin
 
                     case NetworkTags.TURNTABLE_AUTH_REQUEST:
                         OnTurntableRequestAuth(message, e.Client);
+                        break;
+
+                    case NetworkTags.TURNTABLE_HOST_SYNC:
+                        SyncHostTurntables(message);
                         break;
                 }
             }
@@ -119,6 +123,15 @@ namespace TurntablePlugin
             }
 
             ReliableSendToOthers(message, sender);
+        }
+
+        private void SyncHostTurntables(Message message)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                Turntable[] turntables = reader.ReadSerializables<Turntable>();
+                turntableStates.AddRange(turntables);
+            }
         }
 
         private void OnTurntableSnap(Message message, IClient sender)

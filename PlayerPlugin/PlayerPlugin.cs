@@ -6,25 +6,47 @@ using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Timers;
 using UnityEngine;
 
 namespace PlayerPlugin
 {
-    internal class PlayerPlugin : Plugin
+    public class PlayerPlugin : Plugin
     {
         private readonly Dictionary<IClient, Player> players = new Dictionary<IClient, Player>();
         private SetSpawn playerSpawn;
-        private bool isPlayerConnecting = false;
+        private IClient playerConnecting = null;
         private readonly BufferQueue buffer = new BufferQueue();
+
+        public IEnumerable<IClient> GetPlayers()
+        {
+            return players.Keys;
+        }
 
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("2.6.12");
+        public override Version Version => new Version("2.6.16");
 
         public PlayerPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
             ClientManager.ClientConnected += ClientConnected;
             ClientManager.ClientDisconnected += ClientDisconnected;
+            Timer pingSendTimer = new Timer(250);
+            pingSendTimer.Elapsed += PingSendMessage;
+            pingSendTimer.AutoReset = true;
+            pingSendTimer.Start();
+        }
+
+        private void PingSendMessage(object sender, ElapsedEventArgs e)
+        {
+            foreach(IClient client in players.Keys)
+            {
+                using (Message ping = Message.Create((ushort)NetworkTags.PING, DarkRiftWriter.Create()))
+                {
+                    ping.MakePingMessage();
+                    client.SendMessage(ping, SendMode.Reliable);
+                }
+            }
         }
 
         private void ClientDisconnected(object sender, ClientDisconnectedEventArgs e)
@@ -32,6 +54,12 @@ namespace PlayerPlugin
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
                 players.Remove(e.Client);
+                if (e.Client == playerConnecting)
+                {
+                    playerConnecting = null;
+                    buffer.RunNext();
+                }
+
                 writer.Write<Disconnect>(new Disconnect()
                 {
                     PlayerId = e.Client.ID
@@ -52,6 +80,15 @@ namespace PlayerPlugin
         {
             using (Message message = e.GetMessage() as Message)
             {
+                if (message.IsPingMessage)
+                {
+                    using (Message acknowledgementMessage = Message.Create((ushort)NetworkTags.PING, DarkRiftWriter.Create()))
+                    {
+                        acknowledgementMessage.MakePingAcknowledgementMessage(message);
+                        e.Client.SendMessage(acknowledgementMessage, SendMode.Reliable);
+                    }
+                }
+
                 NetworkTags tag = (NetworkTags)message.Tag;
                 if (!tag.ToString().StartsWith("PLAYER_"))
                     return;
@@ -91,7 +128,7 @@ namespace PlayerPlugin
             else
                 Logger.Error($"Client with ID {sender.ID} not found");
 
-            isPlayerConnecting = false;
+            playerConnecting = null;
             buffer.RunNext();
         }
 
@@ -100,7 +137,7 @@ namespace PlayerPlugin
             using (DarkRiftReader reader = message.GetReader())
             {
                 NPlayer player = reader.ReadSerializable<NPlayer>();
-                if (isPlayerConnecting)
+                if (playerConnecting != null)
                 {
                     buffer.AddToBuffer(InitializePlayer, player, sender);
                     return;
@@ -112,7 +149,7 @@ namespace PlayerPlugin
 
         private void InitializePlayer(NPlayer player, IClient sender)
         {
-            isPlayerConnecting = true;
+            playerConnecting = sender;
             bool succesfullyConnected = true;
             if (players.Count > 0)
             {
@@ -219,7 +256,7 @@ namespace PlayerPlugin
 
                 using (DarkRiftWriter writer = DarkRiftWriter.Create())
                 {
-                    newLocation.RTT = (int)sender.RoundTripTime.LatestRtt;
+                    newLocation.RTT = (int)(sender.RoundTripTime.SmoothedRtt * 1000);
                     writer.Write<Location>(newLocation);
 
                     using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_LOCATION_UPDATE, writer))

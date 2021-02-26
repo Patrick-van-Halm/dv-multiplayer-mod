@@ -1017,7 +1017,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             Main.Log($"[CLIENT] > TRAIN_HOSTSYNC: AmountOfTrains: {serverCarStates.Count}");
             writer.Write(serverCarStates.ToArray());
 
-            using (Message message = Message.Create((ushort)NetworkTags.TRAIN_HOSTSYNC, writer))
+            using (Message message = Message.Create((ushort)NetworkTags.TRAIN_HOST_SYNC, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
         IsSynced = true;

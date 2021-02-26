@@ -67,6 +67,11 @@
       <Name>DVMultiplayer</Name>
       <Private>False</Private>
     </ProjectReference>
+    <ProjectReference Include="..\PlayerPlugin\PlayerPlugin.csproj">
+      <Project>{b065403b-a846-4f7e-82ce-18df9639171f}</Project>
+      <Name>PlayerPlugin</Name>
+      <Private>False</Private>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

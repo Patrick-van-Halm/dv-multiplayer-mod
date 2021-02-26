@@ -13,17 +13,15 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.26");
+        public override Version Version => new Version("1.6.28");
 
         private readonly List<WorldTrain> worldTrains;
-        private readonly List<IClient> players;
         private readonly List<IClient> playerHasInitializedTrain;
         private bool isLoadingTrain = false;
 
         public TrainPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
             worldTrains = new List<WorldTrain>();
-            players = new List<IClient>();
             playerHasInitializedTrain = new List<IClient>();
             ClientManager.ClientConnected += OnClientConnected;
             ClientManager.ClientDisconnected += OnClientDisconnect;
@@ -31,7 +29,6 @@ namespace TrainPlugin
 
         private void OnClientDisconnect(object sender, ClientDisconnectedEventArgs e)
         {
-            players.Remove(e.Client);
             if (isLoadingTrain)
                 CheckIfAllPlayersLoadedTrain();
         }
@@ -39,7 +36,6 @@ namespace TrainPlugin
         private void OnClientConnected(object sender, ClientConnectedEventArgs e)
         {
             e.Client.MessageReceived += OnMessageReceived;
-            players.Add(e.Client);
             if (isLoadingTrain)
                 playerHasInitializedTrain.Add(e.Client);
         }
@@ -93,7 +89,7 @@ namespace TrainPlugin
                         SendWorldTrains(e.Client);
                         break;
 
-                    case NetworkTags.TRAIN_HOSTSYNC:
+                    case NetworkTags.TRAIN_HOST_SYNC:
                         SyncTrainDataFromHost(message);
                         break;
 
@@ -130,7 +126,8 @@ namespace TrainPlugin
             {
                 CarsAuthChange authChange = reader.ReadSerializable<CarsAuthChange>();
                 List<IClient> sentTo = new List<IClient>();
-                foreach(string guid in authChange.Guids)
+                IEnumerable<IClient> players = PluginManager.GetPluginByType<PlayerPlugin.PlayerPlugin>().GetPlayers();
+                foreach (string guid in authChange.Guids)
                 {
                     WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == guid);
                     if (train != null)
@@ -145,7 +142,7 @@ namespace TrainPlugin
                     }
                 }
                 IClient cl = players.FirstOrDefault(c => c.ID == authChange.PlayerId);
-                SendDelayedMessage(authChange, NetworkTags.TRAIN_AUTH_CHANGE, cl, (int)sentTo.OrderByDescending(c => c.RoundTripTime.SmoothedRtt).First().RoundTripTime.SmoothedRtt);
+                SendDelayedMessage(authChange, NetworkTags.TRAIN_AUTH_CHANGE, cl, (int)sentTo.OrderByDescending(c => c.RoundTripTime.SmoothedRtt).First().RoundTripTime.SmoothedRtt * 1000);
             }
         }
 
@@ -163,7 +160,7 @@ namespace TrainPlugin
         private void CheckIfAllPlayersLoadedTrain()
         {
             bool allPlayersHaveLoadedTrains = true;
-            foreach (IClient client in players)
+            foreach (IClient client in PluginManager.GetPluginByType<PlayerPlugin.PlayerPlugin>().GetPlayers())
             {
                 if (!playerHasInitializedTrain.Contains(client))
                 {
@@ -185,7 +182,7 @@ namespace TrainPlugin
             }
             else
             {
-                foreach (IClient client in players)
+                foreach (IClient client in PluginManager.GetPluginByType<PlayerPlugin.PlayerPlugin>().GetPlayers())
                 {
                     if (!playerHasInitializedTrain.Contains(client))
                     {

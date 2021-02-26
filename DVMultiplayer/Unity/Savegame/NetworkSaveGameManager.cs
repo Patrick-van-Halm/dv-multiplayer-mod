@@ -37,8 +37,6 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
             {
                 writer.Write(new SaveGame()
                 {
-                    SaveDataSwitches = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions).ToString(Formatting.None),
-                    SaveDataTurntables = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables).ToString(Formatting.None),
                     SaveDataDestroyedLocoDebt = SaveGameManager.data.GetJObject("Debt_deleted_locos").ToString(Formatting.None),
                     SaveDataStagedJobDebt = SaveGameManager.data.GetJObject("Debt_staged_jobs").ToString(Formatting.None),
                     SaveDataDeletedJoblessCarsDept = SaveGameManager.data.GetJObject("Debt_jobless_cars").ToString(Formatting.None),
@@ -215,8 +213,6 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
                     SaveDataDeletedJoblessCarsDept = SaveGameManager.data.GetJObject("Debt_jobless_cars").ToString(Formatting.None),
                     SaveDataInsuranceDept = SaveGameManager.data.GetJObject("Debt_insurance").ToString(Formatting.None),
                 };
-                SaveGameManager.data.SetJObject(SaveGameKeys.Junctions, JObject.Parse(save.SaveDataSwitches));
-                SaveGameManager.data.SetJObject(SaveGameKeys.Turntables, JObject.Parse(save.SaveDataTurntables));
                 SaveGameManager.data.SetJObject("Debt_deleted_locos", JObject.Parse(save.SaveDataDestroyedLocoDebt));
                 SaveGameManager.data.SetJObject("Debt_staged_jobs", JObject.Parse(save.SaveDataStagedJobDebt));
                 SaveGameManager.data.SetJObject("Debt_jobless_cars", JObject.Parse(save.SaveDataDeletedJoblessCarsDept));
@@ -226,33 +222,6 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
                 IsHostSaveReceived = true;
             }
         }
-    }
-
-    public void LoadMultiplayerData()
-    {
-        SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
-
-        JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
-        if (jObject != null)
-        {
-            TurntableRailTrack.SetSaveData(jObject);
-        }
-        else
-        {
-            IsHostSaveLoadedFailed = true;
-            Main.Log("[WARNING] Turntables data not found!");
-        }
-        jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
-        if (jObject != null)
-        {
-            JunctionsSaveManager.Load(jObject);
-        }
-        else
-        {
-            IsHostSaveLoadedFailed = true;
-            Main.Log("[WARNING] Junctions save not found!");
-        }
-        IsHostSaveLoaded = !IsHostSaveLoadedFailed;
     }
 
     public void LoadDataAfterTrainsInit()

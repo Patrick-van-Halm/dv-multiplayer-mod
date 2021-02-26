@@ -4,8 +4,6 @@ namespace DVMultiplayer.DTO.Savegame
 {
     public class SaveGame : IDarkRiftSerializable
     {
-        public string SaveDataSwitches { get; set; } = "";
-        public string SaveDataTurntables { get; set; } = "";
         public string SaveDataDestroyedLocoDebt { get; internal set; } = "";
         public string SaveDataStagedJobDebt { get; internal set; } = "";
         public string SaveDataDeletedJoblessCarsDept { get; internal set; } = "";
@@ -13,8 +11,6 @@ namespace DVMultiplayer.DTO.Savegame
 
         public void Deserialize(DeserializeEvent e)
         {
-            SaveDataSwitches = e.Reader.ReadString();
-            SaveDataTurntables = e.Reader.ReadString();
             SaveDataDestroyedLocoDebt = e.Reader.ReadString();
             SaveDataStagedJobDebt = e.Reader.ReadString();
             SaveDataDeletedJoblessCarsDept = e.Reader.ReadString();
@@ -23,8 +19,6 @@ namespace DVMultiplayer.DTO.Savegame
 
         public void Serialize(SerializeEvent e)
         {
-            e.Writer.Write(SaveDataSwitches);
-            e.Writer.Write(SaveDataTurntables);
             e.Writer.Write(SaveDataDestroyedLocoDebt);
             e.Writer.Write(SaveDataStagedJobDebt);
             e.Writer.Write(SaveDataDeletedJoblessCarsDept);
