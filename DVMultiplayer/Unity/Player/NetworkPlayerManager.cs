@@ -357,15 +357,9 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             yield return new WaitForEndOfFrame();
             PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
             UUI.UnlockMouse(true);
-            AppUtil.Instance.PauseGame();
-            yield return new WaitUntil(() => AppUtil.IsPaused);
-            yield return new WaitForEndOfFrame();
 
             // Wait till world is loaded
             yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
-            AppUtil.Instance.UnpauseGame();
-            yield return new WaitUntil(() => !AppUtil.IsPaused);
-            yield return new WaitForEndOfFrame();
             CustomUI.Close();
         }
         else
@@ -409,7 +403,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     protected override void OnDestroy()
     {
         base.OnDestroy();
-        SingletonBehaviour<UnityClient>.Instance.MessageReceived -= MessageReceived;
+        if (SingletonBehaviour<UnityClient>.Instance)
+            SingletonBehaviour<UnityClient>.Instance.MessageReceived -= MessageReceived;
         foreach (GameObject player in networkPlayers.Values)
         {
             DestroyImmediate(player);

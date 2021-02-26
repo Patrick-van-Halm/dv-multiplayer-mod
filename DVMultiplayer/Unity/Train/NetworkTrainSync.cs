@@ -17,20 +17,27 @@ internal class NetworkTrainSync : MonoBehaviour
         if (!loco.IsLoco)
             return;
 
-        Main.Log($"[{loco.ID}] Listen to base loco controller");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Listen to base loco controller");
         baseController = loco.GetComponent<LocoControllerBase>();
-        Main.Log($"[{loco.ID}] Listen throttle change on base loco controller");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Listen throttle change on base loco controller");
         baseController.ThrottleUpdated += OnTrainThrottleChanged;
-        Main.Log($"[{loco.ID}] Listen brake change on base loco controller");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Listen brake change on base loco controller");
         baseController.BrakeUpdated += OnTrainBrakeChanged;
-        Main.Log($"[{loco.ID}] Listen indepBrake change on base loco controller");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Listen indepBrake change on base loco controller");
         baseController.IndependentBrakeUpdated += OnTrainIndependentBrakeChanged;
-        Main.Log($"[{loco.ID}] Listen reverser change on base loco controller");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Listen reverser change on base loco controller");
         baseController.ReverserUpdated += OnTrainReverserStateChanged;
-        Main.Log($"[{loco.ID}] Listen sander change on base loco controller");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Listen sander change on base loco controller");
         baseController.SandersUpdated += OnTrainSanderChanged;
 
-        Main.Log($"[{loco.ID}] Listen to specific train events");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Listen to specific train events");
         switch (loco.carType)
         {
             case TrainCarType.LocoShunter:
@@ -61,19 +68,24 @@ internal class NetworkTrainSync : MonoBehaviour
     {
         if (!loco || !loco.IsLoco)
             return;
-
-        Main.Log($"[{loco.ID}] Stop listening throttle change on base loco controller");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Stop listening throttle change on base loco controller");
         baseController.ThrottleUpdated -= OnTrainThrottleChanged;
-        Main.Log($"[{loco.ID}] Stop listening brake change on base loco controller");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Stop listening brake change on base loco controller");
         baseController.BrakeUpdated -= OnTrainBrakeChanged;
-        Main.Log($"[{loco.ID}] Stop listening indepBrake change on base loco controller");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Stop listening indepBrake change on base loco controller");
         baseController.IndependentBrakeUpdated -= OnTrainIndependentBrakeChanged;
-        Main.Log($"[{loco.ID}] Stop listening reverser change on base loco controller");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Stop listening reverser change on base loco controller");
         baseController.ReverserUpdated -= OnTrainReverserStateChanged;
-        Main.Log($"[{loco.ID}] Stop listening sander change on base loco controller");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Stop listening sander change on base loco controller");
         baseController.SandersUpdated -= OnTrainSanderChanged;
 
-        Main.Log($"[{loco.ID}] Stop listening to train specific events");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Stop listening to train specific events");
         switch (loco.carType)
         {
             case TrainCarType.LocoShunter:
@@ -102,15 +114,18 @@ internal class NetworkTrainSync : MonoBehaviour
     {
         Main.Log($"NetworkTrainSync.Awake()");
         loco = GetComponent<TrainCar>();
-        Main.Log($"[{loco.ID}] NetworkTrainSync Awake called");
-
-        Main.Log($"[{loco.ID}] Load interior");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] NetworkTrainSync Awake called");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Load interior");
         if (!loco.IsInteriorLoaded)
             loco.LoadInterior();
-        Main.Log($"[{loco.ID}] Keep interior loaded");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Keep interior loaded");
         loco.keepInteriorLoaded = true;
 
-        Main.Log($"[{loco.ID}] Listen to inputEvents");
+        if (loco.logicCar != null)
+            Main.Log($"[{loco.ID}] Listen to inputEvents");
         ListenToTrainInputEvents();
     }
 
@@ -124,7 +139,7 @@ internal class NetworkTrainSync : MonoBehaviour
                 Main.Log($"[{loco.ID}] NetworkTrainSync.OnDestroy()");
             if (loco.logicCar != null)
                 Main.Log($"[{loco.ID}] Stop listening to input");
-            StopListeningToTrainInputEvents();
+            //StopListeningToTrainInputEvents();
             if (loco.logicCar != null)
                 Main.Log($"[{loco.ID}] Stop keeping interior loaded");
             loco.keepInteriorLoaded = false;

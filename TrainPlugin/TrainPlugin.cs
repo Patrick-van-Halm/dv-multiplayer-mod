@@ -13,7 +13,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.28");
+        public override Version Version => new Version("1.6.29");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -114,13 +114,13 @@ namespace TrainPlugin
                         break;
 
                     case NetworkTags.TRAIN_AUTH_CHANGE:
-                        OnAuthChange(message, e.Client);
+                        OnAuthChange(message);
                         break;
                 }
             }
         }
 
-        private void OnAuthChange(Message message, IClient client)
+        private void OnAuthChange(Message message)
         {
             using (DarkRiftReader reader = message.GetReader())
             {
@@ -135,14 +135,16 @@ namespace TrainPlugin
                         if (!sentTo.Any(c => c.ID == train.AuthorityPlayerId))
                         {
                             IClient ocl = players.FirstOrDefault(c => c.ID == train.AuthorityPlayerId);
-                            ocl.SendMessage(message, SendMode.Reliable);
+                            if (ocl.ID != 0)
+                                ocl.SendMessage(message, SendMode.Reliable);
                             sentTo.Add(ocl);
                         }
                         train.AuthorityPlayerId = authChange.PlayerId;
                     }
                 }
                 IClient cl = players.FirstOrDefault(c => c.ID == authChange.PlayerId);
-                SendDelayedMessage(authChange, NetworkTags.TRAIN_AUTH_CHANGE, cl, (int)sentTo.OrderByDescending(c => c.RoundTripTime.SmoothedRtt).First().RoundTripTime.SmoothedRtt * 1000);
+                if(cl.ID != 0)
+                    SendDelayedMessage(authChange, NetworkTags.TRAIN_AUTH_CHANGE, cl, (int)sentTo.OrderByDescending(c => c.RoundTripTime.SmoothedRtt).First().RoundTripTime.SmoothedRtt * 1000);
             }
         }
 

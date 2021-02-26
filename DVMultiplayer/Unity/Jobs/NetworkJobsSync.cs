@@ -44,13 +44,19 @@ class NetworkJobsSync : MonoBehaviour
 
     private IEnumerator WaitTillGenerationFinished()
     {
-        yield return new WaitUntil(() => !station.ProceduralJobsController.IsJobGenerationActive);
+        while (station.ProceduralJobsController.IsJobGenerationActive)
+        {
+            yield return new WaitUntil(() => !station.ProceduralJobsController.IsJobGenerationActive);
+            yield return new WaitForSeconds(.25f);
+        }
 
         Main.Log("Generation is finished Length = " + newChains.Count);
+        List<TrainCar> newJobTrains = new List<TrainCar>();
         foreach(JobChainController job in newChains)
         {
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewJobChainCars(job.trainCarsForJobChain);
+            newJobTrains.AddRange(job.trainCarsForJobChain);
         }
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewJobChainCars(newJobTrains);
 
         OnJobsGenerated?.Invoke(station, newChains.ToArray());
         newChains.Clear();

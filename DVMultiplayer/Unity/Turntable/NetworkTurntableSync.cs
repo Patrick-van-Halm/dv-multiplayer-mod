@@ -104,8 +104,8 @@ internal class NetworkTurntableSync : MonoBehaviour
                 if(car.logicCar != null)
                 {
                     Main.Log($"Train: {car.CarGUID} left turntable");
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(ToggleDamageAfterSeconds(car, 1));;
                     car.rb.isKinematic = false;
-                    car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = true;
                     car.GetComponent<NetworkTrainPosSync>().turntable = null;
                 }
                 carsOnTurntable.Remove(car);
@@ -119,8 +119,9 @@ internal class NetworkTurntableSync : MonoBehaviour
                 if (car.logicCar != null)
                 {
                     Main.Log($"Train: {car.CarGUID} entered turntable");
+                    car.rb.isKinematic = false;
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(ToggleDamageAfterSeconds(car, 1)); ;
                     car.GetComponent<NetworkTrainPosSync>().turntable = this;
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(OverrideDamageSeconds(car, 1));
                     carsOnTurntable.Add(car);
                 }
             }
@@ -157,11 +158,15 @@ internal class NetworkTurntableSync : MonoBehaviour
         }
     }
 
-    private IEnumerator OverrideDamageSeconds(TrainCar car, float seconds)
+    private IEnumerator ToggleDamageAfterSeconds(TrainCar car, float seconds)
     {
+        if (!car.GetComponent<NetworkTrainPosSync>().hasLocalPlayerAuthority)
+            yield break;
         car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = true;
+        car.CarDamage.IgnoreDamage(true);
         yield return new WaitForSeconds(seconds);
         car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = false;
+        car.CarDamage.IgnoreDamage(false);
     }
 
     private void SendRotationChange()

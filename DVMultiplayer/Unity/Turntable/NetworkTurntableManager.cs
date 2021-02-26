@@ -229,7 +229,9 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
     protected override void OnDestroy()
     {
         base.OnDestroy();
-        SingletonBehaviour<UnityClient>.Instance.MessageReceived -= MessageReceived;
+        if(SingletonBehaviour<UnityClient>.Instance)
+            SingletonBehaviour<UnityClient>.Instance.MessageReceived -= MessageReceived;
+
         if (turntables == null)
             return;
 

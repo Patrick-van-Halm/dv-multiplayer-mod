@@ -21,6 +21,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
     internal bool resetAuthority = false;
     internal NetworkTurntableSync turntable = null;
     internal bool overrideDamageDisabled = false;
+    internal Coroutine authorityCoro;
 
 #pragma warning disable IDE0051 // Remove unused private members
     private void Awake()
@@ -40,50 +41,53 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         if (NetworkManager.IsHost())
         {
-            SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
+            authorityCoro = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
         }
     }
 
     private IEnumerator CheckAuthorityChange()
     {
         yield return new WaitForSeconds(.1f);
-        if (turntable == null)
+        if (serverState != null)
         {
-            bool authNeedsChange = true;
-            if (!resetAuthority) 
+            if (turntable == null)
             {
-                foreach (TrainCar car in trainCar.trainset.cars)
+                bool authNeedsChange = true;
+                if (!resetAuthority)
                 {
-                    if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(car).Select(p => p.GetComponent<NetworkPlayerSync>().Id).Contains(serverState.AuthorityPlayerId))
+                    foreach (TrainCar car in trainCar.trainset.cars)
                     {
-                        authNeedsChange = false;
-                        break;
+                        if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(car).Select(p => p.GetComponent<NetworkPlayerSync>().Id).Contains(serverState.AuthorityPlayerId))
+                        {
+                            authNeedsChange = false;
+                            break;
+                        }
                     }
                 }
-            }
 
-            if (authNeedsChange)
-            {
-                GameObject player = null;
-                foreach (TrainCar car in trainCar.trainset.cars)
+                if (authNeedsChange)
                 {
-                    if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(trainCar).Length > 0)
-                        player = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(trainCar)[0];
+                    GameObject player = null;
+                    foreach (TrainCar car in trainCar.trainset.cars)
+                    {
+                        if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(trainCar).Length > 0)
+                            player = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(trainCar)[0];
+                    }
+
+                    if (!player)
+                        player = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
+
+                    if (player.GetComponent<NetworkPlayerSync>().Id != serverState.AuthorityPlayerId || resetAuthority)
+                        SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, player.GetComponent<NetworkPlayerSync>().Id);
+
+                    resetAuthority = false;
                 }
-
-                if (!player)
-                    player = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
-
-                if (player.GetComponent<NetworkPlayerSync>().Id != serverState.AuthorityPlayerId || resetAuthority)
-                    SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, player.GetComponent<NetworkPlayerSync>().Id);
-
-                resetAuthority = false;
             }
-        }
-        else
-        {
-            if(serverState.AuthorityPlayerId != turntable.playerAuthId)
-                SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, turntable.playerAuthId);
+            else
+            {
+                if (serverState.AuthorityPlayerId != turntable.playerAuthId)
+                    SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, turntable.playerAuthId);
+            }
         }
         yield return CheckAuthorityChange();
     }
@@ -103,6 +107,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
         trainCar.LogicCarInitialized -= TrainCar_LogicCarInitialized;
         Main.Log($"Stop listening to movement changed event");
         trainCar.MovementStateChanged -= TrainCar_MovementStateChanged;
+
+        if(authorityCoro != null)
+            SingletonBehaviour<CoroutineManager>.Instance.Stop(authorityCoro);
+
+        if(updatePositionCoroutine != null)
+            SingletonBehaviour<CoroutineManager>.Instance.Stop(updatePositionCoroutine);
     }
 
     private void Update()
@@ -120,12 +130,13 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         if (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)
         {
-            trainCar.rb.isKinematic = false;
-            trainCar.rb.velocity = velocity;
             hasLocalPlayerAuthority = true;
-            trainCar.stress.enabled = true;
             trainCar.stress.DisableStressCheckForTwoSeconds();
             trainCar.CarDamage.IgnoreDamage(false);
+            trainCar.rb.isKinematic = false;
+            trainCar.rb.velocity = velocity;
+            trainCar.stress.enabled = true;
+            trainCar.TrainCarCollisions.enabled = true;
             Main.Log($"Listening to movement changed event");
             if (!trainCar.isStationary && updatePositionCoroutine == null)
             {
@@ -138,11 +149,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         else if (!willLocalPlayerGetAuthority && hasLocalPlayerAuthority)
         {
+            hasLocalPlayerAuthority = false;
             trainCar.CarDamage.IgnoreDamage(true);
             trainCar.stress.enabled = false;
-            SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
+            trainCar.TrainCarCollisions.enabled = false;
             trainCar.rb.isKinematic = true;
-            hasLocalPlayerAuthority = false;
+            SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
             Main.Log($"Stop listening to movement changed event");
             trainCar.MovementStateChanged -= TrainCar_MovementStateChanged;
             trainCar.CarDamage.CarEffectiveHealthStateUpdate -= OnBodyDamageTaken;

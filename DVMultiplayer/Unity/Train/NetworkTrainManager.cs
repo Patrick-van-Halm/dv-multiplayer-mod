@@ -128,7 +128,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     protected override void OnDestroy()
     {
         base.OnDestroy();
-        SingletonBehaviour<UnityClient>.Instance.MessageReceived -= OnMessageReceived;
+        if (SingletonBehaviour<UnityClient>.Instance)
+            SingletonBehaviour<UnityClient>.Instance.MessageReceived -= OnMessageReceived;
         PlayerManager.CarChanged -= OnPlayerSwitchTrainCarEvent;
         CarSpawner.CarSpawned -= OnCarSpawned;
         CarSpawner.CarAboutToBeDeleted -= OnCarAboutToBeDeleted;
@@ -363,6 +364,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             while (reader.Position < reader.Length)
             {
+                IsSpawningTrains = true;
                 Main.Log($"[CLIENT] < TRAINS_INIT");
                 IsChangeByNetwork = true;
                 WorldTrain[] trains = reader.ReadSerializables<WorldTrain>();
@@ -1543,13 +1545,13 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     ShunterDashboardControls shunterDashboard = train.interior.GetComponentInChildren<ShunterDashboardControls>();
                     Main.Log($"Shunter dashboard found {shunterDashboard != null}");
                     Main.Log($"Sync engine state");
-                    controllerShunter.SetEngineRunning(shunter.IsEngineOn);
                     if (!shunter.IsEngineOn)
                     {
                         shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse1On ? 1 : 0);
                         shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse2On ? 1 : 0);
                         shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().SetValue(shunter.IsMainFuseOn ? 1 : 0);
                     }
+                    controllerShunter.SetEngineRunning(shunter.IsEngineOn);
                 }
                 break;
         }
@@ -1609,6 +1611,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     internal IEnumerator RerailDesynced(TrainCar trainCar, Vector3 pos, Vector3 fwd)
     {
+        trainCar.rb.isKinematic = false;
         IsChangeByNetwork = true;
         RailTrack track = RailTrack.GetClosest(pos + WorldMover.currentMove).track;
         if (track)
@@ -1625,6 +1628,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             }
         }
         IsChangeByNetwork = false;
+        if(serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID).AuthorityPlayerId != SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id)
+            trainCar.rb.isKinematic = true;
     }
 
     private void SyncDamageWithServerState(TrainCar trainCar, WorldTrain serverState)
@@ -1728,18 +1733,17 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private IEnumerator SpawnSendedTrains(WorldTrain[] trains)
     {
-        IsSpawningTrains = true;
         AppUtil.Instance.PauseGame();
         CustomUI.OpenPopup("Streaming", "New Area being loaded");
         yield return new WaitUntil(() => SingletonBehaviour<CanvasSpawner>.Instance.IsOpen);
         yield return new WaitForFixedUpdate();
         foreach (WorldTrain train in trains)
         {
+            IsSpawningTrains = true;
             Main.Log($"Initializing: {train.Guid} in area");
             serverCarStates.Add(train);
             TrainCar car = InitializeNewTrainCar(train);
             yield return RerailDesynced(car, train, true);
-            localCars.Add(car);
             Main.Log($"Initializing: {train.Guid} in area [DONE]");
         }
         yield return new WaitUntil(() =>
@@ -1754,6 +1758,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             }
             return true;
         });
+        yield return SingletonBehaviour<FpsStabilityMeasurer>.Instance.WaitForStableFps();
         SendNewTrainsInitializationFinished();
     }
 
