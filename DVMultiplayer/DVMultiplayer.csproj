@@ -159,7 +159,6 @@
     <Compile Include="DTO\Player\NPlayer.cs" />
     <Compile Include="DTO\Player\SetSpawn.cs" />
     <Compile Include="DTO\Savegame\OfflineSave.cs" />
-    <Compile Include="DTO\Savegame\Savegame.cs" />
     <Compile Include="DTO\Train\CarDamage.cs" />
     <Compile Include="DTO\Train\CarsAuthChange.cs" />
     <Compile Include="DTO\Train\CarRemoval.cs" />

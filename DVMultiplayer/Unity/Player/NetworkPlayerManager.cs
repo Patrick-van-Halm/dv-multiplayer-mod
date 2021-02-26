@@ -329,7 +329,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             // Get the online save game
             Main.Log($"Syncing Save");
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
-            yield return new WaitUntil(() => SingletonBehaviour<NetworkSaveGameManager>.Instance.IsHostSaveReceived);
 
             // Load Junction data from server that changed since uptime
             Main.Log($"Syncing Junctions");

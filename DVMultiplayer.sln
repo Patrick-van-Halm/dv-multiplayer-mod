@@ -13,8 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrainPlugin", "TrainPlugin\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JunctionPlugin", "JunctionPlugin\JunctionPlugin.csproj", "{CDCB2A60-DF60-4B09-944E-137A2FB84D3C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SavePlugin", "SavePlugin\SavePlugin.csproj", "{444D067E-4F69-48C8-AEF0-7B66F10EAC0D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TurntablePlugin", "TurntablePlugin\TurntablePlugin.csproj", "{33A6F155-F53F-4D24-9A77-6157ED955A6D}"
 EndProject
 Global
@@ -43,10 +41,6 @@ Global
 		{CDCB2A60-DF60-4B09-944E-137A2FB84D3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDCB2A60-DF60-4B09-944E-137A2FB84D3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CDCB2A60-DF60-4B09-944E-137A2FB84D3C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{444D067E-4F69-48C8-AEF0-7B66F10EAC0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{444D067E-4F69-48C8-AEF0-7B66F10EAC0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{444D067E-4F69-48C8-AEF0-7B66F10EAC0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{444D067E-4F69-48C8-AEF0-7B66F10EAC0D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{33A6F155-F53F-4D24-9A77-6157ED955A6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{33A6F155-F53F-4D24-9A77-6157ED955A6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{33A6F155-F53F-4D24-9A77-6157ED955A6D}.Release|Any CPU.ActiveCfg = Release|Any CPU

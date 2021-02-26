@@ -24,52 +24,13 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
     protected override void Awake()
     {
         base.Awake();
-
-        SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
     }
 
     public void SyncSave()
     {
-        if (NetworkManager.IsHost())
+        if (!NetworkManager.IsHost() && NetworkManager.IsClient())
         {
-            Main.Log("[CLIENT] > SAVEGAME_UPDATE");
-            using (DarkRiftWriter writer = DarkRiftWriter.Create())
-            {
-                writer.Write(new SaveGame()
-                {
-                    SaveDataDestroyedLocoDebt = SaveGameManager.data.GetJObject("Debt_deleted_locos").ToString(Formatting.None),
-                    SaveDataStagedJobDebt = SaveGameManager.data.GetJObject("Debt_staged_jobs").ToString(Formatting.None),
-                    SaveDataDeletedJoblessCarsDept = SaveGameManager.data.GetJObject("Debt_jobless_cars").ToString(Formatting.None),
-                    SaveDataInsuranceDept = SaveGameManager.data.GetJObject("Debt_insurance").ToString(Formatting.None),
-                });
-                Main.Log($"[CLIENT] > SAVEGAME_UPDATE {writer.Length}");
-
-                using (Message message = Message.Create((ushort)NetworkTags.SAVEGAME_UPDATE, writer))
-                    SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
-            }
-        }
-        else if (!NetworkManager.IsHost() && NetworkManager.IsClient())
-        {
-            IsHostSaveReceived = false;
-            Main.Log("[CLIENT] > SAVEGAME_GET");
-            using (DarkRiftWriter writer = DarkRiftWriter.Create())
-            {
-                using (Message message = Message.Create((ushort)NetworkTags.SAVEGAME_GET, writer))
-                    SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
-            }
-        }
-    }
-
-    private void MessageReceived(object sender, MessageReceivedEventArgs e)
-    {
-        using (Message message = e.GetMessage())
-        {
-            switch ((NetworkTags)message.Tag)
-            {
-                case NetworkTags.SAVEGAME_GET:
-                    OnSaveGameReceived(message);
-                    break;
-            }
+            CreateOfflineBackup();
         }
     }
 
@@ -175,6 +136,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         SingletonBehaviour<CareerManagerDebtController>.Instance.ClearDebtsViaInsuranceQuotaReached();
         SingletonBehaviour<CareerManagerDebtController>.Instance.ClearRestOfThePayableDebts();
         SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.Quota = LicenseManager.InsuranceFeeQuota;
+        SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.ClearPaidQuota();
         SingletonBehaviour<CareerManagerDebtController>.Instance.RegisterInsuranceFeeQuotaUpdating();
         jObject = SaveGameManager.data.GetJObject("Debt_insurance");
         if (jObject != null)
@@ -198,67 +160,29 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         IsOfflineSaveLoaded = true;
     }
 
-    private void OnSaveGameReceived(Message message)
+    private void CreateOfflineBackup()
     {
-        using (DarkRiftReader reader = message.GetReader())
+        offlineSave = new OfflineSaveGame()
         {
-            Main.Log($"[CLIENT] SAVEGAME_GET received | Packet size: {reader.Length}");
-            while (reader.Position < reader.Length)
-            {
-                SaveGame save = reader.ReadSerializable<SaveGame>();
-                offlineSave = new OfflineSaveGame()
-                {
-                    SaveDataCars = SaveGameManager.data.GetJObject(SaveGameKeys.Cars).ToString(Formatting.None),
-                    SaveDataJobs = SaveGameManager.data.GetObject<JobsSaveGameData>(SaveGameKeys.Jobs, JobSaveManager.serializeSettings),
-                    SaveDataSwitches = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions).ToString(Formatting.None),
-                    SaveDataTurntables = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables).ToString(Formatting.None),
-                    SaveDataDestroyedLocoDebt = SaveGameManager.data.GetJObject("Debt_deleted_locos").ToString(Formatting.None),
-                    SaveDataStagedJobDebt = SaveGameManager.data.GetJObject("Debt_staged_jobs").ToString(Formatting.None),
-                    SaveDataDeletedJoblessCarsDept = SaveGameManager.data.GetJObject("Debt_jobless_cars").ToString(Formatting.None),
-                    SaveDataInsuranceDept = SaveGameManager.data.GetJObject("Debt_insurance").ToString(Formatting.None),
-                };
-                SaveGameManager.data.SetJObject("Debt_deleted_locos", JObject.Parse(save.SaveDataDestroyedLocoDebt));
-                SaveGameManager.data.SetJObject("Debt_staged_jobs", JObject.Parse(save.SaveDataStagedJobDebt));
-                SaveGameManager.data.SetJObject("Debt_jobless_cars", JObject.Parse(save.SaveDataDeletedJoblessCarsDept));
-                SaveGameManager.data.SetJObject("Debt_insurance", JObject.Parse(save.SaveDataInsuranceDept));
-                SaveGameUpgrader.Upgrade();
-                IsHostSaveLoaded = false;
-                IsHostSaveReceived = true;
-            }
-        }
+            SaveDataCars = SaveGameManager.data.GetJObject(SaveGameKeys.Cars).ToString(Formatting.None),
+            SaveDataJobs = SaveGameManager.data.GetObject<JobsSaveGameData>(SaveGameKeys.Jobs, JobSaveManager.serializeSettings),
+            SaveDataSwitches = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions).ToString(Formatting.None),
+            SaveDataTurntables = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables).ToString(Formatting.None),
+            SaveDataDestroyedLocoDebt = SaveGameManager.data.GetJObject("Debt_deleted_locos").ToString(Formatting.None),
+            SaveDataStagedJobDebt = SaveGameManager.data.GetJObject("Debt_staged_jobs").ToString(Formatting.None),
+            SaveDataDeletedJoblessCarsDept = SaveGameManager.data.GetJObject("Debt_jobless_cars").ToString(Formatting.None),
+            SaveDataInsuranceDept = SaveGameManager.data.GetJObject("Debt_insurance").ToString(Formatting.None),
+        };
     }
 
     public void LoadDataAfterTrainsInit()
     {
-        JObject jObject = SaveGameManager.data.GetJObject("Debt_deleted_locos");
-        if (jObject != null)
-        {
-            SingletonBehaviour<LocoDebtController>.Instance.ClearLocoDebts();
-            SingletonBehaviour<LocoDebtController>.Instance.LoadDestroyedLocosDebtsSaveData(jObject);
-            Main.Log("Loaded destroyed locos debt");
-        }
-        jObject = SaveGameManager.data.GetJObject("Debt_staged_jobs");
+        SingletonBehaviour<LocoDebtController>.Instance.ClearLocoDebts();
         SingletonBehaviour<JobDebtController>.Instance.ClearJobDebts();
-        if (jObject != null)
-        {
-            SingletonBehaviour<JobDebtController>.Instance.LoadStagedJobsDebtsSaveData(jObject);
-            Main.Log("Loaded staged jobs debt");
-        }
-        jObject = SaveGameManager.data.GetJObject("Debt_jobless_cars");
-        if (jObject != null)
-        {
-            SingletonBehaviour<JobDebtController>.Instance.LoadDeletedJoblessCarDebtsSaveData(jObject);
-            Main.Log("Loaded jobless cars debt");
-        }
         SingletonBehaviour<CareerManagerDebtController>.Instance.ClearDebtsViaInsuranceQuotaReached();
         SingletonBehaviour<CareerManagerDebtController>.Instance.ClearRestOfThePayableDebts();
         SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.Quota = LicenseManager.InsuranceFeeQuota;
         SingletonBehaviour<CareerManagerDebtController>.Instance.RegisterInsuranceFeeQuotaUpdating();
-        jObject = SaveGameManager.data.GetJObject("Debt_insurance");
-        if (jObject != null)
-        {
-            SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.LoadSaveData(jObject);
-            Main.Log("Loaded insurance fee data");
-        }
+        SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.ClearPaidQuota();
     }
 }
