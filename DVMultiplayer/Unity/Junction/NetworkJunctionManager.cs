@@ -82,11 +82,13 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
                     VisualSwitch junction = switches.FirstOrDefault(j => j.junction.position == switchInfo.Position + WorldMover.currentMove);
                     if (junction)
                     {
-                        if (switchInfo.SwitchToLeft && junction.junction.selectedBranch == 0 || !switchInfo.SwitchToLeft && junction.junction.selectedBranch == 1)
-                            continue;
                         IsChangeByNetwork = true;
                         junction.junction.Switch(Junction.SwitchMode.NO_SOUND);
                         IsChangeByNetwork = false;
+                    }
+                    else
+                    {
+                        Main.Log("Switch not found");
                     }
                 }
             }
@@ -164,7 +166,7 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
             {
                 serverSwitches.Add(new Switch()
                 {
-                    Position = visualSwitch.transform.position - WorldMover.currentMove,
+                    Position = visualSwitch.junction.position - WorldMover.currentMove,
                     Mode = SwitchMode.NO_SOUND,
                     SwitchToLeft = visualSwitch.junction.selectedBranch == 0
                 });
