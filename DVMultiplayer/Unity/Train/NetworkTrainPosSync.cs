@@ -131,9 +131,17 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)
         {
             hasLocalPlayerAuthority = true;
-            trainCar.stress.enabled = true;
-            trainCar.stress.DisableStressCheckForTwoSeconds();
-            SingletonBehaviour<CoroutineManager>.Instance.Run(ToggleDamageAfterSeconds(1));
+            if (!turntable)
+            {
+                SingletonBehaviour<CoroutineManager>.Instance.Run(ToggleDamageAfterSeconds(1));
+                trainCar.stress.enabled = true;
+                trainCar.stress.DisableStressCheckForTwoSeconds();
+            }
+            else
+            {
+                overrideDamageDisabled = true;
+                trainCar.CarDamage.IgnoreDamage(true);
+            }
             foreach (Bogie bogie in trainCar.Bogies)
             {
                 bogie.rb.isKinematic = false;
