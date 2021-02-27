@@ -35,7 +35,7 @@ internal class NetworkTurntableSync : MonoBehaviour
 
     private IEnumerator CheckAuthorityChange()
     {
-        yield return new WaitForSeconds(.05f);
+        yield return new WaitForSeconds(.1f);
         GameObject newAuthorityPlayer = null;
         if (keyboardInput)
         {
@@ -80,7 +80,7 @@ internal class NetworkTurntableSync : MonoBehaviour
 
     private void Update()
     {
-        if (!SingletonBehaviour<NetworkTurntableManager>.Exists)
+        if (!SingletonBehaviour<NetworkTurntableManager>.Instance)
             return;
 
         List<TrainCar> currentCarsOnTurntable = new List<TrainCar>();
@@ -93,55 +93,52 @@ internal class NetworkTurntableSync : MonoBehaviour
             }
         }
 
-        bool willHaveAuthority = playerAuthId == SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id;
-
-        hasLocalPlayerAuthority = willHaveAuthority;
-
         foreach (TrainCar car in carsOnTurntable.ToList())
         {
-            if(!currentCarsOnTurntable.Contains(car))
+            if(currentCarsOnTurntable.Count == 0 || !carsOnTurntable.Contains(car))
             {
+                carsOnTurntable.Remove(car);
                 if(car.logicCar != null)
                 {
-                    Main.Log($"Train: {car.CarGUID} left turntable");
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(ToggleDamageAfterSeconds(car, 1));;
-                    car.rb.isKinematic = false;
                     car.GetComponent<NetworkTrainPosSync>().turntable = null;
+                    Main.Log($"Train: {car.CarGUID} left turntable");
+                    car.rb.isKinematic = false;
                 }
-                carsOnTurntable.Remove(car);
             }
         }
 
-        foreach(TrainCar car in currentCarsOnTurntable)
+        hasLocalPlayerAuthority = playerAuthId == SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id;
+
+        foreach (TrainCar car in currentCarsOnTurntable)
         {
-            if (!carsOnTurntable.Contains(car))
+            if (currentCarsOnTurntable.Count == 0 || !carsOnTurntable.Contains(car))
             {
                 if (car.logicCar != null)
                 {
                     Main.Log($"Train: {car.CarGUID} entered turntable");
-                    car.rb.isKinematic = false;
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(ToggleDamageAfterSeconds(car, 1)); ;
-                    car.GetComponent<NetworkTrainPosSync>().turntable = this;
                     carsOnTurntable.Add(car);
+                    car.GetComponent<NetworkTrainPosSync>().turntable = this;
+                    car.rb.isKinematic = false;
+                    //car.CarDamage.IgnoreDamage(true);
                 }
             }
 
-            if (!hasLocalPlayerAuthority)
-            {
-                if (!car.rb.isKinematic)
-                {
-                    Main.Log("You're not controlling the turntable so setting trains physics off");
-                    car.rb.isKinematic = true;
-                }
-            }
-            else if(hasLocalPlayerAuthority)
-            {
-                if (car.rb.isKinematic)
-                {
-                    Main.Log("You're controlling the turntable so setting trains physics on");
-                    car.rb.isKinematic = false;
-                }
-            }
+            //if (!hasLocalPlayerAuthority)
+            //{
+            //    if (!car.rb.isKinematic)
+            //    {
+            //        Main.Log("You're not controlling the turntable so setting trains physics off");
+            //        car.rb.isKinematic = true;
+            //    }
+            //}
+            //else if(hasLocalPlayerAuthority)
+            //{
+            //    if (car.rb.isKinematic)
+            //    {
+            //        Main.Log("You're controlling the turntable so setting trains physics on");
+            //        car.rb.isKinematic = false;
+            //    }
+            //}
         }
 
         if (SingletonBehaviour<NetworkTurntableManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority)
@@ -156,17 +153,6 @@ internal class NetworkTurntableSync : MonoBehaviour
                 SendRotationChange();
             prevRotation = turntable.turntable.currentYRotation;
         }
-    }
-
-    private IEnumerator ToggleDamageAfterSeconds(TrainCar car, float seconds)
-    {
-        if (!car.GetComponent<NetworkTrainPosSync>().hasLocalPlayerAuthority)
-            yield break;
-        car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = true;
-        car.CarDamage.IgnoreDamage(true);
-        yield return new WaitForSeconds(seconds);
-        car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = false;
-        car.CarDamage.IgnoreDamage(false);
     }
 
     private void SendRotationChange()

@@ -165,16 +165,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         localCars.Clear();
     }
 
-    internal void ResyncCar(TrainCar trainCar)
-    {
-        WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID);
-        if (serverState != null)
-        {
-            SyncDamageWithServerState(trainCar, serverState);
-            SyncLocomotiveWithServerState(trainCar, serverState);
-        }
-    }
-
     private void OnPlayerSwitchTrainCarEvent(TrainCar trainCar)
     {
         if (trainCar)
@@ -383,24 +373,32 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             while (reader.Position < reader.Length)
             {
-                TrainRerail rerail = reader.ReadSerializable<TrainRerail>();
-                Main.Log($"[CLIENT] < TRAIN_RERAIL: ID: {rerail.Guid}");
-                TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == rerail.Guid);
+                TrainRerail data = reader.ReadSerializable<TrainRerail>();
+                Main.Log($"[CLIENT] < TRAIN_RERAIL: ID: {data.Guid}");
+                TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == data.Guid);
                 if (train)
                 {
-                    WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == rerail.Guid);
+                    WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == data.Guid);
                     if (serverState != null)
                     {
-                        serverState.Position = rerail.Position;
-                        serverState.Rotation = rerail.Rotation;
-                        serverState.Forward = rerail.Forward;
-                        serverState.Bogie1RailTrackName = rerail.Bogie1TrackName;
-                        serverState.Bogie2RailTrackName = rerail.Bogie2TrackName;
-                        serverState.Bogie1PositionAlongTrack = rerail.Bogie1PositionAlongTrack;
-                        serverState.Bogie2PositionAlongTrack = rerail.Bogie2PositionAlongTrack;
-                        serverState.CarHealth = rerail.CarHealth;
+                        serverState.Position = data.Position;
+                        serverState.Rotation = data.Rotation;
+                        serverState.Forward = data.Forward;
+                        serverState.Bogies[0] = new TrainBogie()
+                        {
+                            TrackName = data.Bogie1TrackName,
+                            PositionAlongTrack = data.Bogie1PositionAlongTrack,
+                            Derailed = false
+                        };
+                        serverState.Bogies[serverState.Bogies.Length - 1] = new TrainBogie()
+                        {
+                            TrackName = data.Bogie2TrackName,
+                            PositionAlongTrack = data.Bogie2PositionAlongTrack,
+                            Derailed = false
+                        };
+                        serverState.CarHealth = data.CarHealth;
                         if (!serverState.IsLoco)
-                            serverState.CargoHealth = rerail.CargoHealth;
+                            serverState.CargoHealth = data.CargoHealth;
                         else
                         {
                             serverState.Throttle = 0;
@@ -417,7 +415,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             }
                         }
                     }
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(train, rerail.Position, rerail.Forward));
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(train, data.Position, data.Forward));
                 }
             }
         }
@@ -496,42 +494,48 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             while (reader.Position < reader.Length)
             {
-                TrainDerail derailed = reader.ReadSerializable<TrainDerail>();
-                TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == derailed.TrainId);
+                TrainDerail data = reader.ReadSerializable<TrainDerail>();
+                TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == data.TrainId);
 
                 if (train)
                 {
                     IsChangeByNetwork = true;
                     Main.Log($"[CLIENT] < TRAIN_DERAIL: Packet size: {reader.Length}, TrainId: {train.ID}");
-                    WorldTrain serverTrainState = serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID);
-                    if (serverTrainState == null)
+                    WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID);
+                    if (serverState == null)
                     {
-                        serverTrainState = new WorldTrain()
+                        serverState = new WorldTrain()
                         {
                             Guid = train.CarGUID,
                         };
                         if (train.carType == TrainCarType.LocoShunter)
-                            serverTrainState.Shunter = new Shunter();
-                        serverCarStates.Add(serverTrainState);
+                            serverState.Shunter = new Shunter();
+                        serverCarStates.Add(serverState);
                     }
-                    serverTrainState.IsBogie1Derailed = derailed.IsBogie1Derailed;
-                    serverTrainState.IsBogie2Derailed = derailed.IsBogie2Derailed;
-                    serverTrainState.Bogie1RailTrackName = derailed.Bogie1TrackName;
-                    serverTrainState.Bogie2RailTrackName = derailed.Bogie2TrackName;
-                    serverTrainState.Bogie1PositionAlongTrack = derailed.Bogie1PositionAlongTrack;
-                    serverTrainState.Bogie2PositionAlongTrack = derailed.Bogie2PositionAlongTrack;
-                    serverTrainState.CarHealth = derailed.CarHealth;
-                    if (!serverTrainState.IsLoco)
-                        serverTrainState.CargoHealth = derailed.CargoHealth;
+                    serverState.Bogies[0] = new TrainBogie()
+                    {
+                        TrackName = data.Bogie1TrackName,
+                        PositionAlongTrack = data.Bogie1PositionAlongTrack,
+                        Derailed = data.IsBogie1Derailed
+                    };
+                    serverState.Bogies[serverState.Bogies.Length - 1] = new TrainBogie()
+                    {
+                        TrackName = data.Bogie2TrackName,
+                        PositionAlongTrack = data.Bogie2PositionAlongTrack,
+                        Derailed = data.IsBogie1Derailed
+                    };
+                    serverState.CarHealth = data.CarHealth;
+                    if (!serverState.IsLoco)
+                        serverState.CargoHealth = data.CargoHealth;
 
                     train.GetComponent<NetworkTrainPosSync>().isDerailed = true;
                     train.Derail();
-                    SyncDamageWithServerState(train, serverTrainState);
+                    SyncDamageWithServerState(train, serverState);
                     IsChangeByNetwork = false;
                 }
                 else
                 {
-                    Main.Log($"[CLIENT] < TRAIN_SWITCH: Train not found, GUID: {derailed.TrainId}");
+                    Main.Log($"[CLIENT] < TRAIN_SWITCH: Train not found, GUID: {data.TrainId}");
                 }
             }
         }
@@ -567,10 +571,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         serverState.Position = location.Position;
                         serverState.Rotation = location.Rotation;
                         serverState.Forward = location.Forward;
-                        serverState.Bogie1PositionAlongTrack = location.Bogie1PositionAlongTrack;
-                        serverState.Bogie1RailTrackName = location.Bogie1TrackName;
-                        serverState.Bogie2PositionAlongTrack = location.Bogie2PositionAlongTrack;
-                        serverState.Bogie2RailTrackName = location.Bogie2TrackName;
+                        serverState.Bogies = location.Bogies;
                         serverState.IsStationary = location.IsStationary;
 
                         //Main.Log($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
@@ -1038,7 +1039,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             if (!trainCar.IsLoco)
                 cargoDmg = trainCar.CargoDamage.currentHealth;
 
-            TrainRerail rerail = new TrainRerail()
+            TrainRerail data = new TrainRerail()
             {
                 Guid = trainCar.CarGUID,
                 Position = trainCar.transform.position - WorldMover.currentMove,
@@ -1056,16 +1057,24 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID);
             if (serverState != null)
             {
-                serverState.Position = rerail.Position;
-                serverState.Rotation = rerail.Rotation;
-                serverState.Forward = rerail.Forward;
-                serverState.Bogie1RailTrackName = rerail.Bogie1TrackName;
-                serverState.Bogie2RailTrackName = rerail.Bogie2TrackName;
-                serverState.Bogie1PositionAlongTrack = rerail.Bogie1PositionAlongTrack;
-                serverState.Bogie2PositionAlongTrack = rerail.Bogie2PositionAlongTrack;
-                serverState.CarHealth = rerail.CarHealth;
+                serverState.Position = data.Position;
+                serverState.Rotation = data.Rotation;
+                serverState.Forward = data.Forward;
+                serverState.Bogies[0] = new TrainBogie()
+                {
+                    TrackName = data.Bogie1TrackName,
+                    PositionAlongTrack = data.Bogie1PositionAlongTrack,
+                    Derailed = false
+                };
+                serverState.Bogies[serverState.Bogies.Length - 1] = new TrainBogie()
+                {
+                    TrackName = data.Bogie2TrackName,
+                    PositionAlongTrack = data.Bogie2PositionAlongTrack,
+                    Derailed = false
+                };
+                serverState.CarHealth = data.CarHealth;
                 if (!serverState.IsLoco)
-                    serverState.CargoHealth = rerail.CargoHealth;
+                    serverState.CargoHealth = data.CargoHealth;
                 else
                 {
                     serverState.Throttle = 0;
@@ -1085,7 +1094,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             }
             IsChangeByNetwork = false;
 
-            writer.Write(rerail);
+            writer.Write(data);
 
             Main.Log($"[CLIENT] > TRAIN_RERAIL: ID: {trainCar.CarGUID}");
 
@@ -1138,18 +1147,15 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             List<TrainLocation> locations = new List<TrainLocation>();
             foreach(TrainCar car in trainCar.trainset.cars)
             {
-                string bogie1TrackName = "";
-                string bogie2TrackName = "";
-                double bogie1PositionAlongTrack = 0;
-                double bogie2PositionAlongTrack = 0;
-                if (!trainCar.derailed)
+                List<TrainBogie> bogies = new List<TrainBogie>();
+                foreach(Bogie bogie in car.Bogies)
                 {
-                    Bogie bogie1 = car.Bogies[0];
-                    Bogie bogie2 = car.Bogies[trainCar.Bogies.Length - 1];
-                    bogie1TrackName = bogie1.track.name;
-                    bogie2TrackName = bogie2.track.name;
-                    bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span;
-                    bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span;
+                    bogies.Add(new TrainBogie()
+                    {
+                        TrackName = bogie.track.name,
+                        Derailed = bogie.HasDerailed,
+                        PositionAlongTrack = bogie.HasDerailed ? 0 : bogie.traveller.pointRelativeSpan + bogie.traveller.curPoint.span
+                    });
                 }
 
                 locations.Add(new TrainLocation()
@@ -1158,10 +1164,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     Forward = car.transform.forward,
                     Position = car.transform.position - WorldMover.currentMove,
                     Rotation = car.transform.rotation,
-                    Bogie1TrackName = bogie1TrackName,
-                    Bogie2TrackName = bogie2TrackName,
-                    Bogie1PositionAlongTrack = bogie1PositionAlongTrack,
-                    Bogie2PositionAlongTrack = bogie2PositionAlongTrack,
+                    Bogies = bogies.ToArray(),
                     IsStationary = car.isStationary,
                     Velocity = car.rb.velocity
                 });
@@ -1425,14 +1428,14 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             Bogie bogie2 = train.Bogies[train.Bogies.Length - 1];
             Main.Log($"Train bogies are set {bogie1 != null && bogie2 != null}");
 
-            isDerailed = serverState.IsBogie1Derailed || serverState.IsBogie2Derailed;
+            isDerailed = serverState.Bogies[0].Derailed || serverState.Bogies[serverState.Bogies.Length - 1].Derailed;
             Main.Log($"Train is derailed by bogies {isDerailed}");
-            if (serverState.IsBogie1Derailed && !bogie1.HasDerailed)
+            if (serverState.Bogies[0].Derailed && !bogie1.HasDerailed)
             {
                 bogie1.Derail();
             }
 
-            if (serverState.IsBogie2Derailed && !bogie2.HasDerailed)
+            if (serverState.Bogies[serverState.Bogies.Length - 1].Derailed && !bogie2.HasDerailed)
             {
                 bogie2.Derail();
             }
@@ -1557,24 +1560,16 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
     }
 
-    private TrainCar InitializeNewTrainCar(WorldTrain train)
+    private TrainCar InitializeNewTrainCar(WorldTrain serverState)
     {
-        GameObject carPrefab = CarTypes.GetCarPrefab(train.CarType);
+        GameObject carPrefab = CarTypes.GetCarPrefab(serverState.CarType);
         TrainCar newTrain;
-        if (!train.IsBogie1Derailed && !train.IsBogie2Derailed)
-        {
-            newTrain = CarSpawner.SpawnLoadedCar(carPrefab, train.Id, train.Guid, train.IsPlayerSpawned, train.Position + WorldMover.currentMove, train.Rotation,
-           train.IsBogie1Derailed, RailTrackRegistry.GetTrackWithName(train.Bogie1RailTrackName), train.Bogie1PositionAlongTrack,
-           train.IsBogie2Derailed, RailTrackRegistry.GetTrackWithName(train.Bogie2RailTrackName), train.Bogie2PositionAlongTrack,
-           false, false);
-        }
-        else
-        {
-            newTrain = CarSpawner.SpawnLoadedCar(carPrefab, train.Id, train.Guid, train.IsPlayerSpawned, train.Position + WorldMover.currentMove, train.Rotation,
-           true, RailTrackRegistry.GetTrackWithName(train.Bogie1RailTrackName), train.Bogie1PositionAlongTrack,
-           true, RailTrackRegistry.GetTrackWithName(train.Bogie2RailTrackName), train.Bogie2PositionAlongTrack,
-           false, false);
-        }
+        TrainBogie bogie1 = serverState.Bogies[0];
+        TrainBogie bogie2 = serverState.Bogies[serverState.Bogies.Length - 1];
+        newTrain = CarSpawner.SpawnLoadedCar(carPrefab, serverState.Id, serverState.Guid, serverState.IsPlayerSpawned, serverState.Position + WorldMover.currentMove, serverState.Rotation,
+        bogie1.Derailed, RailTrackRegistry.GetTrackWithName(bogie1.TrackName), bogie1.PositionAlongTrack,
+        bogie2.Derailed, RailTrackRegistry.GetTrackWithName(bogie2.TrackName), bogie2.PositionAlongTrack,
+        false, false);
         
 
         newTrain.LoadInterior();
@@ -1587,12 +1582,12 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         newTrain.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
         newTrain.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
 
-        if(newTrain.logicCar != null && !newTrain.IsLoco && train.CargoType != CargoType.None)
-            newTrain.logicCar.LoadCargo(train.CargoAmount, train.CargoType);
+        if(newTrain.logicCar != null && !newTrain.IsLoco && serverState.CargoType != CargoType.None)
+            newTrain.logicCar.LoadCargo(serverState.CargoAmount, serverState.CargoType);
         else if(newTrain.logicCar != null)
             posSyncer.OnTrainCarInitialized += NetworkTrainManager_OnTrainCarInitialized;
 
-        SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(newTrain, train, true));
+        SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(newTrain, serverState, true));
         localCars.Add(newTrain);
 
         return newTrain;
@@ -1611,25 +1606,28 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     internal IEnumerator RerailDesynced(TrainCar trainCar, Vector3 pos, Vector3 fwd)
     {
-        trainCar.rb.isKinematic = false;
         IsChangeByNetwork = true;
-        RailTrack track = RailTrack.GetClosest(pos + WorldMover.currentMove).track;
+        trainCar.rb.isKinematic = false;
+        RailTrack track = null;
+        WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID);
+        if (serverState != null && serverState.AuthorityPlayerId != SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id)
+            track = RailTrackRegistry.GetTrackWithName(serverState.Bogies[0].TrackName);
+        else
+            track = RailTrack.GetClosest(pos + WorldMover.currentMove).track;
+
         if (track)
         {
             trainCar.Rerail(track, CalculateWorldPosition(pos + WorldMover.currentMove, fwd, trainCar.Bounds.center.z), fwd);
-            foreach (Bogie bogie in trainCar.Bogies)
-                bogie.RefreshBogiePoints();
             yield return new WaitUntil(() => !trainCar.derailed);
-            WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID);
             if (serverState != null)
             {
                 SyncDamageWithServerState(trainCar, serverState);
                 SyncLocomotiveWithServerState(trainCar, serverState);
             }
         }
-        IsChangeByNetwork = false;
-        if(serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID).AuthorityPlayerId != SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id)
+        if(serverState != null && serverState.AuthorityPlayerId != SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id)
             trainCar.rb.isKinematic = true;
+        IsChangeByNetwork = false;
     }
 
     private void SyncDamageWithServerState(TrainCar trainCar, WorldTrain serverState)
@@ -1652,6 +1650,17 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             Main.Log($"Train bogies found: {bogie1 != null && bogie2 != null}");
 
             Main.Log($"Set train defaults");
+            List<TrainBogie> bogies = new List<TrainBogie>();
+            foreach (Bogie bogie in car.Bogies)
+            {
+                bogies.Add(new TrainBogie()
+                {
+                    TrackName = bogie.track.name,
+                    Derailed = bogie.HasDerailed,
+                    PositionAlongTrack = bogie.HasDerailed ? 0 : bogie.traveller.pointRelativeSpan + bogie.traveller.curPoint.span
+                });
+            }
+
             WorldTrain train = new WorldTrain()
             {
                 Guid = car.CarGUID,
@@ -1661,12 +1670,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 Position = car.transform.position - WorldMover.currentMove,
                 Rotation = car.transform.rotation,
                 Forward = car.transform.forward,
-                IsBogie1Derailed = bogie1.HasDerailed,
-                IsBogie2Derailed = bogie2.HasDerailed,
-                Bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
-                Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
-                Bogie1RailTrackName = bogie1.track.name,
-                Bogie2RailTrackName = bogie2.track.name,
+                Bogies = bogies.ToArray(),
                 IsFrontCouplerCoupled = car.frontCoupler.coupledTo,
                 IsFrontCouplerCockOpen = car.frontCoupler.IsCockOpen,
                 IsFrontCouplerHoseConnected = car.frontCoupler.GetAirHoseConnectedTo() != null,
@@ -1844,6 +1848,18 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 serverState.Shunter.IsEngineOn = false;
                 break;
         }
+    }
+
+    internal void ResyncCar(TrainCar trainCar)
+    {
+        IsChangeByNetwork = true;
+        WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID);
+        if (serverState != null)
+        {
+            SyncDamageWithServerState(trainCar, serverState);
+            SyncLocomotiveWithServerState(trainCar, serverState);
+        }
+        IsChangeByNetwork = false;
     }
     #endregion
 }

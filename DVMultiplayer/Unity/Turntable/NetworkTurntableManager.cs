@@ -324,7 +324,6 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                 TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == turntableInfo.Position + WorldMover.currentMove);
                 if (turntable)
                 {
-                    turntable.GetComponent<NetworkTurntableSync>().playerAuthId = turntableInfo.playerAuthId;
                     SingletonBehaviour<CoroutineManager>.Instance.Run(RotateTurntableTowardsByNetwork(turntable, turntableInfo.Rotation));
                 }
             }

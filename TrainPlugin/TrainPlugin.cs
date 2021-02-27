@@ -13,7 +13,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.29");
+        public override Version Version => new Version("1.6.30");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -502,25 +502,31 @@ namespace TrainPlugin
             {
                 using (DarkRiftReader reader = message.GetReader())
                 {
-                    TrainDerail derailed = reader.ReadSerializable<TrainDerail>();
-                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == derailed.TrainId);
+                    TrainDerail data = reader.ReadSerializable<TrainDerail>();
+                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == data.TrainId);
                     if (train == null)
                     {
                         train = new WorldTrain()
                         {
-                            Guid = derailed.TrainId,
+                            Guid = data.TrainId,
                         };
                         worldTrains.Add(train);
                     }
 
-                    train.IsBogie1Derailed = derailed.IsBogie1Derailed;
-                    train.IsBogie2Derailed = derailed.IsBogie2Derailed;
-                    train.Bogie1RailTrackName = derailed.Bogie1TrackName;
-                    train.Bogie2RailTrackName = derailed.Bogie2TrackName;
-                    train.Bogie1PositionAlongTrack = derailed.Bogie1PositionAlongTrack;
-                    train.Bogie2PositionAlongTrack = derailed.Bogie2PositionAlongTrack;
-                    train.CarHealth = derailed.CarHealth;
-                    train.CargoHealth = derailed.CargoHealth;
+                    train.Bogies[0] = new TrainBogie()
+                    {
+                        TrackName = data.Bogie1TrackName,
+                        PositionAlongTrack = data.Bogie1PositionAlongTrack,
+                        Derailed = data.IsBogie1Derailed
+                    };
+                    train.Bogies[train.Bogies.Length - 1] = new TrainBogie()
+                    {
+                        TrackName = data.Bogie2TrackName,
+                        PositionAlongTrack = data.Bogie2PositionAlongTrack,
+                        Derailed = data.IsBogie2Derailed
+                    };
+                    train.CarHealth = data.CarHealth;
+                    train.CargoHealth = data.CargoHealth;
                 }
             }
 
@@ -534,28 +540,34 @@ namespace TrainPlugin
             {
                 using (DarkRiftReader reader = message.GetReader())
                 {
-                    TrainRerail rerailed = reader.ReadSerializable<TrainRerail>();
-                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == rerailed.Guid);
+                    TrainRerail data = reader.ReadSerializable<TrainRerail>();
+                    WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == data.Guid);
                     if (train == null)
                     {
                         train = new WorldTrain()
                         {
-                            Guid = rerailed.Guid,
+                            Guid = data.Guid,
                         };
                         worldTrains.Add(train);
                     }
 
-                    train.IsBogie1Derailed = false;
-                    train.IsBogie2Derailed = false;
-                    train.Bogie1RailTrackName = rerailed.Bogie1TrackName;
-                    train.Bogie2RailTrackName = rerailed.Bogie2TrackName;
-                    train.Bogie1PositionAlongTrack = rerailed.Bogie1PositionAlongTrack;
-                    train.Bogie2PositionAlongTrack = rerailed.Bogie2PositionAlongTrack;
-                    train.Position = rerailed.Position;
-                    train.Forward = rerailed.Forward;
-                    train.Rotation = rerailed.Rotation;
-                    train.CarHealth = rerailed.CarHealth;
-                    train.CargoHealth = rerailed.CargoHealth;
+                    train.Bogies[0] = new TrainBogie()
+                    {
+                        TrackName = data.Bogie1TrackName,
+                        PositionAlongTrack = data.Bogie1PositionAlongTrack,
+                        Derailed = false
+                    };
+                    train.Bogies[train.Bogies.Length - 1] = new TrainBogie()
+                    {
+                        TrackName = data.Bogie2TrackName,
+                        PositionAlongTrack = data.Bogie2PositionAlongTrack,
+                        Derailed = false
+                    };
+                    train.Position = data.Position;
+                    train.Forward = data.Forward;
+                    train.Rotation = data.Rotation;
+                    train.CarHealth = data.CarHealth;
+                    train.CargoHealth = data.CargoHealth;
 
                     if (train.IsLoco)
                     {
@@ -686,18 +698,15 @@ namespace TrainPlugin
             {
                 using (DarkRiftReader reader = message.GetReader())
                 {
-                    TrainLocation[] newLocations = reader.ReadSerializables<TrainLocation>();
-                    foreach(TrainLocation newLocation in newLocations)
+                    TrainLocation[] datas = reader.ReadSerializables<TrainLocation>();
+                    foreach(TrainLocation data in datas)
                     {
-                        WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == newLocation.TrainId);
-                        train.Position = newLocation.Position;
-                        train.Rotation = newLocation.Rotation;
-                        train.Forward = newLocation.Forward;
-                        train.Bogie1PositionAlongTrack = newLocation.Bogie1PositionAlongTrack;
-                        train.Bogie1RailTrackName = newLocation.Bogie1TrackName;
-                        train.Bogie2PositionAlongTrack = newLocation.Bogie2PositionAlongTrack;
-                        train.Bogie2RailTrackName = newLocation.Bogie2TrackName;
-                        train.IsStationary = newLocation.IsStationary;
+                        WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == data.TrainId);
+                        train.Position = data.Position;
+                        train.Rotation = data.Rotation;
+                        train.Forward = data.Forward;
+                        train.Bogies = data.Bogies;
+                        train.IsStationary = data.IsStationary;
                     }
                 }
             }

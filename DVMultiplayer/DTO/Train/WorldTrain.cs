@@ -23,14 +23,7 @@ namespace DVMultiplayer.DTO.Train
         public Vector3 Forward { get; set; }
         public Quaternion Rotation { get; set; }
         public bool IsStationary { get; set; }
-
-        // Bogies
-        public bool IsBogie1Derailed { get; set; }
-        public double Bogie1PositionAlongTrack { get; set; }
-        public string Bogie1RailTrackName { get; set; } = "";
-        public bool IsBogie2Derailed { get; set; }
-        public double Bogie2PositionAlongTrack { get; set; }
-        public string Bogie2RailTrackName { get; set; } = "";
+        public TrainBogie[] Bogies { get; set; }
 
         // Couplers
         public bool? IsFrontCouplerCoupled { get; set; } = null;
@@ -70,13 +63,7 @@ namespace DVMultiplayer.DTO.Train
             Forward = e.Reader.ReadVector3();
             Rotation = e.Reader.ReadQuaternion();
             IsStationary = e.Reader.ReadBoolean();
-
-            IsBogie1Derailed = e.Reader.ReadBoolean();
-            Bogie1RailTrackName = e.Reader.ReadString();
-            Bogie1PositionAlongTrack = e.Reader.ReadDouble();
-            IsBogie2Derailed = e.Reader.ReadBoolean();
-            Bogie2RailTrackName = e.Reader.ReadString();
-            Bogie2PositionAlongTrack = e.Reader.ReadDouble();
+            Bogies = e.Reader.ReadSerializables<TrainBogie>();
 
             CarHealth = e.Reader.ReadSingle();
 
@@ -125,13 +112,7 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(Forward);
             e.Writer.Write(Rotation);
             e.Writer.Write(IsStationary);
-
-            e.Writer.Write(IsBogie1Derailed);
-            e.Writer.Write(Bogie1RailTrackName);
-            e.Writer.Write(Bogie1PositionAlongTrack);
-            e.Writer.Write(IsBogie2Derailed);
-            e.Writer.Write(Bogie2RailTrackName);
-            e.Writer.Write(Bogie2PositionAlongTrack);
+            e.Writer.Write(Bogies);
 
             e.Writer.Write(CarHealth);
 
