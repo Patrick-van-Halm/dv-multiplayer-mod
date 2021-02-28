@@ -17,6 +17,7 @@ namespace PlayerPlugin
         private SetSpawn playerSpawn;
         private IClient playerConnecting = null;
         private readonly BufferQueue buffer = new BufferQueue();
+        Timer pingSendTimer;
 
         public IEnumerable<IClient> GetPlayers()
         {
@@ -25,13 +26,13 @@ namespace PlayerPlugin
 
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("2.6.16");
+        public override Version Version => new Version("2.6.17");
 
         public PlayerPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
             ClientManager.ClientConnected += ClientConnected;
             ClientManager.ClientDisconnected += ClientDisconnected;
-            Timer pingSendTimer = new Timer(250);
+            pingSendTimer = new Timer(250);
             pingSendTimer.Elapsed += PingSendMessage;
             pingSendTimer.AutoReset = true;
             pingSendTimer.Start();
@@ -128,6 +129,7 @@ namespace PlayerPlugin
             else
                 Logger.Error($"Client with ID {sender.ID} not found");
 
+            pingSendTimer.Start();
             playerConnecting = null;
             buffer.RunNext();
         }
@@ -143,6 +145,7 @@ namespace PlayerPlugin
                     return;
                 }
 
+                pingSendTimer.Stop();
                 InitializePlayer(player, sender);
             }
         }

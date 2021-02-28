@@ -23,6 +23,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     private SetSpawn spawnData;
     private Coroutine playersLoaded;
     private bool modMismatched = false;
+    private bool newPlayerConnecting;
 
     public bool IsSynced { get; private set; }
 
@@ -38,6 +39,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
     private IEnumerator SendPingSignal()
     {
+        yield return new WaitUntil(() => !newPlayerConnecting);
         yield return new WaitForSeconds(.2f);
         using (Message ping = Message.Create((ushort)NetworkTags.PING, DarkRiftWriter.Create()))
         {
@@ -257,6 +259,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     /// </summary>
     public void PlayerConnect()
     {
+        newPlayerConnecting = true;
         allPlayers.Add(SingletonBehaviour<UnityClient>.Instance.ID, PlayerManager.PlayerTransform.gameObject);
         Vector3 pos = PlayerManager.PlayerTransform.position - WorldMover.currentMove;
         if (NetworkManager.IsHost())
@@ -419,6 +422,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         {
             while (reader.Position < reader.Length)
             {
+                newPlayerConnecting = true;
                 NPlayer player = reader.ReadSerializable<NPlayer>();
 
                 if (player.Id != SingletonBehaviour<UnityClient>.Instance.ID)
@@ -465,6 +469,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         AppUtil.Instance.UnpauseGame();
         playersLoaded = null;
         CustomUI.Close();
+        newPlayerConnecting = false;
     }
 
     /// <summary>
