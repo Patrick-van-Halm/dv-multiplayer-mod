@@ -14,19 +14,22 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
     public bool IsChangeByNetwork { get; internal set; }
     public bool IsSynced { get; internal set; }
 
-    private VisualSwitch[] switches;
+    private Junction[] junctions;
     private readonly BufferQueue buffer = new BufferQueue();
 
     protected override void Awake()
     {
         Main.Log("NetworkJunctionManager initialized");
         base.Awake();
-        switches = GameObject.FindObjectsOfType<VisualSwitch>();
-        Main.Log($"NetworkJunctionManager found {switches.Length} switches in world");
-        foreach (VisualSwitch @switch in switches)
+
+        junctions = SingletonBehaviour<CarsSaveManager>.Instance.TrackRootParent.GetComponentsInChildren<Junction>();
+        Main.Log($"NetworkJunctionManager found {junctions.Length} switches in world");
+        for(uint i = 0; i < junctions.Length; i++)
         {
-            @switch.junction.gameObject.AddComponent<NetworkJunctionSync>();
+            Junction junction = junctions[i];
+            junction.gameObject.AddComponent<NetworkJunctionSync>().Id = i;
         }
+
 
         SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
 
@@ -40,13 +43,13 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
         if (SingletonBehaviour<UnityClient>.Instance)
             SingletonBehaviour<UnityClient>.Instance.MessageReceived -= MessageReceived;
 
-        if (switches == null)
+        if (junctions == null)
             return;
 
-        foreach (VisualSwitch @switch in switches)
+        foreach (Junction junction in junctions)
         {
-            if (@switch.junction.GetComponent<NetworkJunctionSync>())
-                Destroy(@switch.junction.GetComponent<NetworkJunctionSync>());
+            if (junction.GetComponent<NetworkJunctionSync>())
+                Destroy(junction.GetComponent<NetworkJunctionSync>());
         }
     }
 
@@ -79,17 +82,22 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
 
                 foreach (Switch switchInfo in switchesServer)
                 {
-                    VisualSwitch junction = switches.FirstOrDefault(j => j.junction.position == switchInfo.Position + WorldMover.currentMove);
-                    if (junction)
+                    if(switchInfo.Id >= junctions.Length)
                     {
-                        IsChangeByNetwork = true;
-                        junction.junction.Switch(Junction.SwitchMode.NO_SOUND);
-                        IsChangeByNetwork = false;
+                        Main.Log($"Unidentified junction received. Skipping (ID: {switchInfo.Id})");
+                        continue;
                     }
-                    else
+
+                    Junction junction = junctions[switchInfo.Id];
+                    if (switchInfo.SwitchToLeft && junction.selectedBranch == 0 || !switchInfo.SwitchToLeft && junction.selectedBranch == 1)
                     {
-                        Main.Log("Switch not found");
+                        Main.Log($"Junction with ID {switchInfo.Id} already set to correct branch.");
+                        continue;
                     }
+
+                    IsChangeByNetwork = true;
+                    junction.Switch(Junction.SwitchMode.NO_SOUND);
+                    IsChangeByNetwork = false;
                 }
             }
         }
@@ -97,7 +105,7 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
         buffer.RunBuffer();
     }
 
-    public void OnJunctionSwitched(Vector3 position, Junction.SwitchMode mode, bool switchedToLeft)
+    public void OnJunctionSwitched(uint id, Junction.SwitchMode mode, bool switchedToLeft)
     {
         if (!IsSynced)
             return;
@@ -108,7 +116,7 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
         {
             writer.Write<Switch>(new Switch()
             {
-                Position = position - WorldMover.currentMove,
+                Id = id,
                 Mode = (SwitchMode)mode,
                 SwitchToLeft = switchedToLeft
             });
@@ -131,15 +139,22 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
             {
                 Switch switchInfo = reader.ReadSerializable<Switch>();
 
-                VisualSwitch junction = switches.FirstOrDefault(j => j.junction.position == switchInfo.Position + WorldMover.currentMove);
-                if (junction)
+                if (switchInfo.Id >= junctions.Length)
                 {
-                    if (switchInfo.SwitchToLeft && junction.junction.selectedBranch == 0 || !switchInfo.SwitchToLeft && junction.junction.selectedBranch == 1)
-                        return;
-                    IsChangeByNetwork = true;
-                    junction.junction.Switch((Junction.SwitchMode)switchInfo.Mode);
-                    IsChangeByNetwork = false;
+                    Main.Log($"Unidentified junction received. Skipping (ID: {switchInfo.Id})");
+                    return;
                 }
+
+                Junction junction = junctions[switchInfo.Id];
+                if (switchInfo.SwitchToLeft && junction.selectedBranch == 0 || !switchInfo.SwitchToLeft && junction.selectedBranch == 1)
+                {
+                    Main.Log($"Junction with ID {switchInfo.Id} already set to correct branch.");
+                    return;
+                }
+
+                IsChangeByNetwork = true;
+                junction.Switch((Junction.SwitchMode)switchInfo.Mode);
+                IsChangeByNetwork = false;
             }
         }
     }
@@ -162,13 +177,14 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             List<Switch> serverSwitches = new List<Switch>();
-            foreach(VisualSwitch visualSwitch in switches)
+            for(uint i = 0; i < junctions.Length; i++)
             {
+                Junction junction = junctions[i];
                 serverSwitches.Add(new Switch()
                 {
-                    Position = visualSwitch.junction.position - WorldMover.currentMove,
+                    Id = i,
                     Mode = SwitchMode.NO_SOUND,
-                    SwitchToLeft = visualSwitch.junction.selectedBranch == 0
+                    SwitchToLeft = junction.selectedBranch == 0
                 });
             }
             Main.Log($"[CLIENT] > SWITCH_HOST_SYNC");

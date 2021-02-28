@@ -59,7 +59,7 @@ namespace JunctionPlugin
             using (DarkRiftReader reader = message.GetReader())
             {
                 Switch switchInfo = reader.ReadSerializable<Switch>();
-                Switch s = switchStates.FirstOrDefault(t => t.Position == switchInfo.Position);
+                Switch s = switchStates.FirstOrDefault(t => t.Id == switchInfo.Id);
                 if (s != null)
                 {
                     s.SwitchToLeft = switchInfo.SwitchToLeft;

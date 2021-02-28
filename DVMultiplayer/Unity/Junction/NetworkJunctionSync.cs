@@ -4,6 +4,9 @@ using UnityEngine;
 internal class NetworkJunctionSync : MonoBehaviour
 {
     private Junction junction;
+
+    public uint Id { get; internal set; }
+
     private void Awake()
     {
         Main.Log($"NetworkJunctionSync initalized");
@@ -14,7 +17,7 @@ internal class NetworkJunctionSync : MonoBehaviour
 
     private void OnJunctionSwitched(Junction.SwitchMode mode, int branchNum)
     {
-        SingletonBehaviour<NetworkJunctionManager>.Instance.OnJunctionSwitched(junction.position, mode, branchNum == 0);
+        SingletonBehaviour<NetworkJunctionManager>.Instance.OnJunctionSwitched(Id, mode, branchNum == 0);
     }
 
     private void OnDestroy()
