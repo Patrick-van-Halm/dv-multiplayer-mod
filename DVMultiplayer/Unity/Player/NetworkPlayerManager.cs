@@ -19,7 +19,7 @@ using UnityEngine.UI;
 public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 {
     private Dictionary<ushort, GameObject> networkPlayers = new Dictionary<ushort, GameObject>();
-    private Dictionary<ushort, GameObject> allPlayers = new Dictionary<ushort, GameObject>();
+    private readonly Dictionary<ushort, GameObject> allPlayers = new Dictionary<ushort, GameObject>();
     private SetSpawn spawnData;
     private Coroutine playersLoaded;
     private bool modMismatched = false;

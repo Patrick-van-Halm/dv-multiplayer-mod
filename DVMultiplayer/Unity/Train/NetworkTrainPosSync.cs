@@ -11,7 +11,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private TrainCar trainCar;
     private WorldTrain serverState;
     public bool isOutOfSync = false;
-    private bool hostStationary;
+    //private bool hostStationary;
     private Vector3 prevPos;
     public bool isDerailed;
     internal Vector3 velocity = Vector3.zero;
@@ -321,7 +321,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             yield break;
         }
         location.Position += WorldMover.currentMove;
-        hostStationary = location.IsStationary;
+        //hostStationary = location.IsStationary;
 
         for (int i = 0; i < location.Bogies.Length; i++)
         {
@@ -424,15 +424,15 @@ internal class NetworkTrainPosSync : MonoBehaviour
     //        Main.mod.Logger.Log($"{trainCar.ID} Is out of sync difference is {distance}m");
     //}
 
-    private float Distance(Transform a, Vector3 b)
-    {
-        Vector3 forward = a.TransformDirection(a.forward);
-        Vector3 toOther = b - a.position;
-        if (Vector3.Dot(forward, toOther) < 0)
-            return -Vector3.Distance(a.position, b);
-        else
-            return Vector3.Distance(a.position, b);
-    }
+    //private float Distance(Transform a, Vector3 b)
+    //{
+    //    Vector3 forward = a.TransformDirection(a.forward);
+    //    Vector3 toOther = b - a.position;
+    //    if (Vector3.Dot(forward, toOther) < 0)
+    //        return -Vector3.Distance(a.position, b);
+    //    else
+    //        return Vector3.Distance(a.position, b);
+    //}
 
     private TrainCar GetMostFrontCar(TrainCar car)
     {

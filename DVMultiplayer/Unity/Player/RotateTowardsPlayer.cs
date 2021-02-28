@@ -2,8 +2,8 @@
 
 internal class RotateTowardsPlayer : MonoBehaviour
 {
+#pragma warning disable IDE0051 // Remove unused private members
     private Camera camera;
-
     private void Awake()
     {
         camera = PlayerManager.PlayerCamera;

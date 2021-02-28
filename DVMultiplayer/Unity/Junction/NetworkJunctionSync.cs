@@ -6,7 +6,7 @@ internal class NetworkJunctionSync : MonoBehaviour
     private Junction junction;
 
     public uint Id { get; internal set; }
-
+#pragma warning disable IDE0051 // Remove unused private members
     private void Awake()
     {
         Main.Log($"NetworkJunctionSync initalized");
@@ -15,13 +15,14 @@ internal class NetworkJunctionSync : MonoBehaviour
         junction.Switched += OnJunctionSwitched;
     }
 
-    private void OnJunctionSwitched(Junction.SwitchMode mode, int branchNum)
-    {
-        SingletonBehaviour<NetworkJunctionManager>.Instance.OnJunctionSwitched(Id, mode, branchNum == 0);
-    }
-
     private void OnDestroy()
     {
         junction.Switched -= OnJunctionSwitched;
+    }
+#pragma warning restore IDE0051
+
+    private void OnJunctionSwitched(Junction.SwitchMode mode, int branchNum)
+    {
+        SingletonBehaviour<NetworkJunctionManager>.Instance.OnJunctionSwitched(Id, mode, branchNum == 0);
     }
 }
