@@ -135,9 +135,12 @@ namespace TrainPlugin
                         if (!sentTo.Any(c => c.ID == train.AuthorityPlayerId))
                         {
                             IClient ocl = players.FirstOrDefault(c => c.ID == train.AuthorityPlayerId);
-                            if (ocl.ID != 0)
-                                ocl.SendMessage(message, SendMode.Reliable);
-                            sentTo.Add(ocl);
+                            if (ocl != null)
+                            {
+                                if (ocl.ID != 0)
+                                    ocl.SendMessage(message, SendMode.Reliable);
+                                sentTo.Add(ocl);
+                            }
                         }
                         train.AuthorityPlayerId = authChange.PlayerId;
                     }

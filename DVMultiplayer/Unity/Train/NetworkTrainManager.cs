@@ -93,20 +93,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         if (car.IsLoco || car.playerSpawnedCar)
         {
-            car.LoadInterior();
-            car.keepInteriorLoaded = true;
-
-            if (!car.GetComponent<NetworkTrainSync>() && car.IsLoco)
-                car.gameObject.AddComponent<NetworkTrainSync>();
-
-            if (!car.GetComponent<NetworkTrainPosSync>())
-                car.gameObject.AddComponent<NetworkTrainPosSync>();
-
-            if (!car.frontCoupler.GetComponent<NetworkTrainCouplerSync>())
-                car.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
-
-            if (!car.rearCoupler.GetComponent<NetworkTrainCouplerSync>())
-                car.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+            AddNetworkingScripts(car);
 
             SendNewCarSpawned(car);
             AppUtil.Instance.PauseGame();
@@ -575,7 +562,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         serverState.IsStationary = location.IsStationary;
 
                         //Main.Log($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
-                        SingletonBehaviour<CoroutineManager>.Instance.Run(train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location));
+                        if(train.GetComponent<NetworkTrainPosSync>())
+                            SingletonBehaviour<CoroutineManager>.Instance.Run(train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location));
                     }
                 }
             }
@@ -1000,7 +988,14 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
+            foreach (TrainCar car in cars)
+            {
+                AddNetworkingScripts(car);
+            }
+
             WorldTrain[] newServerTrains = GenerateServerCarsData(cars);
+            serverCarStates.AddRange(newServerTrains);
+            localCars.AddRange(cars);
             writer.Write(newServerTrains);
             Main.Log($"[CLIENT] > TRAINS_INIT: {newServerTrains.Length}");
 
@@ -1337,6 +1332,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     internal void SendNewJobChainCars(List<TrainCar> trainCarsForJobChain)
     {
+        
         SendNewCarsSpawned(trainCarsForJobChain);
         AppUtil.Instance.PauseGame();
         CustomUI.OpenPopup("Streaming", "New Area being loaded");
@@ -1557,6 +1553,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().SetValue(shunter.IsMainFuseOn ? 1 : 0);
                     }
                     controllerShunter.SetEngineRunning(shunter.IsEngineOn);
+                }
+                else
+                {
+                    serverState.Shunter = new Shunter();
                 }
                 break;
         }
@@ -1862,6 +1862,24 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             SyncLocomotiveWithServerState(trainCar, serverState);
         }
         IsChangeByNetwork = false;
+    }
+
+    private void AddNetworkingScripts(TrainCar car)
+    {
+        car.LoadInterior();
+        car.keepInteriorLoaded = true;
+
+        if (!car.GetComponent<NetworkTrainSync>() && car.IsLoco)
+            car.gameObject.AddComponent<NetworkTrainSync>();
+
+        if (!car.GetComponent<NetworkTrainPosSync>())
+            car.gameObject.AddComponent<NetworkTrainPosSync>();
+
+        if (!car.frontCoupler.GetComponent<NetworkTrainCouplerSync>())
+            car.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+
+        if (!car.rearCoupler.GetComponent<NetworkTrainCouplerSync>())
+            car.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
     }
     #endregion
 }

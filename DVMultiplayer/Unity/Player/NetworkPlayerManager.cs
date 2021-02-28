@@ -39,8 +39,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
     private IEnumerator SendPingSignal()
     {
-        yield return new WaitUntil(() => !newPlayerConnecting);
         yield return new WaitForSeconds(.2f);
+        yield return new WaitUntil(() => !newPlayerConnecting);
         using (Message ping = Message.Create((ushort)NetworkTags.PING, DarkRiftWriter.Create()))
         {
             ping.MakePingMessage();

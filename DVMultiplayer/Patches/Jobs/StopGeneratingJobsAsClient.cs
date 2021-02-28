@@ -46,21 +46,26 @@ namespace DVMultiplayer.Patches
 					bool isHostInGenerationZone = ___stationRange.IsPlayerInJobGenerationZone(playerSqrDistanceFromStationCenter);
 					if (isHostInGenerationZone && !___playerEnteredJobGenerationZone)
 					{
-						if (!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().All(p => ___stationRange.IsPlayerInJobGenerationZone((p.transform.position - ___stationRange.stationCenterAnchor.position).sqrMagnitude)))
-							__instance.ProceduralJobsController.TryToGenerateJobs();
+						Main.Log("Generating jobs because host is in area");
+						__instance.ProceduralJobsController.TryToGenerateJobs();
 						___playerEnteredJobGenerationZone = true;
-						return false;
 					}
 					else if(!isHostInGenerationZone && !___playerEnteredJobGenerationZone)
                     {
 						if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().Any(p => ___stationRange.IsPlayerInJobGenerationZone((p.transform.position - ___stationRange.stationCenterAnchor.position).sqrMagnitude)))
+                        {
+							Main.Log("Generating jobs because a client is in area");
 							__instance.ProceduralJobsController.TryToGenerateJobs();
-						___playerEnteredJobGenerationZone = true;
+							___playerEnteredJobGenerationZone = true;
+                        }
 					}
-					else if(!isHostInGenerationZone && ___playerEnteredJobGenerationZone)
+					else if(___playerEnteredJobGenerationZone)
                     {
-						if (!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().All(p => ___stationRange.IsPlayerInJobGenerationZone((p.transform.position - ___stationRange.stationCenterAnchor.position).sqrMagnitude)))
+						if (!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().All(p => ___stationRange.IsPlayerInJobGenerationZone((p.transform.position - ___stationRange.stationCenterAnchor.position).sqrMagnitude)) && !isHostInGenerationZone)
+                        {
+							Main.Log("No one in area reseting generation flag");
 							___playerEnteredJobGenerationZone = false;
+                        }
 					}
 				}
 				return false;
