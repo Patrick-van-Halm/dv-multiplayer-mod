@@ -22,13 +22,17 @@ internal class NetworkTrainPosSync : MonoBehaviour
     internal NetworkTurntableSync turntable = null;
     internal bool overrideDamageDisabled = false;
     internal Coroutine authorityCoro;
+    //private TrainAudio trainAudio;
+    //private BogieAudioController[] bogieAudios;
 
 #pragma warning disable IDE0051 // Remove unused private members
     private void Awake()
     {
         Main.Log($"NetworkTrainPosSync.Awake()");
         trainCar = GetComponent<TrainCar>();
-        
+
+        //bogieAudios = new BogieAudioController[trainCar.Bogies.Length];
+
         Main.Log($"[{trainCar.ID}] NetworkTrainPosSync Awake called");
 
         Main.Log($"Listening to derailment/rerail events");
@@ -38,6 +42,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
         trainCar.LogicCarInitialized += TrainCar_LogicCarInitialized;
 
         trainCar.CarDamage.IgnoreDamage(true);
+
+        //for(int i = 0; i < trainCar.Bogies.Length; i++)
+        //{
+        //    bogieAudios[i] = trainCar.Bogies[i].GetComponent<BogieAudioController>();
+        //}
 
         if (NetworkManager.IsHost())
         {
@@ -126,22 +135,40 @@ internal class NetworkTrainPosSync : MonoBehaviour
             return;
         }
 
+        //if(trainAudio == null)
+        //{
+        //    trainAudio = trainCar.GetComponentInChildren<TrainAudio>();
+        //    return;
+        //}
+
         bool willLocalPlayerGetAuthority = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id == serverState.AuthorityPlayerId;
+
+        if (overrideDamageDisabled)
+        {
+            trainCar.CarDamage.IgnoreDamage(true);
+            trainCar.stress.enabled = false;
+            trainCar.TrainCarCollisions.enabled = false;
+        }
+        else if(!overrideDamageDisabled && (hasLocalPlayerAuthority || (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)))
+        {
+            SingletonBehaviour<CoroutineManager>.Instance.Run(ToggleDamageAfterSeconds(1));
+            trainCar.stress.enabled = true;
+            trainCar.stress.DisableStressCheckForTwoSeconds();
+            trainCar.TrainCarCollisions.enabled = true;
+        }
+
+        //if (!(hasLocalPlayerAuthority || (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)))
+        //{
+        //    trainAudio.frictionAudio?.Stop();
+        //    foreach (BogieAudioController bogieAudio in bogieAudios)
+        //    {
+        //        bogieAudio.SetLOD(AudioLOD.NONE);
+        //    }
+        //}
 
         if (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)
         {
             hasLocalPlayerAuthority = true;
-            if (!turntable)
-            {
-                SingletonBehaviour<CoroutineManager>.Instance.Run(ToggleDamageAfterSeconds(1));
-                trainCar.stress.enabled = true;
-                trainCar.stress.DisableStressCheckForTwoSeconds();
-            }
-            else
-            {
-                overrideDamageDisabled = true;
-                trainCar.CarDamage.IgnoreDamage(true);
-            }
             foreach (Bogie bogie in trainCar.Bogies)
             {
                 bogie.rb.isKinematic = false;
@@ -165,6 +192,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             trainCar.CarDamage.IgnoreDamage(true);
             trainCar.stress.enabled = false;
             trainCar.rb.isKinematic = true;
+            trainCar.TrainCarCollisions.enabled = false;
             foreach (Bogie bogie in trainCar.Bogies)
             {
                 bogie.rb.isKinematic = true;
@@ -175,10 +203,20 @@ internal class NetworkTrainPosSync : MonoBehaviour
             trainCar.CarDamage.CarEffectiveHealthStateUpdate -= OnBodyDamageTaken;
             if (!trainCar.IsLoco)
                 trainCar.CargoDamage.CargoDamaged -= OnCargoDamageTaken;
+
             if (updatePositionCoroutine != null)
             {
                 SingletonBehaviour<CoroutineManager>.Instance.Stop(updatePositionCoroutine);
                 updatePositionCoroutine = null;
+            }
+        }
+
+        if (trainCar.rb.isKinematic && trainCar.derailed)
+        {
+            trainCar.rb.isKinematic = false;
+            foreach (Bogie bogie in trainCar.Bogies)
+            {
+                bogie.rb.isKinematic = false;
             }
         }
     }
@@ -186,12 +224,13 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private IEnumerator ToggleDamageAfterSeconds(float seconds)
     {
-        if (hasLocalPlayerAuthority)
+        if (!hasLocalPlayerAuthority)
+        {
+            trainCar.CarDamage.IgnoreDamage(true);
             yield break;
-        overrideDamageDisabled = true;
+        }
         trainCar.CarDamage.IgnoreDamage(true);
         yield return new WaitForSeconds(seconds);
-        overrideDamageDisabled = false;
         trainCar.CarDamage.IgnoreDamage(false);
     }
 
@@ -284,12 +323,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
         location.Position += WorldMover.currentMove;
         hostStationary = location.IsStationary;
 
-        //for(int i = 0; i < location.Bogies.Length; i++)
-        //{
-        //    TrainBogie bogie = location.Bogies[i];
-        //    if(!bogie.Derailed)
-        //        trainCar.Bogies[i].SetTrack(RailTrackRegistry.GetTrackWithName(bogie.TrackName), bogie.PositionAlongTrack);
-        //}
+        for (int i = 0; i < location.Bogies.Length; i++)
+        {
+            TrainBogie bogie = location.Bogies[i];
+            trainCar.Bogies[i].transform.position = bogie.Position;
+            trainCar.Bogies[i].transform.rotation = bogie.Rotation;
+        }
 
         trainCar.rb.MovePosition(location.Position);
         trainCar.rb.MoveRotation(location.Rotation);

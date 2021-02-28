@@ -21,9 +21,6 @@ internal class NetworkTurntableSync : MonoBehaviour
     private void Awake()
     {
         turntable = GetComponent<TurntableController>();
-        //lever = turntable.leverGO.GetComponent<LeverBase>();
-        //playerCameraTransform = PlayerManager.PlayerCamera.transform;
-        //coroutineInputLever = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckInputLever());
         turntable.Snapped += Turntable_Snapped;
         prevRotation = turntable.turntable.currentYRotation;
         SingletonBehaviour<CoroutineManager>.Instance.Run(DisableKeyboardInput());
@@ -88,6 +85,7 @@ internal class NetworkTurntableSync : MonoBehaviour
         {
             if (!currentCarsOnTurntable.Contains(bogie.Car))
             {
+                bogie.Car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = true;
                 if(turntable.turntable.Track.onTrackBogies.Contains(bogie.Car.Bogies[0]) && turntable.turntable.Track.onTrackBogies.Contains(bogie.Car.Bogies[bogie.Car.Bogies.Length - 1]))
                     currentCarsOnTurntable.Add(bogie.Car);
             }
@@ -102,7 +100,7 @@ internal class NetworkTurntableSync : MonoBehaviour
                 {
                     car.GetComponent<NetworkTrainPosSync>().turntable = null;
                     Main.Log($"Train: {car.CarGUID} left turntable");
-                    car.rb.isKinematic = false;
+                    SingletonBehaviour<CoroutineManager>.Instance.Run(EnableDamageAfterSeconds(car, .3f));
                 }
             }
         }
@@ -115,10 +113,10 @@ internal class NetworkTurntableSync : MonoBehaviour
             {
                 if (car.logicCar != null)
                 {
+                    car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = true;
+                    car.GetComponent<NetworkTrainPosSync>().turntable = this;
                     Main.Log($"Train: {car.CarGUID} entered turntable");
                     carsOnTurntable.Add(car);
-                    car.GetComponent<NetworkTrainPosSync>().turntable = this;
-                    car.rb.isKinematic = false;
                     //car.CarDamage.IgnoreDamage(true);
                 }
             }
@@ -153,6 +151,12 @@ internal class NetworkTurntableSync : MonoBehaviour
                 SendRotationChange();
             prevRotation = turntable.turntable.currentYRotation;
         }
+    }
+
+    private IEnumerator EnableDamageAfterSeconds(TrainCar car, float time)
+    {
+        yield return new WaitForSeconds(time);
+        car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = false;
     }
 
     private void SendRotationChange()

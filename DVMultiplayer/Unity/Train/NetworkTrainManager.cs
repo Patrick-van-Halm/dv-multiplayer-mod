@@ -1152,9 +1152,11 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 {
                     bogies.Add(new TrainBogie()
                     {
-                        TrackName = bogie.track.name,
+                        TrackName = bogie.HasDerailed ? "" : bogie.track.name,
                         Derailed = bogie.HasDerailed,
-                        PositionAlongTrack = bogie.HasDerailed ? 0 : bogie.traveller.pointRelativeSpan + bogie.traveller.curPoint.span
+                        PositionAlongTrack = bogie.HasDerailed ? 0 : bogie.traveller.pointRelativeSpan + bogie.traveller.curPoint.span,
+                        Position = bogie.transform.position,
+                        Rotation = bogie.transform.rotation
                     });
                 }
 
