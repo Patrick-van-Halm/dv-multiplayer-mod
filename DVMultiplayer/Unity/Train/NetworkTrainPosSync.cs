@@ -8,6 +8,7 @@ using UnityEngine;
 
 internal class NetworkTrainPosSync : MonoBehaviour
 {
+#pragma warning disable
     private TrainCar trainCar;
     private WorldTrain serverState;
     public bool isOutOfSync = false;
@@ -57,7 +58,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         if (NetworkManager.IsHost())
         {
-            authorityCoro = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
+            authorityCoro = StartCoroutine(CheckAuthorityChange());
         }
     }
 
@@ -124,11 +125,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.Log($"Stop listening to movement changed event");
         trainCar.MovementStateChanged -= TrainCar_MovementStateChanged;
 
-        if(authorityCoro != null)
-            SingletonBehaviour<CoroutineManager>.Instance.Stop(authorityCoro);
-
-        if(updatePositionCoroutine != null)
-            SingletonBehaviour<CoroutineManager>.Instance.Stop(updatePositionCoroutine);
+        StopAllCoroutines();
     }
 
     private void Update()
@@ -163,7 +160,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             trainCar.stress.enabled = true;
             trainCar.stress.DisableStressCheckForTwoSeconds();
             trainCar.TrainCarCollisions.enabled = true;
-            SingletonBehaviour<CoroutineManager>.Instance.Run(ToggleDamageAfterSeconds(1));
+            StartCoroutine(ToggleDamageAfterSeconds(1));
         }
 
         //if (!(hasLocalPlayerAuthority || (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)))
@@ -202,7 +199,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             if (!trainCar.isStationary && updatePositionCoroutine == null)
             {
                 Main.Log($"Staring update position corouting");
-                updatePositionCoroutine = SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
+                updatePositionCoroutine = StartCoroutine(UpdateLocation());
             }
         }
         else if (!willLocalPlayerGetAuthority && hasLocalPlayerAuthority)
@@ -214,7 +211,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 trainCar.CargoDamage.CargoDamaged -= OnCargoDamageTaken;
             if (updatePositionCoroutine != null)
             {
-                SingletonBehaviour<CoroutineManager>.Instance.Stop(updatePositionCoroutine);
+                StopCoroutine(updatePositionCoroutine);
                 updatePositionCoroutine = null;
             }
 
@@ -270,13 +267,13 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (isMoving)
         {
             if (updatePositionCoroutine == null)
-                updatePositionCoroutine = SingletonBehaviour<CoroutineManager>.Instance.Run(UpdateLocation());
+                updatePositionCoroutine = StartCoroutine(UpdateLocation());
         }
         else
         {
             if (updatePositionCoroutine != null)
             {
-                SingletonBehaviour<CoroutineManager>.Instance.Stop(updatePositionCoroutine);
+                StopCoroutine(updatePositionCoroutine);
                 updatePositionCoroutine = null;
             }
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, true);
