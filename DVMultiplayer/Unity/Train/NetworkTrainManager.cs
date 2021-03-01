@@ -443,23 +443,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == changedCar.TrainId);
                     if (train)
                     {
-                        if (!train.GetComponent<NetworkTrainSync>() && train.IsLoco)
-                            train.gameObject.AddComponent<NetworkTrainSync>();
-
-                        if (!train.GetComponent<NetworkTrainPosSync>())
-                            train.gameObject.AddComponent<NetworkTrainPosSync>();
-
-                        if (!train.frontCoupler.GetComponent<NetworkTrainCouplerSync>())
-                            train.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
-
-                        if (!train.rearCoupler.GetComponent<NetworkTrainCouplerSync>())
-                            train.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
-
-                        if (!train.IsInteriorLoaded)
-                        {
-                            train.LoadInterior();
-                            train.keepInteriorLoaded = true;
-                        }
+                        AddNetworkingScripts(train);
                         Main.Log($"[CLIENT] < TRAIN_SWITCH: Train found: {train}, ID: {train.ID}, GUID: {train.CarGUID}");
                         targetPlayerSync.Train = train;
                     }
@@ -1866,8 +1850,11 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void AddNetworkingScripts(TrainCar car)
     {
-        car.LoadInterior();
-        car.keepInteriorLoaded = true;
+        if(!car.IsInteriorLoaded)
+            car.LoadInterior();
+
+        if(!car.keepInteriorLoaded)
+            car.keepInteriorLoaded = true;
 
         if (!car.GetComponent<NetworkTrainSync>() && car.IsLoco)
             car.gameObject.AddComponent<NetworkTrainSync>();
