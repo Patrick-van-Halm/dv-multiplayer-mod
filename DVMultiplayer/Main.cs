@@ -15,6 +15,11 @@ namespace DVMultiplayer
         public static bool isInitialized = false;
         private static bool enabled;
 
+        private static string[] AllowedMods = new string[]
+        {
+            "UnencryptedSaveGameMod"
+        };
+
         private static Harmony harmony;
 
         private static bool Load(ModEntry entry)
@@ -37,7 +42,7 @@ namespace DVMultiplayer
 
         public static string[] GetEnabledMods()
         {
-            return modEntries.Where(m => m.Active && m.Loaded).Select(m => m.Info.Id).Where(m => m != "UnencryptedSaveGameMod").ToArray();
+            return modEntries.Where(m => m.Active && m.Loaded).Select(m => m.Info.Id).Except(AllowedMods).ToArray();
         }
 
         private static void OnUpdate(ModEntry entry, float time)
