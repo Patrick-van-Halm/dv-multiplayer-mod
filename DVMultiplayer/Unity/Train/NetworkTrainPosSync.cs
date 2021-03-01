@@ -22,6 +22,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
     internal NetworkTurntableSync turntable = null;
     internal bool overrideDamageDisabled = false;
     internal Coroutine authorityCoro;
+
+    public bool IsCarDamageEnabled { get; internal set; }
+
     //private TrainAudio trainAudio;
     //private BogieAudioController[] bogieAudios;
 
@@ -42,6 +45,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
         trainCar.LogicCarInitialized += TrainCar_LogicCarInitialized;
 
         trainCar.CarDamage.IgnoreDamage(true);
+        trainCar.stress.enabled = false;
+        trainCar.TrainCarCollisions.enabled = false;
+        Main.Log($"Set kinematic");
+        trainCar.rb.isKinematic = true;
 
         //for(int i = 0; i < trainCar.Bogies.Length; i++)
         //{

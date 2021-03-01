@@ -1556,8 +1556,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         bogie1.Derailed, RailTrackRegistry.GetTrackWithName(bogie1.TrackName), bogie1.PositionAlongTrack,
         bogie2.Derailed, RailTrackRegistry.GetTrackWithName(bogie2.TrackName), bogie2.PositionAlongTrack,
         false, false);
-        
-
+        newTrain.CarDamage.IgnoreDamage(true);
         newTrain.LoadInterior();
         newTrain.keepInteriorLoaded = true;
 
@@ -1575,6 +1574,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(newTrain, serverState, true));
         localCars.Add(newTrain);
+        newTrain.CarDamage.IgnoreDamage(false);
 
         return newTrain;
     }
@@ -1593,6 +1593,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     internal IEnumerator RerailDesynced(TrainCar trainCar, Vector3 pos, Vector3 fwd)
     {
         IsChangeByNetwork = true;
+        trainCar.CarDamage.IgnoreDamage(true);
         trainCar.rb.isKinematic = false;
         RailTrack track = null;
         WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID);
@@ -1613,6 +1614,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
         if(serverState != null && serverState.AuthorityPlayerId != SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id)
             trainCar.rb.isKinematic = true;
+        trainCar.CarDamage.IgnoreDamage(false);
         IsChangeByNetwork = false;
     }
 
