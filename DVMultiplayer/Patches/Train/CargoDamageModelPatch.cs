@@ -13,7 +13,7 @@ namespace DVMultiplayer.Patches
     [HarmonyPatch(typeof(CargoDamageModel), "ApplyDamageToCargo")]
     internal class CargoDamageModelPatch
     {
-        private static bool Postfix(CargoDamageModel __instance, TrainCar ___trainCar)
+        private static bool Prefix(CargoDamageModel __instance, TrainCar ___trainCar, float damage)
         {
             if (NetworkManager.IsClient())
             {

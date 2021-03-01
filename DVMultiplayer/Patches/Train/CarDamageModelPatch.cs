@@ -13,7 +13,7 @@ namespace DVMultiplayer.Patches
     [HarmonyPatch(typeof(CarDamageModel), "IgnoreDamage")]
     internal class CarDamageModelPatch
     {
-        private static void Postfix(CarDamageModel __instance, bool set)
+        private static void Prefix(CarDamageModel __instance, bool set)
         {
             if (NetworkManager.IsClient())
             {
