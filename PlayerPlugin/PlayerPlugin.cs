@@ -26,7 +26,7 @@ namespace PlayerPlugin
 
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("2.6.17");
+        public override Version Version => new Version("2.6.18");
 
         public PlayerPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -259,7 +259,7 @@ namespace PlayerPlugin
 
                 using (DarkRiftWriter writer = DarkRiftWriter.Create())
                 {
-                    newLocation.RTT = (int)(sender.RoundTripTime.SmoothedRtt * 1000);
+                    newLocation.RTT = (int)(sender.RoundTripTime.SmoothedRtt / 2 * 1000);
                     writer.Write<Location>(newLocation);
 
                     using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_LOCATION_UPDATE, writer))

@@ -13,7 +13,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.30");
+        public override Version Version => new Version("1.6.31");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -147,7 +147,7 @@ namespace TrainPlugin
                 }
                 IClient cl = players.FirstOrDefault(c => c.ID == authChange.PlayerId);
                 if(cl.ID != 0)
-                    SendDelayedMessage(authChange, NetworkTags.TRAIN_AUTH_CHANGE, cl, (int)sentTo.OrderByDescending(c => c.RoundTripTime.SmoothedRtt).First().RoundTripTime.SmoothedRtt * 1000);
+                    SendDelayedMessage(authChange, NetworkTags.TRAIN_AUTH_CHANGE, cl, (int)sentTo.OrderByDescending(c => c.RoundTripTime.SmoothedRtt).First().RoundTripTime.SmoothedRtt / 2 * 1000);
             }
         }
 
@@ -178,11 +178,11 @@ namespace TrainPlugin
             if (allPlayersHaveLoadedTrains)
             {
                 Logger.Trace("[SERVER] > TRAINS_INIT_FINISHED");
-                List<IClient> playersOrderedByPing = playerHasInitializedTrain.OrderBy(c => c.RoundTripTime.SmoothedRtt).ToList();
+                List<IClient> playersOrderedByPing = playerHasInitializedTrain.OrderBy(c => c.RoundTripTime.SmoothedRtt / 2).ToList();
                 isLoadingTrain = false;
                 for(int i = 0; i < playersOrderedByPing.Count; i++)
                 {
-                    SendDelayedMessage(true, NetworkTags.TRAINS_INIT_FINISHED, playersOrderedByPing[i], (int)(playersOrderedByPing[0].RoundTripTime.SmoothedRtt - playersOrderedByPing[i].RoundTripTime.SmoothedRtt));
+                    SendDelayedMessage(true, NetworkTags.TRAINS_INIT_FINISHED, playersOrderedByPing[i], (int)(playersOrderedByPing[0].RoundTripTime.SmoothedRtt / 2 - playersOrderedByPing[i].RoundTripTime.SmoothedRtt / 2) * 1000);
                 }
             }
             else
