@@ -24,6 +24,7 @@ namespace DVMultiplayer.Networking
         internal static string username;
         private static bool scriptsInitialized = false;
         private static int tries = 1;
+        private static PlayerDistanceMultipleGameObjectsOptimizer[] objectDisablers;
 
         /// <summary>
         /// Initializes the NetworkManager by:
@@ -70,6 +71,10 @@ namespace DVMultiplayer.Networking
             {
                 yield return DeInitializeUnityScripts();
                 scriptsInitialized = false;
+            }
+            foreach (PlayerDistanceMultipleGameObjectsOptimizer disabler in objectDisablers)
+            {
+                disabler.enabled = true;
             }
             client.Close();
         }
@@ -197,7 +202,7 @@ namespace DVMultiplayer.Networking
                 isClient = false;
                 Main.Log($"[ERROR] {ex.Message}");
                 Main.mod.Logger.Log($"[CLIENT] Connecting failed retrying..., tries: {tries}/5");
-                if (tries <= 5)
+                if (tries < 5)
                 {
                     tries++;
                     ClientConnect();
@@ -205,7 +210,7 @@ namespace DVMultiplayer.Networking
                 else
                 {
                     Main.mod.Logger.Log($"[CLIENT] Connecting failed stopping retries.");
-                    tries = 0;
+                    tries = 1;
                 }
             }
             else
@@ -222,6 +227,11 @@ namespace DVMultiplayer.Networking
                 Main.Log($"Disabling autosave");
                 SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = true;
                 CarSpawner.useCarPooling = false;
+                objectDisablers = GameObject.FindObjectsOfType<PlayerDistanceMultipleGameObjectsOptimizer>();
+                foreach(PlayerDistanceMultipleGameObjectsOptimizer disabler in objectDisablers)
+                {
+                    disabler.enabled = false;
+                }
 
                 Main.Log($"Everything should be initialized running PlayerConnect method");
                 SingletonBehaviour<NetworkPlayerManager>.Instance.PlayerConnect();
