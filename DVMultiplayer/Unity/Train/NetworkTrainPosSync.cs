@@ -8,7 +8,6 @@ using UnityEngine;
 
 internal class NetworkTrainPosSync : MonoBehaviour
 {
-#pragma warning disable
     private TrainCar trainCar;
     private WorldTrain serverState;
     public bool isOutOfSync = false;
