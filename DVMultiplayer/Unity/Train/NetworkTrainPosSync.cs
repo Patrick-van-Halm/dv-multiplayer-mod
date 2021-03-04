@@ -149,14 +149,14 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         if (overrideDamageDisabled && IsCarDamageEnabled)
         {
-            Main.Log("Ignoring damage");
+            Main.Log($"Ignoring damage on train {trainCar.CarGUID}");
             trainCar.CarDamage.IgnoreDamage(true);
             trainCar.stress.enabled = false;
             trainCar.TrainCarCollisions.enabled = false;
         }
         else if(!overrideDamageDisabled && !trainCar.stress.enabled && (hasLocalPlayerAuthority || (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)))
         {
-            Main.Log("Accepting damage");
+            Main.Log($"Accepting damage on train {trainCar.CarGUID}");
             trainCar.stress.enabled = true;
             trainCar.stress.DisableStressCheckForTwoSeconds();
             trainCar.TrainCarCollisions.enabled = true;
