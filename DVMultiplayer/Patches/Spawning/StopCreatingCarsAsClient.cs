@@ -20,7 +20,10 @@ namespace DVMultiplayer.Patches
             else if (NetworkManager.IsHost())
             {
 				if (!SingletonBehaviour<NetworkPlayerManager>.Exists || !SingletonBehaviour<NetworkPlayerManager>.Instance)
-					return true;
+					return false;
+
+				if (SingletonBehaviour<NetworkPlayerManager>.Instance.newPlayerConnecting)
+					return false;
 
 				bool shouldSpawn = false;
 				if (!___spawnAllowed || !SaveLoadController.carsAndJobsLoadingFinished)

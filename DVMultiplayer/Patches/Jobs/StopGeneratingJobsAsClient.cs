@@ -42,6 +42,9 @@ namespace DVMultiplayer.Patches
 
                 if (NetworkManager.IsHost() && SingletonBehaviour<NetworkPlayerManager>.Instance.IsSynced)
                 {
+					if (SingletonBehaviour<NetworkPlayerManager>.Instance.newPlayerConnecting)
+						return false;
+
 					float playerSqrDistanceFromStationCenter = ___stationRange.PlayerSqrDistanceFromStationCenter;
 					bool isHostInGenerationZone = ___stationRange.IsPlayerInJobGenerationZone(playerSqrDistanceFromStationCenter);
 					if (isHostInGenerationZone && !___playerEnteredJobGenerationZone)

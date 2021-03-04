@@ -23,7 +23,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     private SetSpawn spawnData;
     private Coroutine playersLoaded;
     private bool modMismatched = false;
-    private bool newPlayerConnecting;
+    public bool newPlayerConnecting;
 
     public bool IsSynced { get; private set; }
 
@@ -303,10 +303,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         TutorialController.movementAllowed = false;
 
         GamePreferences.Set(Preferences.CommsRadioSpawnMode, false);
-        GamePreferences.RegisterToPreferenceUpdated(Preferences.CommsRadioSpawnMode, () =>
-        {
-            GamePreferences.Set(Preferences.CommsRadioSpawnMode, false);
-        });
+        GamePreferences.RegisterToPreferenceUpdated(Preferences.CommsRadioSpawnMode, DisableSpawnMode);
 
         if (!NetworkManager.IsHost())
         {
@@ -386,6 +383,11 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         // Move to spawn
     }
 
+    private void DisableSpawnMode()
+    {
+        GamePreferences.Set(Preferences.CommsRadioSpawnMode, false);
+    }
+
     private void SendIsLoaded()
     {
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
@@ -408,6 +410,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         base.OnDestroy();
         if (SingletonBehaviour<UnityClient>.Instance)
             SingletonBehaviour<UnityClient>.Instance.MessageReceived -= MessageReceived;
+        GamePreferences.UnregisterFromPreferenceUpdated(Preferences.CommsRadioSpawnMode, DisableSpawnMode);
         foreach (GameObject player in networkPlayers.Values)
         {
             DestroyImmediate(player);
@@ -508,7 +511,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                     Vector3 pos = location.Position;
                     pos = new Vector3(pos.x, pos.y + 1, pos.z);
                     NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
-                    playerSync.UpdateLocation(pos, location.RTT, location.Rotation);
+                    playerSync.UpdateLocation(pos, location.AproxPing, location.Rotation);
                 }
             }
         }

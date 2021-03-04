@@ -39,7 +39,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void Update()
     {
-        if (IsSpawningTrains || IsSynced)
+        if (IsSpawningTrains || !IsSynced)
             return;
 
         foreach(TrainCar car in localCars.ToList())
@@ -1532,10 +1532,12 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     Main.Log($"Sync engine state");
                     if (!shunter.IsEngineOn)
                     {
+                        Main.Log($"Sync engine fuses");
                         shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse1On ? 1 : 0);
                         shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse2On ? 1 : 0);
                         shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().SetValue(shunter.IsMainFuseOn ? 1 : 0);
                     }
+                    Main.Log($"Sync engine on");
                     controllerShunter.SetEngineRunning(shunter.IsEngineOn);
                 }
                 else

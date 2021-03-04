@@ -181,7 +181,9 @@
     <Compile Include="Networking\NetworkManager.cs" />
     <Compile Include="Networking\NetworkTags.cs" />
     <Compile Include="Patches\Jobs\JobValidatorStopAcceptingJobIfNotAllowed.cs" />
-    <Compile Include="Patches\Train\DrivingForcePatch.cs" />
+    <Compile Include="Patches\Train\FixBogiesForceSleepNRE.cs" />
+    <Compile Include="Patches\Train\DisallowDeleteIfPlayerInTrain.cs" />
+    <Compile Include="Patches\Train\FixDrivingForceUpdateWheelSlipNRE.cs" />
     <Compile Include="Patches\Train\CarDamageModelPatch.cs" />
     <Compile Include="Patches\Train\CargoDamageModelPatch.cs" />
     <Compile Include="Patches\Train\AllowUpdateWhenBogieKinematic.cs" />
