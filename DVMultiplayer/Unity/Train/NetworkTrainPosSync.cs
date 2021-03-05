@@ -13,6 +13,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
     public bool isOutOfSync = false;
     //private bool hostStationary;
     private Vector3 prevPos;
+    private Vector3 newPos;
+    private Quaternion newRot;
     public bool isDerailed;
     internal Vector3 velocity = Vector3.zero;
     public event Action<TrainCar> OnTrainCarInitialized;
@@ -238,6 +240,13 @@ internal class NetworkTrainPosSync : MonoBehaviour
             SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
         }
 
+        if(!hasLocalPlayerAuthority && (trainCar.transform.position != newPos || trainCar.transform.rotation != newRot))
+        {
+            float step = 10 * Time.deltaTime; // calculate distance to move
+            transform.position = Vector3.MoveTowards(transform.position, newPos, step);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, newRot, step);
+        }
+
         if (trainCar.rb.isKinematic && isDerailed)
         {
             trainCar.rb.isKinematic = false;
@@ -355,8 +364,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
         //    trainCar.Bogies[i].transform.rotation = bogie.Rotation;
         //}
 
-        trainCar.rb.MovePosition(location.Position);
-        trainCar.rb.MoveRotation(location.Rotation);
+        newPos = location.Position;
+        newRot = location.Rotation;
     }
 
     //private void SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(TrainLocation location)
