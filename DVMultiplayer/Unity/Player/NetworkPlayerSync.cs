@@ -12,7 +12,7 @@ internal class NetworkPlayerSync : MonoBehaviour
     private Vector3 newPosition;
     private Vector3 absPosition;
     internal bool IsLoaded;
-    private const float SYNC_THRESHOLD = 0.1f;
+    private const float SYNC_THRESHOLD = 0.05f;
     private int ping = 0;
 
 #pragma warning disable IDE0051 // Remove unused private members
@@ -26,7 +26,8 @@ internal class NetworkPlayerSync : MonoBehaviour
     {
         if (!IsLocal)
         {
-            transform.position = Vector3.Lerp(transform.position, newPosition + WorldMover.currentMove, 15 * (Time.deltaTime / 2));
+            float step = 10 * Time.deltaTime;
+            transform.position = Vector3.MoveTowards(transform.position, newPosition + WorldMover.currentMove, );
             transform.GetChild(0).Find("Ping").GetComponent<Text>().text = $"{ping}ms";
             return;
         }
