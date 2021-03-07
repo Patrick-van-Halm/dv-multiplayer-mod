@@ -17,11 +17,11 @@ namespace DVMultiplayer.Patches
 				if (!SingletonBehaviour<NetworkTrainManager>.Exists)
 					return;
 
-				if (NetworkManager.IsClient() && !NetworkManager.IsHost() && SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded)
+				if (!NetworkManager.IsHost())
 				{
 					__result = false;
 				}
-				else if (NetworkManager.IsHost() && SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded)
+				else if (NetworkManager.IsHost())
 				{
 					bool isPlayerNotNearTrain = true;
 					float distCheck;
