@@ -230,6 +230,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             trainCar.TrainCarCollisions.enabled = false;
             Main.Log($"Set kinematic");
             trainCar.rb.isKinematic = true;
+            Main.Log($"Stopping coroutines");
             if (positionCoro != null)
             {
                 StopAllCoroutines();
@@ -335,6 +336,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void OnCargoDamageTaken(float _)
     {
+        if (overrideDamageDisabled)
+            Main.Log($"Cargo took damage but should be ignored");
+
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || overrideDamageDisabled)
             return;
 
@@ -343,6 +347,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void OnBodyDamageTaken(float _)
     {
+        if(overrideDamageDisabled)
+            Main.Log($"Train took damage but should be ignored");
+
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || overrideDamageDisabled)
             return;
 

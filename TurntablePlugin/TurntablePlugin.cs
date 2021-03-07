@@ -12,7 +12,7 @@ namespace TurntablePlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.9");
+        public override Version Version => new Version("1.0.10");
 
         private readonly List<Turntable> turntableStates = new List<Turntable>();
 
@@ -77,6 +77,7 @@ namespace TurntablePlugin
                 }
             }
 
+            Logger.Trace("[SERVER] > TURNTABLE_AUTH_REQUEST");
             ReliableSendToOthers(message, client);
         }
 
@@ -92,6 +93,7 @@ namespace TurntablePlugin
                 }
             }
 
+            Logger.Trace("[SERVER] > TURNTABLE_AUTH_RELEASE");
             ReliableSendToOthers(message, client);
         }
 
@@ -122,6 +124,7 @@ namespace TurntablePlugin
                 }
             }
 
+            //Logger.Trace("[SERVER] > TURNTABLE_ANGLE_CHANGED");
             ReliableSendToOthers(message, sender);
         }
 
@@ -150,6 +153,7 @@ namespace TurntablePlugin
                 }
             }
 
+            Logger.Trace("[SERVER] > TURNTABLE_SNAP");
             ReliableSendToOthers(message, sender);
         }
 

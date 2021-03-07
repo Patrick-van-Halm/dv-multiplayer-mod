@@ -13,7 +13,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.31");
+        public override Version Version => new Version("1.6.32");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -145,6 +145,7 @@ namespace TrainPlugin
                         train.AuthorityPlayerId = authChange.PlayerId;
                     }
                 }
+                Logger.Trace("[SERVER] > TRAIN_AUTH_CHANGE");
                 IClient cl = players.FirstOrDefault(c => c.ID == authChange.PlayerId);
                 if(cl.ID != 0)
                     SendDelayedMessage(authChange, NetworkTags.TRAIN_AUTH_CHANGE, cl, (int)sentTo.OrderByDescending(c => c.RoundTripTime.SmoothedRtt).First().RoundTripTime.SmoothedRtt / 2 * 1000);
@@ -616,7 +617,7 @@ namespace TrainPlugin
                 using (DarkRiftReader reader = message.GetReader())
                 {
                     TrainLever lever = reader.ReadSerializable<TrainLever>();
-                    Logger.Trace($"Setting serverTrainState lever: [{lever.TrainId}] {lever.Lever}: {lever.Value}");
+                    //Logger.Trace($"Setting serverTrainState lever: [{lever.TrainId}] {lever.Lever}: {lever.Value}");
                     WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == lever.TrainId);
                     if (train == null)
                     {
