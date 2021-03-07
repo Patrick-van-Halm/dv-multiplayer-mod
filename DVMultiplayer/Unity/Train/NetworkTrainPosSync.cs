@@ -147,7 +147,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         if(newPos == Vector3.zero)
         {
-            newPos = trainCar.transform.position;
+            newPos = trainCar.transform.position - WorldMover.currentMove;
         }
 
         //if(trainAudio == null)
