@@ -13,8 +13,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
     public bool isOutOfSync = false;
     //private bool hostStationary;
     private Vector3 prevPos;
-    private Vector3 newPos;
-    private Quaternion newRot;
+    //private bool isStationary;
+    //private Vector3 newPos;
+    //private Quaternion newRot;
     public bool isDerailed;
     internal Vector3 velocity = Vector3.zero;
     public event Action<TrainCar> OnTrainCarInitialized;
@@ -51,6 +52,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         trainCar.TrainCarCollisions.enabled = false;
         Main.Log($"Set kinematic");
         trainCar.rb.isKinematic = true;
+        //newPos = trainCar.transform.position;
 
         //for(int i = 0; i < trainCar.Bogies.Length; i++)
         //{
@@ -240,12 +242,23 @@ internal class NetworkTrainPosSync : MonoBehaviour
             SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
         }
 
-        if(!hasLocalPlayerAuthority && (trainCar.transform.position != newPos || trainCar.transform.rotation != newRot))
-        {
-            float step = 10 * Time.deltaTime; // calculate distance to move
-            transform.position = Vector3.MoveTowards(transform.position, newPos, step);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, newRot, step);
-        }
+        //if(!hasLocalPlayerAuthority && !isStationary && !turntable && (trainCar.transform.position != newPos || trainCar.transform.rotation != newRot))
+        //{
+        //    float step = 10 * Time.deltaTime; // calculate distance to move
+        //    trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos, step));
+        //    trainCar.rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, newRot, step));
+        //}
+        //else if(!hasLocalPlayerAuthority && isStationary)
+        //{
+        //    trainCar.rb.MovePosition(newPos);
+        //    trainCar.rb.MoveRotation(newRot);
+        //}
+
+        //if (!hasLocalPlayerAuthority)
+        //{
+        //    trainCar.rb.MovePosition(newPos);
+        //    trainCar.rb.MoveRotation(newRot);
+        //}
 
         if (trainCar.rb.isKinematic && isDerailed)
         {
@@ -325,7 +338,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private IEnumerator UpdateLocation()
     {
-        yield return new WaitForSeconds(.05f);
+        yield return new WaitForSeconds(.016f);
         yield return new WaitUntil(() => Vector3.Distance(trainCar.transform.position, prevPos) > 0f);
         if (hasLocalPlayerAuthority && !trainCar.frontCoupler.coupledTo)
         {
@@ -355,7 +368,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
             yield break;
         }
         location.Position += WorldMover.currentMove;
-        //hostStationary = location.IsStationary;
 
         //for (int i = 0; i < location.Bogies.Length; i++)
         //{
@@ -364,8 +376,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
         //    trainCar.Bogies[i].transform.rotation = bogie.Rotation;
         //}
 
-        newPos = location.Position;
-        newRot = location.Rotation;
+        //isStationary = location.IsStationary;
+        //newPos = location.Position;
+        //newRot = location.Rotation;
+
+        trainCar.rb.MovePosition(location.Position);
+        trainCar.rb.MoveRotation(location.Rotation);
     }
 
     //private void SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(TrainLocation location)
