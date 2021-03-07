@@ -250,23 +250,27 @@ internal class NetworkTrainPosSync : MonoBehaviour
             SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
         }
 
-        float step = 15 * Time.deltaTime; // calculate distance to move
-        if (!hasLocalPlayerAuthority && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) >= .05)
+        if (!hasLocalPlayerAuthority)
         {
-            trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
-        }
+            float step = (velocity.magnitude * 2) * Time.deltaTime; // calculate distance to move
+            if (Vector3.Distance(transform.position, newPos + WorldMover.currentMove) >= .05)
+            {
+                trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
+            }
 
-        if (!hasLocalPlayerAuthority && Quaternion.Angle(transform.rotation, newRot) >= .05)
-        {
-            if (!turntable)
+            if (Quaternion.Angle(transform.rotation, newRot) >= .1)
             {
-                trainCar.rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, newRot, step));
-            }
-            else
-            {
-                trainCar.rb.MoveRotation(newRot);
+                if (!turntable)
+                {
+                    trainCar.rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, newRot, step));
+                }
+                else
+                {
+                    trainCar.rb.MoveRotation(newRot);
+                }
             }
         }
+        
 
         //if (!hasLocalPlayerAuthority)
         //{
