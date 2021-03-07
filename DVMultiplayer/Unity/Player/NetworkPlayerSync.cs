@@ -27,7 +27,7 @@ internal class NetworkPlayerSync : MonoBehaviour
         if (!IsLocal)
         {
             float step = 10 * Time.deltaTime;
-            transform.position = Vector3.MoveTowards(transform.position, newPosition + WorldMover.currentMove, );
+            transform.position = Vector3.MoveTowards(transform.position, newPosition + WorldMover.currentMove, step);
             transform.GetChild(0).Find("Ping").GetComponent<Text>().text = $"{ping}ms";
             return;
         }
