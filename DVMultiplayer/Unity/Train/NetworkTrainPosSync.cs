@@ -11,11 +11,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private TrainCar trainCar;
     private WorldTrain serverState;
     public bool isOutOfSync = false;
-    //private bool hostStationary;
     private Vector3 prevPos;
-    //private bool isStationary;
-    //private Vector3 newPos;
-    //private Quaternion newRot;
+    //private bool hostStationary;
+    private bool isStationary;
+    private Vector3 newPos = Vector3.zero;
+    private Quaternion newRot;
+    //internal bool isLocationApplied;
     public bool isDerailed;
     internal Vector3 velocity = Vector3.zero;
     public event Action<TrainCar> OnTrainCarInitialized;
@@ -52,7 +53,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
         trainCar.TrainCarCollisions.enabled = false;
         Main.Log($"Set kinematic");
         trainCar.rb.isKinematic = true;
-        //newPos = trainCar.transform.position;
+        //isLocationApplied = true;
+        
 
         //for(int i = 0; i < trainCar.Bogies.Length; i++)
         //{
@@ -143,6 +145,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
             return;
         }
 
+        if(newPos == Vector3.zero)
+        {
+            newPos = trainCar.transform.position;
+        }
+
         //if(trainAudio == null)
         //{
         //    trainAudio = trainCar.GetComponentInChildren<TrainAudio>();
@@ -200,7 +207,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             if (!trainCar.IsLoco)
                 trainCar.CargoDamage.CargoDamaged += OnCargoDamageTaken;
 
-            if (!trainCar.isStationary  )
+            if (!trainCar.isStationary)
             {
                 Main.Log($"Staring update position corouting");
                 if(positionCoro == null)
@@ -242,17 +249,23 @@ internal class NetworkTrainPosSync : MonoBehaviour
             SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
         }
 
-        //if(!hasLocalPlayerAuthority && !isStationary && !turntable && (trainCar.transform.position != newPos || trainCar.transform.rotation != newRot))
-        //{
-        //    float step = 10 * Time.deltaTime; // calculate distance to move
-        //    trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos, step));
-        //    trainCar.rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, newRot, step));
-        //}
-        //else if(!hasLocalPlayerAuthority && isStationary)
-        //{
-        //    trainCar.rb.MovePosition(newPos);
-        //    trainCar.rb.MoveRotation(newRot);
-        //}
+        float step = 15 * Time.deltaTime; // calculate distance to move
+        if (!hasLocalPlayerAuthority && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) >= .05)
+        {
+            trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
+        }
+
+        if (!hasLocalPlayerAuthority && Quaternion.Angle(transform.rotation, newRot) >= .05)
+        {
+            if (!turntable)
+            {
+                trainCar.rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, newRot, step));
+            }
+            else
+            {
+                trainCar.rb.MoveRotation(newRot);
+            }
+        }
 
         //if (!hasLocalPlayerAuthority)
         //{
@@ -367,7 +380,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             trainCar.transform.forward = location.Forward;
             yield break;
         }
-        location.Position += WorldMover.currentMove;
+        //location.Position += WorldMover.currentMove;
 
         //for (int i = 0; i < location.Bogies.Length; i++)
         //{
@@ -376,12 +389,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
         //    trainCar.Bogies[i].transform.rotation = bogie.Rotation;
         //}
 
-        //isStationary = location.IsStationary;
-        //newPos = location.Position;
-        //newRot = location.Rotation;
-
-        trainCar.rb.MovePosition(location.Position);
-        trainCar.rb.MoveRotation(location.Rotation);
+        //isLocationApplied = false;
+        isStationary = location.IsStationary;
+        newPos = location.Position;
+        newRot = location.Rotation;
     }
 
     //private void SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(TrainLocation location)

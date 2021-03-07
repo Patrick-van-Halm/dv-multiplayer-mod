@@ -10,7 +10,6 @@ internal class NetworkPlayerSync : MonoBehaviour
     internal ushort Id;
     private Vector3 prevPosition;
     private Vector3 newPosition;
-    private Vector3 absPosition;
     internal bool IsLoaded;
     private const float SYNC_THRESHOLD = 0.05f;
     private int ping = 0;
@@ -18,17 +17,23 @@ internal class NetworkPlayerSync : MonoBehaviour
 #pragma warning disable IDE0051 // Remove unused private members
     private void Start()
     {
-        absPosition = transform.position;
-        newPosition = absPosition;
+        newPosition = transform.position - WorldMover.currentMove;
     }
 
     private void Update()
     {
         if (!IsLocal)
         {
-            //float step = 10 * Time.deltaTime;
-            //transform.position = Vector3.MoveTowards(transform.position, newPosition + WorldMover.currentMove, step);
-            transform.position = newPosition + WorldMover.currentMove;
+            if(Vector3.Distance(transform.position, newPosition + WorldMover.currentMove) >= 2)
+            {
+                transform.position = newPosition + WorldMover.currentMove;
+            }
+            else if (transform.position != newPosition + WorldMover.currentMove)
+            {
+                float step = 15 * Time.deltaTime;
+                transform.position = Vector3.MoveTowards(transform.position, newPosition + WorldMover.currentMove, step);
+            }
+            //transform.position = newPosition + WorldMover.currentMove;
             transform.GetChild(0).Find("Ping").GetComponent<Text>().text = $"{ping}ms";
             return;
         }
