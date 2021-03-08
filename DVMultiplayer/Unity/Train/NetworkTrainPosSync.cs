@@ -366,6 +366,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar);
             prevPos = trainCar.transform.position;
+            newPos = trainCar.transform.position - WorldMover.currentMove;
+            newRot = trainCar.transform.rotation;
         }
         yield return UpdateLocation();
     }
