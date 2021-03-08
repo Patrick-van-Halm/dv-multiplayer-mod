@@ -51,6 +51,9 @@ namespace DVMultiplayer.DTO.Train
         public CargoType CargoType { get; set; } = CargoType.None;
         public float CargoHealth { get; set; }
 
+        //Data specific
+        public long updatedAt { get; set; }
+
         public void Deserialize(DeserializeEvent e)
         {
             Guid = e.Reader.ReadString();
@@ -98,6 +101,8 @@ namespace DVMultiplayer.DTO.Train
                     Shunter = e.Reader.ReadSerializable<Shunter>();
                     break;
             }
+
+            updatedAt = e.Reader.ReadInt64();
         }
 
         public void Serialize(SerializeEvent e)
@@ -147,6 +152,7 @@ namespace DVMultiplayer.DTO.Train
                     e.Writer.Write(Shunter);
                     break;
             }
+            e.Writer.Write(updatedAt);
         }
     }
 }

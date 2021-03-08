@@ -13,7 +13,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.32");
+        public override Version Version => new Version("1.6.33");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -706,11 +706,15 @@ namespace TrainPlugin
                     foreach(TrainLocation data in datas)
                     {
                         WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == data.TrainId);
+                        if (data.timestamp <= train.updatedAt)
+                            continue;
+
                         train.Position = data.Position;
                         train.Rotation = data.Rotation;
                         train.Forward = data.Forward;
                         train.Bogies = data.Bogies;
                         train.IsStationary = data.IsStationary;
+                        train.updatedAt = data.timestamp;
                     }
                 }
             }

@@ -538,12 +538,15 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                                 serverState.Shunter = new Shunter();
                             serverCarStates.Add(serverState);
                         }
+                        if (location.timestamp <= serverState.updatedAt)
+                            continue;
 
                         serverState.Position = location.Position;
                         serverState.Rotation = location.Rotation;
                         serverState.Forward = location.Forward;
                         serverState.Bogies = location.Bogies;
                         serverState.IsStationary = location.IsStationary;
+                        serverState.updatedAt = location.timestamp;
 
                         //Main.Log($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
                         if(train.GetComponent<NetworkTrainPosSync>())
@@ -1147,7 +1150,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     Rotation = car.transform.rotation,
                     Bogies = bogies.ToArray(),
                     IsStationary = car.isStationary,
-                    Velocity = car.rb.velocity
+                    Velocity = car.rb.velocity,
+                    Drag = car.rb.drag,
+                    timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                 });
             }
 

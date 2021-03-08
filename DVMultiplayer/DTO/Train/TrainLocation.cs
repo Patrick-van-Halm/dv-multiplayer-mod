@@ -13,6 +13,8 @@ namespace DVMultiplayer.DTO.Train
         public TrainBogie[] Bogies { get; set; }
         public bool IsStationary { get; set; }
         public Vector3 Velocity { get; internal set; }
+        public float Drag { get; internal set; }
+        public long timestamp { get; internal set; }
 
         public void Deserialize(DeserializeEvent e)
         {
@@ -23,6 +25,8 @@ namespace DVMultiplayer.DTO.Train
             Bogies = e.Reader.ReadSerializables<TrainBogie>();
             IsStationary = e.Reader.ReadBoolean();
             Velocity = e.Reader.ReadVector3();
+            Drag = e.Reader.ReadSingle();
+            timestamp = e.Reader.ReadInt64();
         }
 
         public void Serialize(SerializeEvent e)
@@ -34,6 +38,8 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(Bogies);
             e.Writer.Write(IsStationary);
             e.Writer.Write(Velocity);
+            e.Writer.Write(Drag);
+            e.Writer.Write(timestamp);
         }
     }
 
