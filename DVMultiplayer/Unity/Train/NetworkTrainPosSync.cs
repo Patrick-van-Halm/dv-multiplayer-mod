@@ -121,19 +121,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         StopAllCoroutines();
         SingletonBehaviour<CoroutineManager>.Instance.Stop(authorityCoro);
         Main.Log($"NetworkTrainPosSync.OnDestroy()");
-        if (!trainCar)
-            return;
-
-        if(trainCar.logicCar != null)
-            Main.Log($"[{trainCar.ID}] NetworkTrainPosSync OnDestroy called");
-        Main.Log($"Stop listening to derailment/rerail events");
-        trainCar.OnDerailed -= TrainDerail;
-        trainCar.OnRerailed -= TrainRerail;
-        Main.Log($"Stop listening to LogicCar loaded event");
-        trainCar.LogicCarInitialized -= TrainCar_LogicCarInitialized;
-        Main.Log($"Stop listening to movement changed event");
-        trainCar.MovementStateChanged -= TrainCar_MovementStateChanged;
-
     }
 
     private void Update()

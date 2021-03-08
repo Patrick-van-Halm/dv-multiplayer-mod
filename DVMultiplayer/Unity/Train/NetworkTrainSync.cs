@@ -129,11 +129,9 @@ internal class NetworkTrainSync : MonoBehaviour
         ListenToTrainInputEvents();
     }
 
-    
-
     public void OnDestroy()
     {
-        if (loco)
+        if (loco && NetworkManager.IsHost())
         {
             if (loco.logicCar != null)
                 Main.Log($"[{loco.ID}] NetworkTrainSync.OnDestroy()");

@@ -128,24 +128,20 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             if (!trainCar)
                 continue;
 
-            if (trainCar.GetComponent<NetworkTrainPosSync>())
-                DestroyImmediate(trainCar.GetComponent<NetworkTrainPosSync>());
-            if (trainCar.GetComponent<NetworkTrainSync>())
-                DestroyImmediate(trainCar.GetComponent<NetworkTrainSync>());
-            if (trainCar.frontCoupler.GetComponent<NetworkTrainCouplerSync>())
-                DestroyImmediate(trainCar.frontCoupler.GetComponent<NetworkTrainCouplerSync>());
-            if (trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>())
-                DestroyImmediate(trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>());
-        }
-
-        if (!NetworkManager.IsHost())
-        {
-            foreach (TrainCar trainCar in localCars)
+            if (!NetworkManager.IsHost())
             {
-                if (!trainCar)
-                    continue;
-
                 CarSpawner.DeleteCar(trainCar);
+            }
+            else
+            {
+                if (trainCar.GetComponent<NetworkTrainPosSync>())
+                    DestroyImmediate(trainCar.GetComponent<NetworkTrainPosSync>());
+                if (trainCar.GetComponent<NetworkTrainSync>())
+                    DestroyImmediate(trainCar.GetComponent<NetworkTrainSync>());
+                if (trainCar.frontCoupler.GetComponent<NetworkTrainCouplerSync>())
+                    DestroyImmediate(trainCar.frontCoupler.GetComponent<NetworkTrainCouplerSync>());
+                if (trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>())
+                    DestroyImmediate(trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>());
             }
         }
 

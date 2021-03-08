@@ -1,4 +1,5 @@
 ﻿using DVMultiplayer;
+using DVMultiplayer.Networking;
 using UnityEngine;
 
 internal class NetworkTrainCouplerSync : MonoBehaviour
@@ -26,19 +27,13 @@ internal class NetworkTrainCouplerSync : MonoBehaviour
         if (!coupler)
             return;
 
-        if (coupler.train.logicCar != null)
+        if (NetworkManager.IsHost())
         {
-            Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] NetworkTrainCouplerSync OnDestroy called");
-            Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to coupled event");
-            Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to uncoupled event");
-            Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to hose connection changed event");
-            Main.Log($"[{coupler.train.ID}-{(coupler.isFrontCoupler ? "Front" : "Back")}] Stop listening to cock changed event");
+            coupler.Coupled -= CouplerCoupled;
+            coupler.Uncoupled -= CouplerUncoupled;
+            coupler.HoseConnectionChanged -= CouplerHoseConChanged;
+            coupler.CockChanged -= CouplerCockChanged;
         }
-            
-        coupler.Coupled -= CouplerCoupled;
-        coupler.Uncoupled -= CouplerUncoupled;
-        coupler.HoseConnectionChanged -= CouplerHoseConChanged;
-        coupler.CockChanged -= CouplerCockChanged;
     }
 #pragma warning restore IDE0051 // Remove unused private members
 

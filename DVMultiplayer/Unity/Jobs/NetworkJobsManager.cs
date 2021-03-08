@@ -37,6 +37,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
             return;
 
         Main.Log("Destroying all NetworkJobsSync");
+        if (NetworkManager.IsHost())
         foreach (StationController station in allStations)
         {
             if(station.GetComponent<NetworkJobsSync>())
@@ -46,11 +47,14 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                 station.ExpireAllAvailableJobsInStation();
         }
 
-        Main.Log("Stop listening to Job events");
-        foreach (DV.Logic.Job.Job job in jobs.Values)
+        if (NetworkManager.IsHost())
         {
-            job.JobTaken -= CurrentJobInChain_JobTaken;
-            job.JobCompleted -= Job_JobCompleted;
+            Main.Log("Stop listening to Job events");
+            foreach (DV.Logic.Job.Job job in jobs.Values)
+            {
+                job.JobTaken -= CurrentJobInChain_JobTaken;
+                job.JobCompleted -= Job_JobCompleted;
+            }
         }
 
         jobs.Clear();
