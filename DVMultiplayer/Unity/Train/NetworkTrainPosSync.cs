@@ -246,9 +246,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (!hasLocalPlayerAuthority)
         {
             float increment = (velocity.magnitude * 3.6f);
-            if (increment < 1)
-                increment = 1;
-            float step = increment * Time.deltaTime; // calculate distance to move
+            float step = (increment + 5) * Time.deltaTime; // calculate distance to move
             if (Vector3.Distance(transform.position, newPos + WorldMover.currentMove) >= .05)
             {
                 trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
