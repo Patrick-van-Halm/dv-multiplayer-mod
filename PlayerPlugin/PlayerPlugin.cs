@@ -26,7 +26,7 @@ namespace PlayerPlugin
 
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("2.6.18");
+        public override Version Version => new Version("2.6.19");
 
         public PlayerPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -42,6 +42,9 @@ namespace PlayerPlugin
         {
             foreach(IClient client in players.Keys)
             {
+                if (playerConnecting != null)
+                    break;
+
                 using (Message ping = Message.Create((ushort)NetworkTags.PING, DarkRiftWriter.Create()))
                 {
                     ping.MakePingMessage();
@@ -81,15 +84,6 @@ namespace PlayerPlugin
         {
             using (Message message = e.GetMessage() as Message)
             {
-                if (message.IsPingMessage)
-                {
-                    using (Message acknowledgementMessage = Message.Create((ushort)NetworkTags.PING, DarkRiftWriter.Create()))
-                    {
-                        acknowledgementMessage.MakePingAcknowledgementMessage(message);
-                        e.Client.SendMessage(acknowledgementMessage, SendMode.Reliable);
-                    }
-                }
-
                 NetworkTags tag = (NetworkTags)message.Tag;
                 if (!tag.ToString().StartsWith("PLAYER_"))
                     return;

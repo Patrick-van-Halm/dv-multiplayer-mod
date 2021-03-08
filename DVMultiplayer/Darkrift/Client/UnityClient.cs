@@ -532,11 +532,14 @@ namespace DarkRift.Client.Unity
         /// </summary>
         public void Close()
         {
-            Client.MessageReceived -= Client_MessageReceived;
-            Client.Disconnected -= Client_Disconnected;
+            if (Client != null)
+            {
+                Client.MessageReceived -= Client_MessageReceived;
+                Client.Disconnected -= Client_Disconnected;
 
-            Client.Dispose();
-            Client = null;
+                Client.Dispose();
+                Client = null;
+            }
         }
     }
 }
