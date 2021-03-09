@@ -190,6 +190,7 @@
     <Compile Include="Patches\Train\ChangeSpeedCalculationWhenPhysicsAreOff.cs" />
     <Compile Include="Patches\Train\AllowUpdateWhenKinematic.cs" />
     <Compile Include="Patches\Spawning\StopCreatingLocosAsClient.cs" />
+    <Compile Include="Patches\Train\Shunter\ShunterLocoSimulationPatch.cs" />
     <Compile Include="Patches\UI\StopClosingUIIfNotAllowed.cs" />
     <Compile Include="Patches\Train\RemoveScriptsBeforeCarDeletion.cs" />
     <Compile Include="Patches\Train\StopTrainsToPoolWhenClient.cs" />

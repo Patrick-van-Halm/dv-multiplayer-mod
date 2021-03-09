@@ -66,8 +66,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (!trainCar.IsLoco)
             trainCar.CargoDamage.CargoDamaged += OnCargoDamageTaken;
 
-        if (trainCar.carType == TrainCarType.LocoShunter)
-            shunterLocoSimulation = GetComponent<ShunterLocoSimulation>();
+        shunterLocoSimulation = GetComponent<ShunterLocoSimulation>();
 
         //for(int i = 0; i < trainCar.Bogies.Length; i++)
         //{
@@ -393,7 +392,16 @@ internal class NetworkTrainPosSync : MonoBehaviour
         isStationary = location.IsStationary;
         newPos = location.Position;
         newRot = location.Rotation;
-        shunterLocoSimulation?.engineTemp.SetValue(location.Temperature);
+        if (trainCar.IsLoco)
+        {
+            switch (trainCar.carType)
+            {
+                case TrainCarType.LocoShunter:
+                    shunterLocoSimulation.engineTemp.SetValue(location.Temperature);
+                    break;
+            }
+        }
+        
     }
 
     //private void SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(TrainLocation location)

@@ -706,7 +706,7 @@ namespace TrainPlugin
                     foreach(TrainLocation data in datas)
                     {
                         WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == data.TrainId);
-                        if (data.timestamp <= train.updatedAt)
+                        if (data.Timestamp <= train.updatedAt)
                             continue;
 
                         train.Position = data.Position;
@@ -714,7 +714,7 @@ namespace TrainPlugin
                         train.Forward = data.Forward;
                         train.Bogies = data.Bogies;
                         train.IsStationary = data.IsStationary;
-                        train.updatedAt = data.timestamp;
+                        train.updatedAt = data.Timestamp;
                     }
                 }
             }

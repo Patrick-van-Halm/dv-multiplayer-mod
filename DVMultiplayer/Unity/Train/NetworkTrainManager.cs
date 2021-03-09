@@ -534,7 +534,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                                 serverState.Shunter = new Shunter();
                             serverCarStates.Add(serverState);
                         }
-                        if (location.timestamp <= serverState.updatedAt)
+                        if (location.Timestamp <= serverState.updatedAt)
                             continue;
 
                         serverState.Position = location.Position;
@@ -542,7 +542,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         serverState.Forward = location.Forward;
                         serverState.Bogies = location.Bogies;
                         serverState.IsStationary = location.IsStationary;
-                        serverState.updatedAt = location.timestamp;
+                        serverState.updatedAt = location.Timestamp;
 
                         //Main.Log($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
                         if(train.GetComponent<NetworkTrainPosSync>())
@@ -1138,7 +1138,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     });
                 }
 
-                locations.Add(new TrainLocation()
+                TrainLocation loc = new TrainLocation()
                 {
                     TrainId = car.CarGUID,
                     Forward = car.transform.forward,
@@ -1148,8 +1148,20 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     IsStationary = car.isStationary,
                     Velocity = car.rb.velocity,
                     Drag = car.rb.drag,
-                    timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                });
+                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                };
+
+                if (car.IsLoco)
+                {
+                    switch (car.carType)
+                    {
+                        case TrainCarType.LocoShunter:
+                            loc.Temperature = car.GetComponent<ShunterLocoSimulation>().engineTemp.value;
+                            break;
+                    }
+                }
+
+                locations.Add(loc);
             }
 
             writer.Write(locations.ToArray());

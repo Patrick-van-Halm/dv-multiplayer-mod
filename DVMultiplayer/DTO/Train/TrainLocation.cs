@@ -15,7 +15,7 @@ namespace DVMultiplayer.DTO.Train
         public Vector3 Velocity { get; internal set; }
         public float Drag { get; internal set; }
         public float Temperature { get; internal set; }
-        public long timestamp { get; internal set; }
+        public long Timestamp { get; internal set; }
 
         public void Deserialize(DeserializeEvent e)
         {
@@ -28,7 +28,7 @@ namespace DVMultiplayer.DTO.Train
             Velocity = e.Reader.ReadVector3();
             Drag = e.Reader.ReadSingle();
             Temperature = e.Reader.ReadSingle();
-            timestamp = e.Reader.ReadInt64();
+            Timestamp = e.Reader.ReadInt64();
         }
 
         public void Serialize(SerializeEvent e)
@@ -41,8 +41,8 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(IsStationary);
             e.Writer.Write(Velocity);
             e.Writer.Write(Drag);
-            e.Writer.Write(timestamp);
             e.Writer.Write(Temperature);
+            e.Writer.Write(Timestamp);
         }
     }
 
