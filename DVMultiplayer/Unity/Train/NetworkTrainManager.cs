@@ -1156,7 +1156,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     switch (car.carType)
                     {
                         case TrainCarType.LocoShunter:
-                            loc.Temperature = car.GetComponent<ShunterLocoSimulation>().engineTemp.value;
+                            LocoControllerShunter shunter = car.GetComponent<LocoControllerShunter>();
+                            loc.Temperature = shunter.GetEngineTemp();
+                            loc.RPM = shunter.GetEngineRPM();
                             break;
                     }
                 }

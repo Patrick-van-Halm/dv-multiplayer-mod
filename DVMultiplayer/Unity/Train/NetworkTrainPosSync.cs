@@ -398,6 +398,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             {
                 case TrainCarType.LocoShunter:
                     shunterLocoSimulation.engineTemp.SetValue(location.Temperature);
+                    shunterLocoSimulation.engineRPM.SetValue(location.RPM);
                     break;
             }
         }
