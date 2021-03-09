@@ -30,6 +30,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private Coroutine damageEnablerCoro;
     public bool IsCarDamageEnabled { get; internal set; }
     NetworkPlayerSync localPlayer;
+    ShunterLocoSimulation shunterLocoSimulation = null;
 
     //private TrainAudio trainAudio;
     //private BogieAudioController[] bogieAudios;
@@ -64,6 +65,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
         trainCar.CarDamage.CarEffectiveHealthStateUpdate += OnBodyDamageTaken;
         if (!trainCar.IsLoco)
             trainCar.CargoDamage.CargoDamaged += OnCargoDamageTaken;
+
+        if (trainCar.carType == TrainCarType.LocoShunter)
+            shunterLocoSimulation = GetComponent<ShunterLocoSimulation>();
 
         //for(int i = 0; i < trainCar.Bogies.Length; i++)
         //{
@@ -387,6 +391,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         isStationary = location.IsStationary;
         newPos = location.Position;
         newRot = location.Rotation;
+        shunterLocoSimulation?.engineTemp.SetValue(location.Temperature);
     }
 
     //private void SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(TrainLocation location)
