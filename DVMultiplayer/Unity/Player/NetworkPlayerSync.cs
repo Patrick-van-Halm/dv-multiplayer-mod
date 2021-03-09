@@ -11,7 +11,6 @@ internal class NetworkPlayerSync : MonoBehaviour
     private Vector3 prevPosition;
     private Vector3 newPosition;
     internal bool IsLoaded;
-    private const float SYNC_THRESHOLD = 0.05f;
     private int ping = 0;
 
 #pragma warning disable IDE0051 // Remove unused private members
@@ -38,7 +37,7 @@ internal class NetworkPlayerSync : MonoBehaviour
             return;
         }
 
-        if (prevPosition == null || Vector3.Distance(prevPosition, transform.position) > SYNC_THRESHOLD)
+        if (prevPosition == null || Vector3.Distance(prevPosition, transform.position) > 1e-5)
         {
             // Main.DebugLog("Player location changed sending new location");
             SingletonBehaviour<NetworkPlayerManager>.Instance.UpdateLocalPositionAndRotation(transform.position, transform.rotation);
