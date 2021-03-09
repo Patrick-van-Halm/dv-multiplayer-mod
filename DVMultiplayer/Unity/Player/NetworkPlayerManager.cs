@@ -296,11 +296,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         {
             CustomUI.OpenPopup("Connecting", "Loading savegame");
             Main.Log($"[CLIENT] Receiving savegame");
-            PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
-            UUI.UnlockMouse(true);
-
-            // Wait till world is loaded
-            yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
             AppUtil.Instance.PauseGame();
             // Check if host is connected if so the savegame should be available to receive
             SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
@@ -317,6 +312,17 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
             // Wait till spawn is set
             yield return new WaitUntil(() => spawnData != null);
+
+            AppUtil.Instance.UnpauseGame();
+            yield return new WaitUntil(() => !AppUtil.IsPaused);
+            yield return new WaitForEndOfFrame();
+            PlayerManager.TeleportPlayer(spawnData.Position + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
+            UUI.UnlockMouse(true);
+
+            // Wait till world is loaded
+            yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
+            AppUtil.Instance.PauseGame();
+            yield return new WaitUntil(() => AppUtil.IsPaused);
 
             // Get the online save game
             Main.Log($"Syncing Save");
