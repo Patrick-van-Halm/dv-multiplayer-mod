@@ -17,7 +17,8 @@ namespace DVMultiplayer
 
         private static string[] AllowedMods = new string[]
         {
-            "UnencryptedSaveGameMod"
+            "UnencryptedSaveGameMod",
+            "DVMouseSmoothing"
         };
 
         private static Harmony harmony;
