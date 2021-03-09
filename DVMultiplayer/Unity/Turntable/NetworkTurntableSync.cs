@@ -32,47 +32,50 @@ internal class NetworkTurntableSync : MonoBehaviour
 
     private IEnumerator CheckAuthorityChange()
     {
-        yield return new WaitForSeconds(.1f);
         GameObject newAuthorityPlayer = null;
-        if (keyboardInput)
+        while (NetworkManager.IsHost())
         {
-            Vector3 position = PlayerManager.PlayerTransform.position;
-            if (keyboardInput.interactionAreaTrigger.ClosestPoint(position) == position)
+            newAuthorityPlayer = null;
+            yield return new WaitForSeconds(.1f);
+            if (keyboardInput)
             {
-                newAuthorityPlayer = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
-            }
-
-            if (!newAuthorityPlayer)
-            {
-                foreach (GameObject player in SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers())
+                Vector3 position = PlayerManager.PlayerTransform.position;
+                if (keyboardInput.interactionAreaTrigger.ClosestPoint(position) == position)
                 {
-                    position = player.transform.position;
-                    if (keyboardInput.interactionAreaTrigger.ClosestPoint(position) == position)
+                    newAuthorityPlayer = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
+                }
+
+                if (!newAuthorityPlayer)
+                {
+                    foreach (GameObject player in SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers())
                     {
-                        newAuthorityPlayer = player;
-                        break;
+                        position = player.transform.position;
+                        if (keyboardInput.interactionAreaTrigger.ClosestPoint(position) == position)
+                        {
+                            newAuthorityPlayer = player;
+                            break;
+                        }
+                    }
+                }
+
+                if (newAuthorityPlayer)
+                {
+                    if (playerAuthId != newAuthorityPlayer.GetComponent<NetworkPlayerSync>().Id)
+                    {
+                        playerAuthId = newAuthorityPlayer.GetComponent<NetworkPlayerSync>().Id;
+                        SingletonBehaviour<NetworkTurntableManager>.Instance.SendRequestAuthority(turntable, playerAuthId);
+                    }
+                }
+                else
+                {
+                    if (playerAuthId != 0)
+                    {
+                        SingletonBehaviour<NetworkTurntableManager>.Instance.SendReleaseAuthority(turntable);
+                        playerAuthId = 0;
                     }
                 }
             }
-
-            if (newAuthorityPlayer)
-            {
-                if (playerAuthId != newAuthorityPlayer.GetComponent<NetworkPlayerSync>().Id)
-                {
-                    playerAuthId = newAuthorityPlayer.GetComponent<NetworkPlayerSync>().Id;
-                    SingletonBehaviour<NetworkTurntableManager>.Instance.SendRequestAuthority(turntable, playerAuthId);
-                }
-            }
-            else
-            {
-                if(playerAuthId != 0)
-                {
-                    SingletonBehaviour<NetworkTurntableManager>.Instance.SendReleaseAuthority(turntable);
-                    playerAuthId = 0;
-                }
-            }
         }
-        yield return CheckAuthorityChange();
     }
 
     private void Update()
