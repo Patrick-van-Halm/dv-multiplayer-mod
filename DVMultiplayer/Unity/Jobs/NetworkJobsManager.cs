@@ -149,7 +149,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                 IsChangedByNetwork = true;
                 string id = reader.ReadString();
                 Job job = jobs.Keys.FirstOrDefault(j => j.Id == id);
-                if (!job.IsCompleted)
+                if (job != null && !job.IsCompleted)
                 {
                     job.IsCompleted = true;
                     if(!job.IsTakenByLocalPlayer)
