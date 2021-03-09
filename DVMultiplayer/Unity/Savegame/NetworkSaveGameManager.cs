@@ -51,6 +51,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
                 SaveGameManager.data.SetJObject("Debt_insurance", JObject.Parse(offlineSave.SaveDataInsuranceDept));
                 offlineSave = null;
                 SaveGameUpgrader.Upgrade();
+                SingletonBehaviour<CarsSaveManager>.Instance.DeleteAllExistingCars();
             }
             SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave());
         }
@@ -64,6 +65,9 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
     {
         TutorialController.movementAllowed = false;
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
+        AppUtil.Instance.UnpauseGame();
+        yield return new WaitUntil(() => !AppUtil.IsPaused);
+        yield return new WaitForEndOfFrame();
         PlayerManager.TeleportPlayer(vector3_1 + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
         UUI.UnlockMouse(true);
         yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
@@ -74,77 +78,81 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         yield return new WaitUntil(() => CustomUI.currentScreen == CustomUI.PopupUI);
         CarSpawner.useCarPooling = true;
         bool carsLoadedSuccessfully = false;
-        JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
-        if (jObject != null)
-        {
-            TurntableRailTrack.SetSaveData(jObject);
-        }
-        else
-        {
-            Main.Log("[WARNING] Turntables data not found!");
-        }
-        jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
-        if (jObject != null)
-        {
-            JunctionsSaveManager.Load(jObject);
-        }
-        else
-        {
-            Main.Log("[WARNING] Junctions save not found!");
-        }
 
-        jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
-        if (jObject != null)
+        if (!NetworkManager.IsHost())
         {
-            carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jObject);
-            if (!carsLoadedSuccessfully)
-                Main.Log("[WARNING] Cars not loaded successfully!");
-        }
-        else
-            Main.Log("[WARNING] Cars save not found!");
-
-        if (carsLoadedSuccessfully)
-        {
-            JobsSaveGameData saveData = SaveGameManager.data.GetObject<JobsSaveGameData>(SaveGameKeys.Jobs, JobSaveManager.serializeSettings);
-            if (saveData != null)
+            JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
+            if (jObject != null)
             {
-                SingletonBehaviour<JobSaveManager>.Instance.LoadJobSaveGameData(saveData);
+                TurntableRailTrack.SetSaveData(jObject);
             }
             else
-                Main.Log("[WARNING] Jobs save not found!");
-            SingletonBehaviour<JobSaveManager>.Instance.MarkAllNonJobCarsAsUnused();
-        }
+            {
+                Main.Log("[WARNING] Turntables data not found!");
+            }
+            jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
+            if (jObject != null)
+            {
+                JunctionsSaveManager.Load(jObject);
+            }
+            else
+            {
+                Main.Log("[WARNING] Junctions save not found!");
+            }
 
-        jObject = SaveGameManager.data.GetJObject("Debt_deleted_locos");
-        if (jObject != null)
-        {
-            SingletonBehaviour<LocoDebtController>.Instance.ClearLocoDebts();
-            SingletonBehaviour<LocoDebtController>.Instance.LoadDestroyedLocosDebtsSaveData(jObject);
-            Main.Log("Loaded destroyed locos debt");
-        }
-        jObject = SaveGameManager.data.GetJObject("Debt_staged_jobs");
-        SingletonBehaviour<JobDebtController>.Instance.ClearJobDebts();
-        if (jObject != null)
-        {
-            SingletonBehaviour<JobDebtController>.Instance.LoadStagedJobsDebtsSaveData(jObject);
-            Main.Log("Loaded staged jobs debt");
-        }
-        jObject = SaveGameManager.data.GetJObject("Debt_jobless_cars");
-        if (jObject != null)
-        {
-            SingletonBehaviour<JobDebtController>.Instance.LoadDeletedJoblessCarDebtsSaveData(jObject);
-            Main.Log("Loaded jobless cars debt");
-        }
-        SingletonBehaviour<CareerManagerDebtController>.Instance.ClearDebtsViaInsuranceQuotaReached();
-        SingletonBehaviour<CareerManagerDebtController>.Instance.ClearRestOfThePayableDebts();
-        SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.Quota = LicenseManager.InsuranceFeeQuota;
-        SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.ClearPaidQuota();
-        SingletonBehaviour<CareerManagerDebtController>.Instance.RegisterInsuranceFeeQuotaUpdating();
-        jObject = SaveGameManager.data.GetJObject("Debt_insurance");
-        if (jObject != null)
-        {
-            SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.LoadSaveData(jObject);
-            Main.Log("Loaded insurance fee data");
+            jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
+            if (jObject != null)
+            {
+                carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jObject);
+                if (!carsLoadedSuccessfully)
+                    Main.Log("[WARNING] Cars not loaded successfully!");
+            }
+            else
+                Main.Log("[WARNING] Cars save not found!");
+
+            if (carsLoadedSuccessfully)
+            {
+                JobsSaveGameData saveData = SaveGameManager.data.GetObject<JobsSaveGameData>(SaveGameKeys.Jobs, JobSaveManager.serializeSettings);
+                if (saveData != null)
+                {
+                    SingletonBehaviour<JobSaveManager>.Instance.LoadJobSaveGameData(saveData);
+                }
+                else
+                    Main.Log("[WARNING] Jobs save not found!");
+                SingletonBehaviour<JobSaveManager>.Instance.MarkAllNonJobCarsAsUnused();
+            }
+
+            jObject = SaveGameManager.data.GetJObject("Debt_deleted_locos");
+            if (jObject != null)
+            {
+                SingletonBehaviour<LocoDebtController>.Instance.ClearLocoDebts();
+                SingletonBehaviour<LocoDebtController>.Instance.LoadDestroyedLocosDebtsSaveData(jObject);
+                Main.Log("Loaded destroyed locos debt");
+            }
+            jObject = SaveGameManager.data.GetJObject("Debt_staged_jobs");
+            SingletonBehaviour<JobDebtController>.Instance.ClearJobDebts();
+            if (jObject != null)
+            {
+                SingletonBehaviour<JobDebtController>.Instance.LoadStagedJobsDebtsSaveData(jObject);
+                Main.Log("Loaded staged jobs debt");
+            }
+            jObject = SaveGameManager.data.GetJObject("Debt_jobless_cars");
+            if (jObject != null)
+            {
+                SingletonBehaviour<JobDebtController>.Instance.LoadDeletedJoblessCarDebtsSaveData(jObject);
+                Main.Log("Loaded jobless cars debt");
+            }
+            SingletonBehaviour<CareerManagerDebtController>.Instance.ClearDebtsViaInsuranceQuotaReached();
+            SingletonBehaviour<CareerManagerDebtController>.Instance.ClearRestOfThePayableDebts();
+            SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.Quota = LicenseManager.InsuranceFeeQuota;
+            SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.ClearPaidQuota();
+            SingletonBehaviour<CareerManagerDebtController>.Instance.RegisterInsuranceFeeQuotaUpdating();
+            jObject = SaveGameManager.data.GetJObject("Debt_insurance");
+            if (jObject != null)
+            {
+                SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.LoadSaveData(jObject);
+                Main.Log("Loaded insurance fee data");
+            }
         }
         SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
         AppUtil.Instance.UnpauseGame();
