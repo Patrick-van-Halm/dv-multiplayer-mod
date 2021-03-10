@@ -58,7 +58,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
             Main.Log("Stop listening to Job events");
             foreach (DV.Logic.Job.Job job in jobs.Values)
             {
-                job.JobTaken -= CurrentJobInChain_JobTaken;
+                job.JobTaken -= JobTaken;
                 job.JobCompleted -= Job_JobCompleted;
             }
         }
@@ -91,7 +91,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
         }
     }
 
-    private void CurrentJobInChain_JobTaken(DV.Logic.Job.Job job, bool takenViaGame)
+    private void JobTaken(DV.Logic.Job.Job job, bool takenViaGame)
     {
         job.JobCompleted += Job_JobCompleted;
         Job sJob = jobs.Keys.FirstOrDefault(j => j.Id == job.ID);
@@ -205,7 +205,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                     {
                         StaticJobDefinition jobDef = jobGO.GetComponent<StaticJobDefinition>();
                         if (!job.IsTaken)
-                            jobDef.job.JobTaken += CurrentJobInChain_JobTaken;
+                            jobDef.job.JobTaken += JobTaken;
                         else
                             job.CanTakeJob = false;
                         this.jobs.Add(job, jobDef.job);
@@ -255,7 +255,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                 };
                 newJobs.Add(newJob);
 
-                job.currentJobInChain.JobTaken += CurrentJobInChain_JobTaken;
+                job.currentJobInChain.JobTaken += JobTaken;
                 this.jobs.Add(new Job()
                 {
                     Id = newJob.Id,
@@ -329,7 +329,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
 
                     currentJobs.Add(sJob);
 
-                    job.currentJobInChain.JobTaken += CurrentJobInChain_JobTaken;
+                    job.currentJobInChain.JobTaken += JobTaken;
                     jobs.Add(sJob, job.currentJobInChain);
                 }
             }
@@ -371,14 +371,30 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
             if (jobGO)
             {
                 StaticJobDefinition jobDef = jobGO.GetComponent<StaticJobDefinition>();
-                jobDef.job.JobTaken += CurrentJobInChain_JobTaken;
+                jobDef.job.JobTaken += JobTaken;
+                foreach(StaticJobDefinition nextJob in jobDef.JobsToGenerateWhenThisJobCompleted)
+                {
+                    nextJob.JobGenerated += NextJob_JobGenerated;
+                }
                 jobs.Add(new Job()
                 {
-                    Id = job.Id,
-                    JobData = job.JobData
+                    Id = job.Id
                 }, jobDef.job);
                 Main.Log("Job successfully loaded");
             }
+        }
+    }
+
+    private void NextJob_JobGenerated(StaticJobDefinition jobDef, DV.Logic.Job.Job job)
+    {
+        job.JobTaken += JobTaken;
+        jobs.Add(new Job()
+        {
+            Id = job.ID
+        }, job);
+        foreach (StaticJobDefinition nextJob in jobDef.JobsToGenerateWhenThisJobCompleted)
+        {
+            nextJob.JobGenerated += NextJob_JobGenerated;
         }
     }
 
