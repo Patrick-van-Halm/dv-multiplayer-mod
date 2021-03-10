@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace DVMultiplayer.DTO.Savegame
 {
@@ -16,5 +17,6 @@ namespace DVMultiplayer.DTO.Savegame
         public string SaveDataStagedJobDebt { get; internal set; }
         public string SaveDataDeletedJoblessCarsDept { get; internal set; }
         public string SaveDataInsuranceDept { get; internal set; }
+        public Vector3 SaveDataPosition { get; internal set; }
     }
 }

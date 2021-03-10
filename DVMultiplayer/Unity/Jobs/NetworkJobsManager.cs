@@ -38,13 +38,19 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
 
         Main.Log("Destroying all NetworkJobsSync");
         if (NetworkManager.IsHost())
-        foreach (StationController station in allStations)
         {
-            if(station.GetComponent<NetworkJobsSync>())
-                DestroyImmediate(station.GetComponent<NetworkJobsSync>());
+            foreach (StationController station in allStations)
+            {
+                if(station.GetComponent<NetworkJobsSync>())
+                    DestroyImmediate(station.GetComponent<NetworkJobsSync>());
 
-            if (!NetworkManager.IsHost())
-                station.ExpireAllAvailableJobsInStation();
+                if (!NetworkManager.IsHost())
+                    station.ExpireAllAvailableJobsInStation();
+            }
+        }
+        else
+        {
+            SingletonBehaviour<JobSaveManager>.Instance.DeleteAllNonActiveJobChains();
         }
 
         if (NetworkManager.IsHost())

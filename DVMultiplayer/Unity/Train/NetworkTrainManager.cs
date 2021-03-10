@@ -130,7 +130,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
             if (!NetworkManager.IsHost())
             {
-                CarSpawner.DeleteCar(trainCar);
+                SingletonBehaviour<CarsSaveManager>.Instance.DeleteAllExistingCars();
             }
             else
             {

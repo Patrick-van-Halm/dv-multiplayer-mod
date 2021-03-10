@@ -49,9 +49,9 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
                 SaveGameManager.data.SetJObject("Debt_staged_jobs", JObject.Parse(offlineSave.SaveDataStagedJobDebt));
                 SaveGameManager.data.SetJObject("Debt_jobless_cars", JObject.Parse(offlineSave.SaveDataDeletedJoblessCarsDept));
                 SaveGameManager.data.SetJObject("Debt_insurance", JObject.Parse(offlineSave.SaveDataInsuranceDept));
+                SaveGameManager.data.SetVector3("Player_position", offlineSave.SaveDataPosition);
                 offlineSave = null;
                 SaveGameUpgrader.Upgrade();
-                SingletonBehaviour<CarsSaveManager>.Instance.DeleteAllExistingCars();
             }
             SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave());
         }
@@ -125,12 +125,10 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
             jObject = SaveGameManager.data.GetJObject("Debt_deleted_locos");
             if (jObject != null)
             {
-                SingletonBehaviour<LocoDebtController>.Instance.ClearLocoDebts();
                 SingletonBehaviour<LocoDebtController>.Instance.LoadDestroyedLocosDebtsSaveData(jObject);
                 Main.Log("Loaded destroyed locos debt");
             }
             jObject = SaveGameManager.data.GetJObject("Debt_staged_jobs");
-            SingletonBehaviour<JobDebtController>.Instance.ClearJobDebts();
             if (jObject != null)
             {
                 SingletonBehaviour<JobDebtController>.Instance.LoadStagedJobsDebtsSaveData(jObject);
@@ -142,11 +140,6 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
                 SingletonBehaviour<JobDebtController>.Instance.LoadDeletedJoblessCarDebtsSaveData(jObject);
                 Main.Log("Loaded jobless cars debt");
             }
-            SingletonBehaviour<CareerManagerDebtController>.Instance.ClearDebtsViaInsuranceQuotaReached();
-            SingletonBehaviour<CareerManagerDebtController>.Instance.ClearRestOfThePayableDebts();
-            SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.Quota = LicenseManager.InsuranceFeeQuota;
-            SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.ClearPaidQuota();
-            SingletonBehaviour<CareerManagerDebtController>.Instance.RegisterInsuranceFeeQuotaUpdating();
             jObject = SaveGameManager.data.GetJObject("Debt_insurance");
             if (jObject != null)
             {
@@ -179,6 +172,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
             SaveDataStagedJobDebt = SaveGameManager.data.GetJObject("Debt_staged_jobs").ToString(Formatting.None),
             SaveDataDeletedJoblessCarsDept = SaveGameManager.data.GetJObject("Debt_jobless_cars").ToString(Formatting.None),
             SaveDataInsuranceDept = SaveGameManager.data.GetJObject("Debt_insurance").ToString(Formatting.None),
+            SaveDataPosition = PlayerManager.GetWorldAbsolutePlayerPosition()
         };
     }
 
