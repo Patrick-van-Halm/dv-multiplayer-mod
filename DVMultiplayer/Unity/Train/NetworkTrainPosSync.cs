@@ -31,6 +31,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
     public bool IsCarDamageEnabled { get; internal set; }
     NetworkPlayerSync localPlayer;
     ShunterLocoSimulation shunterLocoSimulation = null;
+    ParticleSystem.MainModule shunterExhaust;
 
     //private TrainAudio trainAudio;
     //private BogieAudioController[] bogieAudios;
@@ -66,7 +67,13 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (!trainCar.IsLoco)
             trainCar.CargoDamage.CargoDamaged += OnCargoDamageTaken;
 
-        shunterLocoSimulation = GetComponent<ShunterLocoSimulation>();
+
+        if(trainCar.carType == TrainCarType.LocoShunter)
+        {
+            shunterLocoSimulation = GetComponent<ShunterLocoSimulation>();
+            shunterExhaust = trainCar.transform.Find("[particles]").Find("ExhaustEngineSmoke").GetComponent<ParticleSystem>().main;
+            shunterExhaust.emitterVelocityMode = ParticleSystemEmitterVelocityMode.Transform;
+        }
 
         //for(int i = 0; i < trainCar.Bogies.Length; i++)
         //{
@@ -266,6 +273,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.Log($"Set velocity and drag");
         trainCar.rb.velocity = velocity;
         trainCar.rb.drag = drag;
+
+        if(trainCar.carType == TrainCarType.LocoShunter)
+        {
+            shunterExhaust.emitterVelocityMode = gain ? ParticleSystemEmitterVelocityMode.Rigidbody : ParticleSystemEmitterVelocityMode.Transform;
+        }
 
         Main.Log($"Resync train");
         SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
