@@ -217,6 +217,9 @@ namespace DVMultiplayer.Networking
             {
                 isClient = true;
                 UI.HideUI();
+                Main.Log($"Disabling autosave");
+                SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = true;
+                CarSpawner.useCarPooling = false;
                 if (!scriptsInitialized)
                 {
                     Main.Log($"Client connected loading required unity scripts");
@@ -224,9 +227,6 @@ namespace DVMultiplayer.Networking
                     scriptsInitialized = true;
                 }
 
-                Main.Log($"Disabling autosave");
-                SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = true;
-                CarSpawner.useCarPooling = false;
                 objectDisablers = GameObject.FindObjectsOfType<PlayerDistanceMultipleGameObjectsOptimizer>();
                 foreach(PlayerDistanceMultipleGameObjectsOptimizer disabler in objectDisablers)
                 {
