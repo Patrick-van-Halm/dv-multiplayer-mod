@@ -84,6 +84,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
         while (NetworkManager.IsHost())
         {
             yield return new WaitForSeconds(.1f);
+            if (!SingletonBehaviour<NetworkPlayerManager>.Exists)
+                continue;
+
             if (serverState != null)
             {
                 if (turntable == null)

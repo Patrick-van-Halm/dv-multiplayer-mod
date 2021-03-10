@@ -17,6 +17,7 @@ internal class NetworkTurntableSync : MonoBehaviour
     private bool hasLocalPlayerAuthority = false;
     internal Turntable serverState = null;
     internal ushort playerAuthId = 0;
+    private Coroutine authCoro = null;
 
     private void Awake()
     {
@@ -26,7 +27,7 @@ internal class NetworkTurntableSync : MonoBehaviour
         SingletonBehaviour<CoroutineManager>.Instance.Run(DisableKeyboardInput());
         if (NetworkManager.IsHost())
         {
-            SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
+            authCoro = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
         }
     }
 
@@ -37,6 +38,9 @@ internal class NetworkTurntableSync : MonoBehaviour
         {
             newAuthorityPlayer = null;
             yield return new WaitForSeconds(.1f);
+            if (!SingletonBehaviour<NetworkPlayerManager>.Exists)
+                continue;
+
             if (keyboardInput)
             {
                 Vector3 position = PlayerManager.PlayerTransform.position;
@@ -179,7 +183,9 @@ internal class NetworkTurntableSync : MonoBehaviour
 
     private void OnDestroy()
     {
-        //SingletonBehaviour<CoroutineManager>.Instance.Stop(coroutineInputLever);
+        if(authCoro != null)
+            SingletonBehaviour<CoroutineManager>.Instance.Stop(authCoro);
+
         turntable.Snapped -= Turntable_Snapped;
         if (keyboardInput)
             keyboardInput.enabled = true;
