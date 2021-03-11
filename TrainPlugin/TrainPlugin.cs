@@ -13,7 +13,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.33");
+        public override Version Version => new Version("1.6.34");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -116,8 +116,26 @@ namespace TrainPlugin
                     case NetworkTags.TRAIN_AUTH_CHANGE:
                         OnAuthChange(message);
                         break;
+
+                    case NetworkTags.TRAIN_CARGO_CHANGE:
+                        OnCargoChange(message, e.Client);
+                        break;
                 }
             }
+        }
+
+        private void OnCargoChange(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                TrainCargoChanged data = reader.ReadSerializable<TrainCargoChanged>();
+                WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == data.Id);
+                train.CargoType = data.Type;
+                train.CargoAmount = data.Amount;
+            }
+
+            Logger.Trace("[SERVER] > TRAIN_CARGO_CHANGE");
+            ReliableSendToOthers(message, client);
         }
 
         private void OnAuthChange(Message message)

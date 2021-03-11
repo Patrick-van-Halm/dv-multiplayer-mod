@@ -1,3 +1,4 @@
+using DV.Logic.Job;
 using DVMultiplayer;
 using DVMultiplayer.DTO.Train;
 using DVMultiplayer.Networking;
@@ -75,6 +76,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
             shunterExhaust.emitterVelocityMode = ParticleSystemEmitterVelocityMode.Transform;
         }
 
+        if (!trainCar.IsLoco)
+        {
+            trainCar.logicCar.CargoLoaded += OnCargoLoaded;
+            trainCar.logicCar.CargoUnloaded += OnCargoUnloaded;
+        }
+
         //for(int i = 0; i < trainCar.Bogies.Length; i++)
         //{
         //    bogieAudios[i] = trainCar.Bogies[i].GetComponent<BogieAudioController>();
@@ -84,6 +91,22 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             authorityCoro = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
         }
+    }
+
+    private void OnCargoUnloaded()
+    {
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
+            return;
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.CargoStateChanged(trainCar, CargoType.None, false);
+    }
+
+    private void OnCargoLoaded(CargoType type)
+    {
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
+            return;
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.CargoStateChanged(trainCar, type, true);
     }
 
     private IEnumerator CheckAuthorityChange()

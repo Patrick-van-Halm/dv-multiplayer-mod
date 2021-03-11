@@ -42,5 +42,6 @@
         JOB_TAKEN,
         JOB_COMPLETED,
         PING,
+        TRAIN_CARGO_CHANGE,
     }
 }

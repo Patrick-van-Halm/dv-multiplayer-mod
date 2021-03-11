@@ -17,6 +17,7 @@ using UnityEngine;
 internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 {
     public List<TrainCar> localCars = new List<TrainCar>();
+    public List<WarehouseMachineController> warehouses = new List<WarehouseMachineController>();
     public List<WorldTrain> serverCarStates = new List<WorldTrain>();
     public bool IsChangeByNetwork { get; internal set; }
     public bool IsSynced { get; private set; }
@@ -56,6 +57,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         SaveCarsLoaded = false;
         localCars = GameObject.FindObjectsOfType<TrainCar>().ToList();
+        warehouses = GameObject.FindObjectsOfType<WarehouseMachineController>().ToList();
         Main.Log($"{localCars.Count} traincars found, {localCars.Where(car => car.IsLoco).Count()} are locomotives");
 
         foreach (TrainCar trainCar in localCars)
@@ -146,6 +148,15 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
 
         localCars.Clear();
+    }
+
+    internal void CargoStateChanged(TrainCar trainCar, CargoType type, bool isLoaded)
+    {
+        WarehouseMachine warehouse = null;
+        if (trainCar.IsCargoLoadedUnloadedByMachine)
+            warehouse = trainCar.logicCar.CargoOriginWarehouse;
+
+        SendCargoStateChange(trainCar.CarGUID, trainCar.LoadedCargoAmount, type, warehouse != null ? warehouse.ID : "", isLoaded);
     }
 
     private void OnPlayerSwitchTrainCarEvent(TrainCar trainCar)
@@ -252,6 +263,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
                 case NetworkTags.TRAIN_AUTH_CHANGE:
                     OnAuthorityChangeMessage(message);
+                    break;
+
+                case NetworkTags.TRAIN_CARGO_CHANGE:
+                    OnCargoChangeMessage(message);
                     break;
             }
         }
@@ -909,6 +924,40 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             }
         }
     }
+
+    private void OnCargoChangeMessage(Message message)
+    {
+        if (buffer.NotSyncedAddToBuffer(IsSynced, OnCargoChangeMessage, message))
+            return;
+
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            while (reader.Position < reader.Length)
+            {
+                TrainCargoChanged data = reader.ReadSerializable<TrainCargoChanged>();
+                Main.Log($"[CLIENT] < TRAIN_CARGO_CHANGE: Car: {data.Id} {(data.IsLoading ? $"Loaded {data.Type.GetCargoName()}" : "Unloaded")}");
+                WorldTrain train = serverCarStates.FirstOrDefault(t => t.Guid == data.Id);
+                if(train != null)
+                {
+                    train.CargoType = data.Type;
+                    train.CargoAmount = data.Amount;
+                }
+
+                TrainCar car = localCars.FirstOrDefault(t => t.CarGUID == data.Id);
+                if (car)
+                {
+
+                    IsChangeByNetwork = true;
+                    WarehouseMachineController warehouse = warehouses.FirstOrDefault(w => w.warehouseMachine.ID == data.WarehouseId);
+                    if (data.IsLoading)
+                        car.logicCar.LoadCargo(data.Amount, data.Type, warehouse.warehouseMachine);
+                    else
+                        car.logicCar.UnloadCargo(car.logicCar.LoadedCargoAmount, car.logicCar.CurrentCargoTypeInCar, warehouse.warehouseMachine);
+                    IsChangeByNetwork = false;
+                }
+            }
+        }
+    }
     #endregion
 
     #region Sending Messages
@@ -1356,6 +1405,17 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             writer.Write(new CarsAuthChange() { Guids = carGuids, PlayerId = id });
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_AUTH_CHANGE, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
+    }
+
+    private void SendCargoStateChange(string carId, float loadedCargoAmount, CargoType loadedCargo, string warehouseId, bool isLoaded)
+    {
+        Main.Log($"[CLIENT] > TRAIN_CARGO_CHANGE: Car: {carId} {(isLoaded ? $"Loaded {loadedCargo.GetCargoName()}" : "Unloaded")}");
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write(new TrainCargoChanged() { Id = carId, Amount = loadedCargoAmount, Type = loadedCargo, WarehouseId = warehouseId, IsLoading = isLoaded });
+            using (Message message = Message.Create((ushort)NetworkTags.TRAIN_CARGO_CHANGE, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
     }
