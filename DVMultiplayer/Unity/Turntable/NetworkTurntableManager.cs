@@ -280,7 +280,9 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                 TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == authReset.Position + WorldMover.currentMove);
                 if (turntable)
                 {
-                    turntable.GetComponent<NetworkTurntableSync>().playerAuthId = 0;
+                    NetworkTurntableSync sync = turntable.GetComponent<NetworkTurntableSync>();
+                    sync.IsAnyoneInControlArea = false;
+                    sync.playerAuthId = 0;
                 }
             }
         }
@@ -302,7 +304,9 @@ internal class NetworkTurntableManager : SingletonBehaviour<NetworkTurntableMana
                 TurntableController turntable = turntables.FirstOrDefault(j => j.transform.position == authRequest.Position + WorldMover.currentMove);
                 if (turntable)
                 {
-                    turntable.GetComponent<NetworkTurntableSync>().playerAuthId = authRequest.PlayerId;
+                    NetworkTurntableSync sync = turntable.GetComponent<NetworkTurntableSync>();
+                    sync.IsAnyoneInControlArea = true;
+                    sync.playerAuthId = authRequest.PlayerId;
                 }
             }
         }

@@ -119,7 +119,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
             if (serverState != null)
             {
-                if (turntable == null)
+                if (turntable == null || turntable != null && !turntable.IsAnyoneInControlArea)
                 {
                     bool authNeedsChange = true;
                     if (!resetAuthority)

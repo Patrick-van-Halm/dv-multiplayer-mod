@@ -17,6 +17,7 @@ internal class NetworkTurntableSync : MonoBehaviour
     private bool hasLocalPlayerAuthority = false;
     internal Turntable serverState = null;
     internal ushort playerAuthId = 0;
+    internal bool IsAnyoneInControlArea = false;
     private Coroutine authCoro = null;
 
     private void Awake()
@@ -62,21 +63,17 @@ internal class NetworkTurntableSync : MonoBehaviour
                     }
                 }
 
-                if (newAuthorityPlayer)
+                if (newAuthorityPlayer && !IsAnyoneInControlArea)
                 {
-                    if (playerAuthId != newAuthorityPlayer.GetComponent<NetworkPlayerSync>().Id)
-                    {
-                        playerAuthId = newAuthorityPlayer.GetComponent<NetworkPlayerSync>().Id;
-                        SingletonBehaviour<NetworkTurntableManager>.Instance.SendRequestAuthority(turntable, playerAuthId);
-                    }
+                    IsAnyoneInControlArea = true;
+                    playerAuthId = newAuthorityPlayer.GetComponent<NetworkPlayerSync>().Id;
+                    SingletonBehaviour<NetworkTurntableManager>.Instance.SendRequestAuthority(turntable, playerAuthId);
                 }
-                else
+                else if(!newAuthorityPlayer && IsAnyoneInControlArea)
                 {
-                    if (playerAuthId != 0)
-                    {
-                        SingletonBehaviour<NetworkTurntableManager>.Instance.SendReleaseAuthority(turntable);
-                        playerAuthId = 0;
-                    }
+                    IsAnyoneInControlArea = false;
+                    SingletonBehaviour<NetworkTurntableManager>.Instance.SendReleaseAuthority(turntable);
+                    playerAuthId = 0;
                 }
             }
         }
