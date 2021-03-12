@@ -11,7 +11,7 @@ namespace DVMultiplayer.Patches.Debt
     {
         private static void Postfix(LocoDebtController __instance, ExistingLocoDebt locoDebtToPay)
         {
-            if(NetworkManager.IsClient() && SingletonBehaviour<NetworkDebtManager>.Exists && !SingletonBehaviour<NetworkDebtManager>.Instance.IsChangeByNetwork)
+            if(NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced && SingletonBehaviour<NetworkDebtManager>.Exists && !SingletonBehaviour<NetworkDebtManager>.Instance.IsChangeByNetwork)
             {
                 SingletonBehaviour<NetworkDebtManager>.Instance.OnLocoDeptPaid(locoDebtToPay.ID, false);
             }
@@ -23,7 +23,7 @@ namespace DVMultiplayer.Patches.Debt
     {
         private static void Postfix(LocoDebtController __instance, ExistingLocoDebt locoDebtToPay)
         {
-            if (NetworkManager.IsClient() && SingletonBehaviour<NetworkDebtManager>.Exists && !SingletonBehaviour<NetworkDebtManager>.Instance.IsChangeByNetwork)
+            if (NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced && SingletonBehaviour<NetworkDebtManager>.Exists && !SingletonBehaviour<NetworkDebtManager>.Instance.IsChangeByNetwork)
             {
                 SingletonBehaviour<NetworkDebtManager>.Instance.OnLocoDeptPaid(locoDebtToPay.ID, true);
             }

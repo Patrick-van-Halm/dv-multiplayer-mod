@@ -53,9 +53,18 @@ class NetworkDebtManager : SingletonBehaviour<NetworkDebtManager>
                 IsChangeByNetwork = true;
                 LocoDebtPaid data = reader.ReadSerializable<LocoDebtPaid>();
                 if (data.isDestroyed)
-                    SingletonBehaviour<LocoDebtController>.Instance.destroyedLocosDebts.FirstOrDefault(t => t.ID == data.Id).Pay();
+                {
+
+                    StagedLocoDebt debt = SingletonBehaviour<LocoDebtController>.Instance.destroyedLocosDebts.FirstOrDefault(t => t.ID == data.Id);
+                    if(debt != null)
+                        debt.Pay();
+                }
                 else
-                    SingletonBehaviour<LocoDebtController>.Instance.trackedLocosDebts.FirstOrDefault(t => t.ID == data.Id).Pay();
+                {
+                    ExistingLocoDebt debt = SingletonBehaviour<LocoDebtController>.Instance.trackedLocosDebts.FirstOrDefault(t => t.ID == data.Id);
+                    if (debt != null)
+                        debt.Pay();
+                }
                 IsChangeByNetwork = false;
             }
         }
