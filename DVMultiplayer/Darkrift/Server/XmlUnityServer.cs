@@ -137,11 +137,10 @@ namespace DarkRift.Server.Unity
         /// </summary>
         public void Close()
         {
-            if (Server.Disposed)
-                return;
-
             if (Server != null)
                 Server.Dispose();
+            else
+                return;
 
             Server = null;
         }
