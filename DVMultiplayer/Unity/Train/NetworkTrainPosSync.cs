@@ -88,12 +88,13 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (NetworkManager.IsHost())
         {
             authorityCoro = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
+            SetAuthority(true);
         }
     }
 
     private void OnCargoUnloaded()
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || SingletonBehaviour<NetworkTrainManager>.Instance.IsSpawningTrains)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.CargoStateChanged(trainCar, CargoType.None, false);
@@ -101,7 +102,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void OnCargoLoaded(CargoType type)
     {
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || SingletonBehaviour<NetworkTrainManager>.Instance.IsSpawningTrains)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.CargoStateChanged(trainCar, type, true);
@@ -220,7 +221,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         try
         {
-            if (!hasLocalPlayerAuthority)
+            if (!hasLocalPlayerAuthority && !willLocalPlayerGetAuthority)
             {
                 float increment = (velocity.magnitude * 3.6f);
                 float step = (increment + 5) * Time.deltaTime; // calculate distance to move
@@ -246,12 +247,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
             if (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)
             {
-                Main.Log($"Changing authority [GAINED]");
+                Main.Log($"Car {trainCar.CarGUID}: Changing authority [GAINED]");
                 SetAuthority(true);
             }
             else if (!willLocalPlayerGetAuthority && hasLocalPlayerAuthority)
             {
-                Main.Log($"Changing authority [RELEASED]");
+                Main.Log($"Car {trainCar.CarGUID}: Changing authority [RELEASED]");
                 SetAuthority(false);
                 newPos = transform.position - WorldMover.currentMove;
                 newRot = transform.rotation;
@@ -365,10 +366,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void OnCargoDamageTaken(float _)
     {
-        if (overrideDamageDisabled && hasLocalPlayerAuthority)
+        if (!IsCarDamageEnabled && hasLocalPlayerAuthority)
             Main.Log($"Cargo took damage but should be ignored");
 
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || overrideDamageDisabled)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || !IsCarDamageEnabled)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(trainCar.CarGUID, DamageType.Cargo, trainCar.CargoDamage.currentHealth);
@@ -376,10 +377,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void OnBodyDamageTaken(float _)
     {
-        if(overrideDamageDisabled && hasLocalPlayerAuthority)
+        if(!IsCarDamageEnabled && hasLocalPlayerAuthority)
             Main.Log($"Train took damage but should be ignored");
 
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || overrideDamageDisabled)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || !IsCarDamageEnabled)
             return;
 
         SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(trainCar.CarGUID, DamageType.Car, trainCar.CarDamage.currentHealth);
@@ -392,6 +393,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
             yield return new WaitUntil(() => Vector3.Distance(transform.position - WorldMover.currentMove, prevPos) > 0f);
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar);
             prevPos = transform.position - WorldMover.currentMove;
+
+            if (!turntable && !IsCarDamageEnabled)
+            {
+                trainCar.CarDamage.IgnoreDamage(false);
+            }
         }
     }
 
