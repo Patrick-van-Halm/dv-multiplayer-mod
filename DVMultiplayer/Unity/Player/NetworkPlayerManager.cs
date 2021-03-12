@@ -342,7 +342,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             Main.Log($"Syncing traincars");
             SingletonBehaviour<NetworkTrainManager>.Instance.SendInitCarsRequest();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced);
-            SingletonBehaviour<NetworkSaveGameManager>.Instance.LoadDataAfterTrainsInit();
+            SingletonBehaviour<NetworkSaveGameManager>.Instance.ResetDebts();
 
             // Load Job data from server that changed since uptime
             Main.Log($"Syncing jobs");
