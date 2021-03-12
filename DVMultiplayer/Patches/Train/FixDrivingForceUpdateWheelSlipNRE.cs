@@ -15,7 +15,7 @@ namespace DVMultiplayer.Patches
     {
         private static bool Prefix(float inputForce, Bogie bogie, float maxTractionForcePossible)
         {
-            return bogie && bogie.Car;
+            return bogie && bogie.Car && bogie.rb;
 		}
     }
 }
