@@ -616,6 +616,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             if (train.carType == TrainCarType.LocoShunter)
                             {
                                 train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Use();
+                                if (train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1 && lever.Value == 0)
+                                    train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Use();
                             }
                             break;
 
@@ -623,6 +625,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             if (train.carType == TrainCarType.LocoShunter)
                             {
                                 train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Use();
+                                if (train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1 && lever.Value == 0)
+                                    train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Use();
                             }
                             break;
 
@@ -1860,7 +1864,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 {
                     serverState.Shunter.IsSideFuse1On = value == 1;
                     if (value == 0)
+                    {
+                        serverState.Shunter.IsMainFuseOn = false;
                         serverState.Shunter.IsEngineOn = false;
+                    }
                 }
                 break;
 
@@ -1869,7 +1876,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 {
                     serverState.Shunter.IsSideFuse2On = value == 1;
                     if (value == 0)
+                    {
+                        serverState.Shunter.IsMainFuseOn = false;
                         serverState.Shunter.IsEngineOn = false;
+                    }
                 }
                 break;
 
