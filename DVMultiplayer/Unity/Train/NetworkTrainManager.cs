@@ -51,7 +51,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             }
         }
     }
-#pragma warning restore IDE0051 // Remove unused private members
+#pragma warning restore IDE0051 // Restore unused private members
 
     #region Events
     public void OnFinishedLoading()
