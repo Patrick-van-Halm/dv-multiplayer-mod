@@ -109,8 +109,6 @@ internal class NetworkTurntableSync : MonoBehaviour
             }
         }
 
-        hasLocalPlayerAuthority = playerAuthId == SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id;
-
         foreach (TrainCar car in currentCarsOnTurntable)
         {
             if (currentCarsOnTurntable.Count == 0 || !carsOnTurntable.Contains(car))
@@ -143,7 +141,9 @@ internal class NetworkTurntableSync : MonoBehaviour
             //}
         }
 
-        if (SingletonBehaviour<NetworkTurntableManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority)
+        hasLocalPlayerAuthority = playerAuthId == SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id;
+
+        if (!hasLocalPlayerAuthority)
         {
             prevRotation = turntable.turntable.currentYRotation;
             return;
