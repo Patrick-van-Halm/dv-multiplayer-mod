@@ -56,6 +56,10 @@
       <HintPath>lib\DV.BrakeSystem.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="DV.PointSet">
+      <HintPath>lib\DV.PointSet.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="DV.TerrainSystem">
       <HintPath>lib\DV.TerrainSystem.dll</HintPath>
       <Private>False</Private>
