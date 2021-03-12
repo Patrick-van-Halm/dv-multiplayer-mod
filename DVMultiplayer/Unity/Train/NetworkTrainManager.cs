@@ -17,7 +17,6 @@ using UnityEngine;
 internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 {
     public List<TrainCar> localCars = new List<TrainCar>();
-    public List<WarehouseMachineController> warehouses = new List<WarehouseMachineController>();
     public List<WorldTrain> serverCarStates = new List<WorldTrain>();
     public bool IsChangeByNetwork { get; internal set; }
     public bool IsSynced { get; private set; }
@@ -38,6 +37,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         CarSpawner.CarAboutToBeDeleted += OnCarAboutToBeDeleted;
     }
 
+#pragma warning disable IDE0051 // Remove unused private members
     private void Update()
     {
         if (IsSpawningTrains || !IsSynced)
@@ -51,13 +51,13 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             }
         }
     }
+#pragma warning restore IDE0051 // Remove unused private members
 
     #region Events
     public void OnFinishedLoading()
     {
         SaveCarsLoaded = false;
         localCars = GameObject.FindObjectsOfType<TrainCar>().ToList();
-        warehouses = GameObject.FindObjectsOfType<WarehouseMachineController>().ToList();
         Main.Log($"{localCars.Count} traincars found, {localCars.Where(car => car.IsLoco).Count()} are locomotives");
 
         foreach (TrainCar trainCar in localCars)
@@ -948,7 +948,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 {
 
                     IsChangeByNetwork = true;
-                    WarehouseMachineController warehouse = warehouses.FirstOrDefault(w => w.warehouseMachine.ID == data.WarehouseId);
+                    WarehouseMachineController warehouse = WarehouseMachineController.allControllers.FirstOrDefault(w => w.warehouseMachine.ID == data.WarehouseId);
                     if (data.IsLoading)
                         car.logicCar.LoadCargo(data.Amount, data.Type, warehouse.warehouseMachine);
                     else

@@ -14,7 +14,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
     public bool isOutOfSync = false;
     private Vector3 prevPos;
     //private bool hostStationary;
-    private bool isStationary;
     private Vector3 newPos = Vector3.zero;
     private Quaternion newRot = Quaternion.identity;
     //internal bool isLocationApplied;
@@ -25,7 +24,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
     internal bool resetAuthority = false;
     internal NetworkTurntableSync turntable = null;
     internal bool overrideDamageDisabled = false;
-    internal Coroutine positionCoro;
     internal Coroutine authorityCoro = null;
     private float drag;
     private Coroutine damageEnablerCoro;
@@ -78,8 +76,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         if (!trainCar.IsLoco)
         {
-            trainCar.logicCar.CargoLoaded += OnCargoLoaded;
-            trainCar.logicCar.CargoUnloaded += OnCargoUnloaded;
+            trainCar.CargoLoaded += OnCargoLoaded;
+            trainCar.CargoUnloaded += OnCargoUnloaded;
         }
 
         //for(int i = 0; i < trainCar.Bogies.Length; i++)
@@ -427,7 +425,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         //}
 
         //isLocationApplied = false;
-        isStationary = location.IsStationary;
         newPos = location.Position;
         newRot = location.Rotation;
         if (trainCar.IsLoco)
