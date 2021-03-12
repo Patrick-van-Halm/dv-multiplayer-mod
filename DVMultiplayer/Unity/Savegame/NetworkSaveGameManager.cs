@@ -81,6 +81,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
 
         if (!NetworkManager.IsHost())
         {
+            ResetDebts();
             JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
             if (jObject != null)
             {
@@ -176,7 +177,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         };
     }
 
-    public void LoadDataAfterTrainsInit()
+    public void ResetDebts()
     {
         SingletonBehaviour<LocoDebtController>.Instance.ClearLocoDebts();
         SingletonBehaviour<JobDebtController>.Instance.ClearJobDebts();
