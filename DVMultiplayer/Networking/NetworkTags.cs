@@ -43,5 +43,6 @@
         JOB_COMPLETED,
         PING,
         TRAIN_CARGO_CHANGE,
+        DEBT_LOCO_PAID,
     }
 }

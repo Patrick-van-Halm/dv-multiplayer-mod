@@ -11,6 +11,7 @@
     <plugin type="JunctionPlugin" load="true" />
     <plugin type="TurntablePlugin" load="true" />
     <plugin type="JobsPlugin" load="true" />
+    <plugin type="DebtPlugin" load="true" />
   </plugins>
 
   <data directory="Mods/DVMultiplayer/Data/"/>

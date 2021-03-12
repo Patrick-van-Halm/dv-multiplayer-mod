@@ -260,6 +260,8 @@ namespace DVMultiplayer.Networking
             networkManager.AddComponent<NetworkJobsManager>();
             Main.Log($"[CLIENT] Initializing NetworkTurntableManager");
             networkManager.AddComponent<NetworkTurntableManager>();
+            Main.Log($"[CLIENT] Initializing NetworkDebtManager");
+            networkManager.AddComponent<NetworkDebtManager>();
         }
 
         private static IEnumerator DeInitializeUnityScripts()
@@ -276,6 +278,8 @@ namespace DVMultiplayer.Networking
             Object.DestroyImmediate(networkManager.GetComponent<NetworkJunctionManager>());
             Main.Log($"[DISCONNECTING] NetworkTurntableManager Deinitializing");
             Object.DestroyImmediate(networkManager.GetComponent<NetworkTurntableManager>());
+            Main.Log($"[DISCONNECTING] NetworkDebtManager Deinitializing");
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkDebtManager>());
             Main.Log($"[DISCONNECTING] NetworkSaveGameManager Deinitializing");
             networkManager.GetComponent<NetworkSaveGameManager>().PlayerDisconnect();
             yield return new WaitUntil(() => networkManager.GetComponent<NetworkSaveGameManager>().IsOfflineSaveLoaded);

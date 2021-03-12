@@ -158,6 +158,7 @@
     <Compile Include="Darkrift\Server\XmlUnityServer.cs" />
     <Compile Include="Darkrift\WriterExtends.cs" />
     <Compile Include="DebugUI.cs" />
+    <Compile Include="DTO\Debt\LocoDebtPaid.cs" />
     <Compile Include="DTO\Job\Job.cs" />
     <Compile Include="DTO\Job\JobCreated.cs" />
     <Compile Include="DTO\Junction\Switch.cs" />
@@ -189,6 +190,7 @@
     <Compile Include="Networking\NetworkingUI.cs" />
     <Compile Include="Networking\NetworkManager.cs" />
     <Compile Include="Networking\NetworkTags.cs" />
+    <Compile Include="Patches\Debt\LocoDebtControllerPatch.cs" />
     <Compile Include="Patches\Jobs\JobValidatorStopAcceptingJobIfNotAllowed.cs" />
     <Compile Include="Patches\Train\FixBogiesForceSleepNRE.cs" />
     <Compile Include="Patches\Train\DisallowDeleteIfPlayerInTrain.cs" />
@@ -199,6 +201,7 @@
     <Compile Include="Patches\Train\ChangeSpeedCalculationWhenPhysicsAreOff.cs" />
     <Compile Include="Patches\Train\AllowUpdateWhenKinematic.cs" />
     <Compile Include="Patches\Spawning\StopCreatingLocosAsClient.cs" />
+    <Compile Include="Patches\Train\Shunter\LocoControllerShunterSetNeutralStatePatch.cs" />
     <Compile Include="Patches\Train\Shunter\ShunterLocoSimulationPatch.cs" />
     <Compile Include="Patches\UI\StopClosingUIIfNotAllowed.cs" />
     <Compile Include="Patches\Train\RemoveScriptsBeforeCarDeletion.cs" />
@@ -211,6 +214,7 @@
     <Compile Include="Patches\UI\EnableMovementOutsidePauseMenus.cs" />
     <Compile Include="Patches\UI\StopGamePauseInMenus.cs" />
     <Compile Include="Patches\Jobs\StopGeneratingJobsAsClient.cs" />
+    <Compile Include="Unity\Debt\NetworkDebtManager.cs" />
     <Compile Include="Unity\Jobs\NetworkJobsManager.cs" />
     <Compile Include="Unity\Jobs\NetworkJobsSync.cs" />
     <Compile Include="Unity\Junction\NetworkJunctionSync.cs" />
