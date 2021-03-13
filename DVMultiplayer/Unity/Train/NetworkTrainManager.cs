@@ -93,7 +93,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         if (IsChangeByNetwork || !IsSynced || IsSpawningTrains)
             return;
 
-        if (car.IsLoco || car.playerSpawnedCar)
+        if (car.IsLoco || car.playerSpawnedCar || car.carType == TrainCarType.Tender || car.carType == TrainCarType.TenderBlue)
         {
             AddNetworkingScripts(car);
 

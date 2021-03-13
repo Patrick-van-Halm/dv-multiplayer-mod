@@ -27,6 +27,7 @@
         TRAIN_DAMAGE,
         TRAINS_INIT_FINISHED,
         TRAIN_AUTH_CHANGE,
+        TRAIN_CARGO_CHANGE,
         SWITCH_CHANGED,
         SWITCH_SYNC,
         SWITCH_HOST_SYNC,
@@ -41,8 +42,10 @@
         JOB_HOST_SYNC,
         JOB_TAKEN,
         JOB_COMPLETED,
+        JOB_NEXT_JOB,
+        JOB_CHAIN_COMPLETED,
+        JOB_CHAIN_CHANGED,
         PING,
-        TRAIN_CARGO_CHANGE,
         DEBT_LOCO_PAID,
     }
 }

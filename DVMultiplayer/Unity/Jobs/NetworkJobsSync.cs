@@ -11,35 +11,62 @@ using UnityEngine;
 class NetworkJobsSync : MonoBehaviour
 {
     internal event Action<StationController, JobChainController[]> OnJobsGenerated;
+    internal List<JobChainController> currentChains = new List<JobChainController>();
     StationController station;
-    List<JobChainController> currentJobs = new List<JobChainController>();
     Coroutine sendNewJobsAfterGeneration = null;
     List<JobChainController> newChains = new List<JobChainController>();
 
     private void Awake()
     {
         station = GetComponent<StationController>();
-        station.ProceduralJobsController.JobGenerationAttempt += OnJobGeneratedAttempt;
-        currentJobs.AddRange(station.ProceduralJobsController.GetCurrentJobChains());
+        station.ProceduralJobsController.JobGenerationAttempt += OnChainsGenerated;
+        currentChains.AddRange(station.ProceduralJobsController.GetCurrentJobChains());
     }
 
     private void OnDestroy()
     {
-        station.ProceduralJobsController.JobGenerationAttempt -= OnJobGeneratedAttempt;
+        station.ProceduralJobsController.JobGenerationAttempt -= OnChainsGenerated;
     }
 
-    private void OnJobGeneratedAttempt()
+    private void OnChainsGenerated()
     {
         List<JobChainController> newJobs = station.ProceduralJobsController.GetCurrentJobChains();
-        foreach (JobChainController chain in currentJobs)
+        foreach (JobChainController chain in currentChains)
         {
             newJobs.RemoveAll(j => j.currentJobInChain.ID == chain.currentJobInChain.ID);
         }
 
-        currentJobs.AddRange(newJobs);
+        currentChains.AddRange(newJobs);
         newChains.AddRange(newJobs);
         if (sendNewJobsAfterGeneration == null)
             sendNewJobsAfterGeneration = SingletonBehaviour<CoroutineManager>.Instance.Run(WaitTillGenerationFinished());
+    }
+
+    internal void OnSingleChainGeneratedWithExistingCars(JobChainController chain)
+    {
+        currentChains.Add(chain);
+        OnJobsGenerated?.Invoke(station, new JobChainController[] { chain });
+    }
+
+    internal void OnSingleChainGenerated(bool trainsNotInitialized = false)
+    {
+        List<JobChainController> newJobs = station.ProceduralJobsController.GetCurrentJobChains();
+        foreach (JobChainController chain in currentChains)
+        {
+            newJobs.RemoveAll(j => j.currentJobInChain.ID == chain.currentJobInChain.ID);
+        }
+
+        currentChains.AddRange(newJobs);
+        if (trainsNotInitialized)
+        {
+            List<TrainCar> newJobTrains = new List<TrainCar>();
+            foreach (JobChainController job in newJobs)
+            {
+                newJobTrains.AddRange(job.trainCarsForJobChain);
+            }
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewJobChainCars(newJobTrains);
+        }
+        OnJobsGenerated?.Invoke(station, newJobs.ToArray());
     }
 
     private IEnumerator WaitTillGenerationFinished()

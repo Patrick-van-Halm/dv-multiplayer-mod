@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -159,8 +159,8 @@
     <Compile Include="Darkrift\WriterExtends.cs" />
     <Compile Include="DebugUI.cs" />
     <Compile Include="DTO\Debt\LocoDebtPaid.cs" />
+    <Compile Include="DTO\Job\Chain.cs" />
     <Compile Include="DTO\Job\Job.cs" />
-    <Compile Include="DTO\Job\JobCreated.cs" />
     <Compile Include="DTO\Junction\Switch.cs" />
     <Compile Include="DTO\Player\Disconnect.cs" />
     <Compile Include="DTO\Player\Location.cs" />
@@ -192,6 +192,8 @@
     <Compile Include="Networking\NetworkTags.cs" />
     <Compile Include="Patches\Debt\LocoDebtControllerPatch.cs" />
     <Compile Include="Patches\Jobs\JobValidatorStopAcceptingJobIfNotAllowed.cs" />
+    <Compile Include="Patches\Jobs\StaticJobDefinitionPatch.cs" />
+    <Compile Include="Patches\Jobs\StopGeneratingJobsAsClientAfterChain.cs" />
     <Compile Include="Patches\Train\FixBogiesForceSleepNRE.cs" />
     <Compile Include="Patches\Train\DisallowDeleteIfPlayerInTrain.cs" />
     <Compile Include="Patches\Train\FixDrivingForceUpdateWheelSlipNRE.cs" />

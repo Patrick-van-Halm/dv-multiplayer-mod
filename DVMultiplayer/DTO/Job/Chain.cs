@@ -7,21 +7,26 @@ using System.Threading.Tasks;
 
 namespace DVMultiplayer.DTO.Job
 {
-    public class JobCreated : IDarkRiftSerializable
+    public class Chain : IDarkRiftSerializable
     {
         public string Id { get; set; }
-        public string JobData { get; set; }
+        public string Data { get; set; }
+        public bool IsCompleted { get; set; } = false;
+
+        internal JobChainController Controller { get; set; }
 
         public void Deserialize(DeserializeEvent e)
         {
             Id = e.Reader.ReadString();
-            JobData = e.Reader.ReadString();
+            Data = e.Reader.ReadString();
+            IsCompleted = e.Reader.ReadBoolean();
         }
 
         public void Serialize(SerializeEvent e)
         {
             e.Writer.Write(Id);
-            e.Writer.Write(JobData);
+            e.Writer.Write(Data);
+            e.Writer.Write(IsCompleted);
         }
     }
 }

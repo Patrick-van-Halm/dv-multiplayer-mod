@@ -12,12 +12,14 @@ namespace JobsPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.3");
+        public override Version Version => new Version("1.0.7");
 
+        private readonly List<Chain> chains;
         private readonly List<Job> jobs;
 
         public JobsPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
+            chains = new List<Chain>();
             jobs = new List<Job>();
             ClientManager.ClientConnected += OnClientConnected;
         }
@@ -58,8 +60,61 @@ namespace JobsPlugin
                     case NetworkTags.JOB_COMPLETED:
                         OnJobCompleted(message, e.Client);
                         break;
+
+                    case NetworkTags.JOB_CHAIN_COMPLETED:
+                        OnJobChainCompleted(message, e.Client);
+                        break;
+
+                    case NetworkTags.JOB_NEXT_JOB:
+                        OnNextJobInChainGenerated(message, e.Client);
+                        break;
+
+                    case NetworkTags.JOB_CHAIN_CHANGED:
+                        OnChainDataChanged(message);
+                        break;
                 }
             }
+        }
+
+        private void OnChainDataChanged(Message message)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                Chain data = reader.ReadSerializable<Chain>();
+                Chain chain = chains.FirstOrDefault(c => c.Id == data.Id);
+                chain.Data = data.Data;
+            }
+        }
+
+        private void OnNextJobInChainGenerated(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                Job data = reader.ReadSerializable<Job>();
+                Job prevJob = jobs.FirstOrDefault(j => j.ChainId == data.ChainId && j.IsCurrentJob);
+                Job job = jobs.FirstOrDefault(j => j.Id == data.Id);
+                prevJob.IsCurrentJob = false;
+                job.GameId = data.GameId;
+                job.IsCurrentJob = true;
+                job.IsTaken = false;
+                job.IsCompleted = false;
+            }
+
+            Logger.Trace("[SERVER] > JOB_NEXT_JOB");
+            ReliableSendToOthers(message, client);
+        }
+
+        private void OnJobChainCompleted(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                string id = reader.ReadString();
+                Chain chain = chains.FirstOrDefault(j => j.Id == id);
+                chain.IsCompleted = true;
+            }
+
+            Logger.Trace("[SERVER] > JOB_CHAIN_COMPLETED");
+            ReliableSendToOthers(message, client);
         }
 
         private void OnJobCompleted(Message message, IClient client)
@@ -71,6 +126,7 @@ namespace JobsPlugin
                 job.IsCompleted = true;
             }
 
+            Logger.Trace("[SERVER] > JOB_COMPLETED");
             ReliableSendToOthers(message, client);
         }
 
@@ -83,6 +139,7 @@ namespace JobsPlugin
                 job.IsTaken = true;
             }
 
+            Logger.Trace("[SERVER] > JOB_TAKEN");
             ReliableSendToOthers(message, client);
         }
 
@@ -90,17 +147,29 @@ namespace JobsPlugin
         {
             using (DarkRiftReader reader = message.GetReader())
             {
-                Job[] jobs = reader.ReadSerializables<Job>();
-                this.jobs.AddRange(jobs);
+                chains.Clear();
+                chains.AddRange(reader.ReadSerializables<Chain>());
+                jobs.Clear();
+                jobs.AddRange(reader.ReadSerializables<Job>());
+                Logger.Trace($"[SERVER] Registered {chains.Count} chains with a total of {jobs.Count} jobs.");
             }
         }
 
         private void SendAllServerJobs(IClient sender)
         {
+            Chain[] chainsToSend = chains.Where(c => !c.IsCompleted).ToArray();
+
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
-                writer.Write(jobs.Where(j => !j.IsCompleted).ToArray());
+                List<Job> jobsToSend = new List<Job>();
+                foreach(Chain chain in chainsToSend)
+                {
+                    jobsToSend.AddRange(jobs.Where(j => j.ChainId == chain.Id));
+                }
+                writer.Write(chainsToSend);
+                writer.Write(jobsToSend.ToArray());
 
+                Logger.Trace("[SERVER] > JOB_SYNC");
                 using (Message msg = Message.Create((ushort)NetworkTags.JOB_SYNC, writer))
                     sender.SendMessage(msg, SendMode.Reliable);
             }
@@ -110,15 +179,8 @@ namespace JobsPlugin
         {
             using (DarkRiftReader reader = message.GetReader())
             {
-                JobCreated[] newJobs = reader.ReadSerializables<JobCreated>();
-                foreach(JobCreated job in newJobs)
-                {
-                    jobs.Add(new Job()
-                    {
-                        Id = job.Id,
-                        JobData = job.JobData
-                    });
-                }
+                chains.AddRange(reader.ReadSerializables<Chain>());
+                jobs.AddRange(reader.ReadSerializables<Job>());
             }
 
             Logger.Trace("[SERVER] > JOB_CREATED");
