@@ -176,7 +176,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void Update()
     {
-        if (!SingletonBehaviour<NetworkPlayerManager>.Exists)
+        if (!SingletonBehaviour<NetworkPlayerManager>.Exists || !SingletonBehaviour<NetworkTrainManager>.Exists)
             return;
 
         if(serverState == null)
@@ -223,15 +223,17 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             if (!hasLocalPlayerAuthority && !willLocalPlayerGetAuthority)
             {
-                float increment = (velocity.magnitude * 3.6f);
-                float step = (increment + 5) * Time.deltaTime; // calculate distance to move
-                if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) >= .05)
+                float increment = (velocity.magnitude * 3f);
+                if (increment <= .1f)
+                    increment = 1;
+                float step = increment * Time.deltaTime; // calculate distance to move
+                if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > 1e-5)
                 {
                     //Main.Log($"Moving train");
                     trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
                 }
 
-                if (newRot != Quaternion.identity && Quaternion.Angle(transform.rotation, newRot) >= .1)
+                if (newRot != Quaternion.identity && Quaternion.Angle(transform.rotation, newRot) > 1e-5)
                 {
                     //Main.Log($"Rotating train");
                     if (!turntable)
@@ -390,6 +392,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
     {
         while (hasLocalPlayerAuthority && !trainCar.frontCoupler.coupledTo)
         {
+            yield return new WaitForSeconds(.005f);
             yield return new WaitUntil(() => Vector3.Distance(transform.position - WorldMover.currentMove, prevPos) > 0f);
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar);
             prevPos = transform.position - WorldMover.currentMove;

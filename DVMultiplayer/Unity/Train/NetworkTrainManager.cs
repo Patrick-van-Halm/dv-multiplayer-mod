@@ -549,19 +549,20 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                                 serverState.Shunter = new Shunter();
                             serverCarStates.Add(serverState);
                         }
-                        if (location.Timestamp <= serverState.updatedAt)
-                            continue;
 
-                        serverState.Position = location.Position;
-                        serverState.Rotation = location.Rotation;
-                        serverState.Forward = location.Forward;
-                        serverState.Bogies = location.Bogies;
-                        serverState.IsStationary = location.IsStationary;
-                        serverState.updatedAt = location.Timestamp;
+                        if (location.Timestamp > serverState.updatedAt)
+                        {
+                            serverState.Position = location.Position;
+                            serverState.Rotation = location.Rotation;
+                            serverState.Forward = location.Forward;
+                            serverState.Bogies = location.Bogies;
+                            serverState.IsStationary = location.IsStationary;
+                            serverState.updatedAt = location.Timestamp;
 
-                        //Main.Log($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
-                        if(train.GetComponent<NetworkTrainPosSync>())
-                            SingletonBehaviour<CoroutineManager>.Instance.Run(train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location));
+                            //Main.Log($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
+                            if (train.GetComponent<NetworkTrainPosSync>())
+                                SingletonBehaviour<CoroutineManager>.Instance.Run(train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location));
+                        }
                     }
                 }
             }
