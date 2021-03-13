@@ -1,4 +1,4 @@
-using DarkRift;
+﻿using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DV;
@@ -426,7 +426,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                     Location playerPos = reader.ReadSerializable<Location>();
                     Main.Log($"[CLIENT] < PLAYER_SPAWN: Username: {player.Username} ");
 
-                    Vector3 pos = playerPos.Position;
+                    Vector3 pos = playerPos.Position + WorldMover.currentMove;
                     pos = new Vector3(pos.x, pos.y + 1, pos.z);
                     Quaternion rotation = Quaternion.identity;
                     if (playerPos.Rotation.HasValue)
