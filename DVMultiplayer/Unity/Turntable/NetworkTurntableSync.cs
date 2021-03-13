@@ -103,8 +103,8 @@ internal class NetworkTurntableSync : MonoBehaviour
                 if(car.logicCar != null)
                 {
                     car.GetComponent<NetworkTrainPosSync>().turntable = null;
+                    car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = false;
                     Main.Log($"Train: {car.CarGUID} left turntable");
-                    SingletonBehaviour<CoroutineManager>.Instance.Run(EnableDamageAfterSeconds(car, .3f));
                 }
             }
         }
@@ -155,12 +155,6 @@ internal class NetworkTurntableSync : MonoBehaviour
                 SendRotationChange();
             prevRotation = turntable.turntable.currentYRotation;
         }
-    }
-
-    private IEnumerator EnableDamageAfterSeconds(TrainCar car, float time)
-    {
-        yield return new WaitForSeconds(time);
-        car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = false;
     }
 
     private void SendRotationChange()

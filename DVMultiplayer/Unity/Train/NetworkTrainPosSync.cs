@@ -203,9 +203,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         else if(!overrideDamageDisabled && !IsCarDamageEnabled && damageEnablerCoro == null && (hasLocalPlayerAuthority || (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)))
         {
             Main.Log($"Accepting damage on train {trainCar.CarGUID}");
-            trainCar.stress.enabled = true;
-            trainCar.stress.DisableStressCheckForTwoSeconds();
-            trainCar.TrainCarCollisions.enabled = true;
             damageEnablerCoro = StartCoroutine(ToggleDamageAfterSeconds(1));
         }
 
@@ -321,11 +318,14 @@ internal class NetworkTrainPosSync : MonoBehaviour
             yield break;
         }
         
+        trainCar.stress.DisableStressCheckForTwoSeconds();
         trainCar.CarDamage.IgnoreDamage(true);
         trainCar.stress.DisableStressCheckForTwoSeconds();
         yield return new WaitForSeconds(seconds);
         if (!turntable)
         {
+            trainCar.stress.enabled = true;
+            trainCar.TrainCarCollisions.enabled = true;
             trainCar.CarDamage.IgnoreDamage(false);
         }
 
