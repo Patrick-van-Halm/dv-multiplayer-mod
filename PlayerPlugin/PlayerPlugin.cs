@@ -254,7 +254,7 @@ namespace PlayerPlugin
                 using (DarkRiftWriter writer = DarkRiftWriter.Create())
                 {
                     newLocation.AproxPing = (int)(sender.RoundTripTime.SmoothedRtt / 2 * 1000);
-                    writer.Write<Location>(newLocation);
+                    writer.Write(newLocation);
 
                     using (Message outMessage = Message.Create((ushort)NetworkTags.PLAYER_LOCATION_UPDATE, writer))
                         foreach (IClient client in ClientManager.GetAllClients().Where(client => client != sender))

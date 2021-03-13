@@ -1,4 +1,4 @@
-﻿using DarkRift;
+using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DV;
@@ -483,7 +483,8 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             {
                 Id = SingletonBehaviour<UnityClient>.Instance.ID,
                 Position = position - WorldMover.currentMove,
-                Rotation = rotation
+                Rotation = rotation,
+                UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
             });
 
             using (Message message = Message.Create((ushort)NetworkTags.PLAYER_LOCATION_UPDATE, writer))
@@ -504,7 +505,7 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
                     Vector3 pos = location.Position;
                     pos = new Vector3(pos.x, pos.y + 1, pos.z);
                     NetworkPlayerSync playerSync = playerObject.GetComponent<NetworkPlayerSync>();
-                    playerSync.UpdateLocation(pos, location.AproxPing, location.Rotation);
+                    playerSync.UpdateLocation(pos, location.AproxPing, location.UpdatedAt, location.Rotation);
                 }
             }
         }
