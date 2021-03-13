@@ -40,7 +40,7 @@ namespace DVMultiplayer.Patches
 				}
 
 
-                if (NetworkManager.IsHost() && SingletonBehaviour<NetworkPlayerManager>.Instance.IsSynced)
+                if (NetworkManager.IsHost() && SingletonBehaviour<NetworkPlayerManager>.Instance.IsSynced && SingletonBehaviour<NetworkJobsManager>.Exists)
                 {
 					if (SingletonBehaviour<NetworkPlayerManager>.Instance.newPlayerConnecting)
 						return false;
@@ -64,10 +64,12 @@ namespace DVMultiplayer.Patches
 					}
 					else if(___playerEnteredJobGenerationZone)
                     {
-						if (!SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().All(p => ___stationRange.IsPlayerInJobGenerationZone((p.transform.position - ___stationRange.stationCenterAnchor.position).sqrMagnitude)) && !isHostInGenerationZone)
+						if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayers().All(p => !___stationRange.IsPlayerInJobGenerationZone((p.transform.position - ___stationRange.stationCenterAnchor.position).sqrMagnitude)) && !isHostInGenerationZone)
                         {
-							Main.Log("No one in area reseting generation flag");
 							___playerEnteredJobGenerationZone = false;
+							Main.Log("No one in area reseting generation flag");
+							__instance.ExpireAllAvailableJobsInStation();
+							SingletonBehaviour<NetworkJobsManager>.Instance.SendJobsExpirationInStation(__instance.logicStation.ID);
                         }
 					}
 				}

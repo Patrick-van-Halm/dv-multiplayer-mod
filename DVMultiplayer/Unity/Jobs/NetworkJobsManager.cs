@@ -126,6 +126,14 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
         SendChainCompleted(chain.Id);
     }
 
+    private void OnJobInChainExpired(JobChainController chainController)
+    {
+        chainController.JobOfChainExpired -= OnJobInChainExpired;
+        Chain chain = jobChains.FirstOrDefault(c => c.Controller == chainController);
+        chain.IsExpired = true;
+        SendChainExpired(chain.Id);
+    }
+
     private void OnNextJobInChainGenerated(StaticJobDefinition jobDef, DV.Logic.Job.Job job)
     {
         if (NetworkManager.IsHost())
@@ -141,6 +149,11 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
         Main.Log("Register job taken event");
         job.JobTaken += OnJobTaken;
         Main.Log("Job fully loaded");
+    }
+
+    private void OnJobExpired(DV.Logic.Job.Job job)
+    {
+        job.JobTaken -= OnJobTaken;
     }
     #endregion
 
@@ -174,12 +187,40 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                 case NetworkTags.JOB_CHAIN_COMPLETED:
                     OnJobChainFinishedMessage(message);
                     break;
+
+                case NetworkTags.JOB_CHAIN_EXPIRED:
+                    OnJobChainExpiredMessage(message);
+                    break;
+
+                case NetworkTags.JOB_STATION_EXPIRATION:
+                    OnStationJobsExpire(message);
+                    break;
             }
         }
     }
     #endregion
 
     #region Receiving Messages
+    private void OnStationJobsExpire(Message message)
+    {
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            Main.Log($"[CLIENT] < JOB_STATION_EXPIRATION");
+
+            while (reader.Position < reader.Length)
+            {
+                IsChangedByNetwork = true;
+                string id = reader.ReadString();
+                StationController station = StationController.allStations.FirstOrDefault(s => s.logicStation.ID == id);
+                if (station != null)
+                {
+                    station.ExpireAllAvailableJobsInStation();
+                }
+                IsChangedByNetwork = false;
+            }
+        }
+    }
+
     private void OnJobChainFinishedMessage(Message message)
     {
         using (DarkRiftReader reader = message.GetReader())
@@ -194,6 +235,26 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                 if (chain != null)
                 {
                     chain.IsCompleted = true;
+                }
+                IsChangedByNetwork = false;
+            }
+        }
+    }
+
+    private void OnJobChainExpiredMessage(Message message)
+    {
+        using (DarkRiftReader reader = message.GetReader())
+        {
+            Main.Log($"[CLIENT] < JOB_CHAIN_EXPIRED");
+
+            while (reader.Position < reader.Length)
+            {
+                IsChangedByNetwork = true;
+                string id = reader.ReadString();
+                Chain chain = jobChains.FirstOrDefault(j => j.Id == id);
+                if (chain != null)
+                {
+                    chain.IsExpired = true;
                 }
                 IsChangedByNetwork = false;
             }
@@ -275,9 +336,13 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
 
                             if (job.IsCurrentJob)
                             {
+
                                 Main.Log("Job is current registering job taken event");
                                 if (!job.IsTaken)
+                                {
+                                    job.Definition.job.JobExpired += OnJobExpired;
                                     job.Definition.job.JobTaken += OnJobTaken;
+                                }
                                 else
                                     job.CanTakeJob = false;
                             }
@@ -443,6 +508,19 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
         }
     }
 
+    private void SendChainExpired(string id)
+    {
+        Main.Log($"[CLIENT] > JOB_CHAIN_COMPLETED");
+
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write(id);
+
+            using (Message message = Message.Create((ushort)NetworkTags.JOB_CHAIN_EXPIRED, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
+    }
+
     private void SendNewChainSaveData(Chain chain)
     {
         Main.Log($"[CLIENT] > JOB_CHAIN_CHANGED");
@@ -452,6 +530,19 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
             writer.Write(chain);
 
             using (Message message = Message.Create((ushort)NetworkTags.JOB_CHAIN_CHANGED, writer))
+                SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
+        }
+    }
+
+    internal void SendJobsExpirationInStation(string stationId)
+    {
+        Main.Log($"[CLIENT] > JOB_STATION_EXPIRATION");
+
+        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+        {
+            writer.Write(stationId);
+
+            using (Message message = Message.Create((ushort)NetworkTags.JOB_STATION_EXPIRATION, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
     }
@@ -550,6 +641,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
             newChains.Add(chain);
 
             controller.JobChainCompleted += OnJobChainCompleted;
+            controller.JobOfChainExpired += OnJobInChainExpired;
             StaticJobDefinition[] definitions = controller.jobChainGO.GetComponents<StaticJobDefinition>();
             foreach (StaticJobDefinition definition in definitions)
             {

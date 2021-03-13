@@ -47,5 +47,7 @@
         JOB_CHAIN_CHANGED,
         PING,
         DEBT_LOCO_PAID,
+        JOB_CHAIN_EXPIRED,
+        JOB_STATION_EXPIRATION,
     }
 }

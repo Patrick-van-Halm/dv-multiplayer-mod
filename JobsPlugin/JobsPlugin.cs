@@ -12,10 +12,10 @@ namespace JobsPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.7");
+        public override Version Version => new Version("1.0.9");
 
         private readonly List<Chain> chains;
-        private readonly List<Job> jobs;
+        public readonly List<Job> jobs;
 
         public JobsPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -65,6 +65,10 @@ namespace JobsPlugin
                         OnJobChainCompleted(message, e.Client);
                         break;
 
+                    case NetworkTags.JOB_CHAIN_EXPIRED:
+                        OnJobChainExpired(message, e.Client);
+                        break;
+
                     case NetworkTags.JOB_NEXT_JOB:
                         OnNextJobInChainGenerated(message, e.Client);
                         break;
@@ -72,8 +76,26 @@ namespace JobsPlugin
                     case NetworkTags.JOB_CHAIN_CHANGED:
                         OnChainDataChanged(message);
                         break;
+
+                    case NetworkTags.JOB_STATION_EXPIRATION:
+                        Logger.Trace("[SERVER] > JOB_STATION_EXPIRATION");
+                        ReliableSendToOthers(message, e.Client);
+                        break;
                 }
             }
+        }
+
+        private void OnJobChainExpired(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                string id = reader.ReadString();
+                Chain chain = chains.FirstOrDefault(j => j.Id == id);
+                chain.IsExpired = true;
+            }
+
+            Logger.Trace("[SERVER] > JOB_CHAIN_EXPIRED");
+            ReliableSendToOthers(message, client);
         }
 
         private void OnChainDataChanged(Message message)
@@ -157,14 +179,14 @@ namespace JobsPlugin
 
         private void SendAllServerJobs(IClient sender)
         {
-            Chain[] chainsToSend = chains.Where(c => !c.IsCompleted).ToArray();
+            Chain[] chainsToSend = chains.Where(c => !c.IsCompleted && !c.IsExpired).ToArray();
 
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
                 List<Job> jobsToSend = new List<Job>();
                 foreach(Chain chain in chainsToSend)
                 {
-                    jobsToSend.AddRange(jobs.Where(j => j.ChainId == chain.Id));
+                    jobsToSend.AddRange(jobs.Where(j => j.ChainId == chain.Id && !j.IsCompleted));
                 }
                 writer.Write(chainsToSend);
                 writer.Write(jobsToSend.ToArray());

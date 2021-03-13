@@ -12,6 +12,7 @@ namespace DVMultiplayer.DTO.Job
         public string Id { get; set; }
         public string Data { get; set; }
         public bool IsCompleted { get; set; } = false;
+        public bool IsExpired { get; set; } = false;
 
         internal JobChainController Controller { get; set; }
 
@@ -20,6 +21,7 @@ namespace DVMultiplayer.DTO.Job
             Id = e.Reader.ReadString();
             Data = e.Reader.ReadString();
             IsCompleted = e.Reader.ReadBoolean();
+            IsExpired = e.Reader.ReadBoolean();
         }
 
         public void Serialize(SerializeEvent e)
@@ -27,6 +29,7 @@ namespace DVMultiplayer.DTO.Job
             e.Writer.Write(Id);
             e.Writer.Write(Data);
             e.Writer.Write(IsCompleted);
+            e.Writer.Write(IsExpired);
         }
     }
 }
