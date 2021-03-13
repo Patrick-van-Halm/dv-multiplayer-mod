@@ -24,7 +24,7 @@ internal class NetworkPlayerSync : MonoBehaviour
     {
         if (!IsLocal)
         {
-            if(Vector3.Distance(transform.position, newPosition + WorldMover.currentMove) >= 2 && !Train)
+            if(Vector3.Distance(transform.position, newPosition + WorldMover.currentMove) >= 2)
             {
                 transform.position = newPosition + WorldMover.currentMove;
             }
@@ -33,7 +33,7 @@ internal class NetworkPlayerSync : MonoBehaviour
                 float increment = 15;
                 if (Train)
                 {
-                    increment = Train.GetVelocity().magnitude * 3f;
+                    increment = Train.GetVelocity().magnitude * 3.6f;
                     if (increment <= .1f)
                         increment = 1;
                 }
