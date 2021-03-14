@@ -235,7 +235,6 @@ namespace DVMultiplayer.Networking
 
                 Main.Log($"Everything should be initialized running PlayerConnect method");
                 SingletonBehaviour<NetworkPlayerManager>.Instance.PlayerConnect();
-                SingletonBehaviour<NetworkTrainManager>.Instance.PlayerConnect();
                 Main.Log($"Connecting finished");
             }
         }

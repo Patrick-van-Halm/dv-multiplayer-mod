@@ -324,6 +324,9 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             AppUtil.Instance.PauseGame();
             yield return new WaitUntil(() => AppUtil.IsPaused);
 
+            // Remove all Cars
+            SingletonBehaviour<CarsSaveManager>.Instance.DeleteAllExistingCars();
+
             // Get the online save game
             Main.Log($"Syncing Save");
             SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
