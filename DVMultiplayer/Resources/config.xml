@@ -1,5 +1,5 @@
 ﻿<configuration>
-  <server maxStrikes="999" reconnectAttempts="0" />
+  <server maxStrikes="3" reconnectAttempts="0" />
   
   <pluginSearch>
     <pluginSearchPath src="Mods/DVMultiplayer/Plugins" createDir="true" />
