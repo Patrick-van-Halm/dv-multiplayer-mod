@@ -521,7 +521,10 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
     /// <returns>GameObject of player</returns>
     internal GameObject GetPlayerById(ushort playerId)
     {
-        return networkPlayers[playerId];
+        if (networkPlayers.ContainsKey(playerId))
+            return networkPlayers[playerId];
+        else
+            return null;
     }
 
     /// <summary>
