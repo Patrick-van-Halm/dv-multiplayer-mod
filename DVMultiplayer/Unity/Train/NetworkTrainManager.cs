@@ -8,6 +8,7 @@ using DVMultiplayer;
 using DVMultiplayer.Darkrift;
 using DVMultiplayer.DTO.Train;
 using DVMultiplayer.Networking;
+using DVMultiplayer.Utils.Game;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -107,6 +108,11 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         if (!NetworkManager.IsHost())
         {
+            if (PlayerManager.Car)
+            {
+                KeyValuePair<string, Vector3> closestStation = SavedPositions.Stations.Where(pair => pair.Value == SavedPositions.Stations.Values.OrderBy(x => Vector3.Distance(x, PlayerManager.GetWorldAbsolutePlayerPosition())).First()).FirstOrDefault();
+                PlayerManager.TeleportPlayer(closestStation.Value + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
+            }
             foreach (TrainCar spCar in GameObject.FindObjectsOfType<TrainCar>())
             {
                 CarSpawner.DeleteCar(spCar);
@@ -132,6 +138,11 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
             if (!NetworkManager.IsHost())
             {
+                if(PlayerManager.Car)
+                {
+                    KeyValuePair<string, Vector3> closestStation = SavedPositions.Stations.Where(pair => pair.Value == SavedPositions.Stations.Values.OrderBy(x => Vector3.Distance(x, PlayerManager.GetWorldAbsolutePlayerPosition())).First()).FirstOrDefault();
+                    PlayerManager.TeleportPlayer(closestStation.Value + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
+                }
                 SingletonBehaviour<CarsSaveManager>.Instance.DeleteAllExistingCars();
             }
             else
