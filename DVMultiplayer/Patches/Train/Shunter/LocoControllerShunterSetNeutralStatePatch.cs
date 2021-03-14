@@ -14,6 +14,10 @@ namespace DVMultiplayer.Patches.Train
             if(NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Exists)
             {
                 NetworkTrainManager net = SingletonBehaviour<NetworkTrainManager>.Instance;
+                foreach(Bogie bogie in ___train.Bogies)
+                {
+                    bogie.RefreshBogiePoints();
+                }
                 WorldTrain state = net.GetServerStateById(___train.CarGUID);
                 if(state != null)
                 {
