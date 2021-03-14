@@ -10,7 +10,7 @@ using UnityEngine;
 internal class NetworkTrainPosSync : MonoBehaviour
 {
     private TrainCar trainCar;
-    private WorldTrain serverState;
+    internal WorldTrain serverState;
     public bool isOutOfSync = false;
     private Vector3 prevPos;
     //private bool hostStationary;
@@ -23,7 +23,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
     public bool hasLocalPlayerAuthority = false;
     internal bool resetAuthority = false;
     internal NetworkTurntableSync turntable = null;
-    internal bool overrideDamageDisabled = false;
     internal Coroutine authorityCoro = null;
     private float drag;
     private Coroutine damageEnablerCoro;
@@ -114,41 +113,88 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             yield return new WaitForSeconds(.1f);
 
-            if (serverState != null && SingletonBehaviour<NetworkPlayerManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Exists && trainCar)
+            if (serverState != null && SingletonBehaviour<NetworkPlayerManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Exists && trainCar && !trainCar.frontCoupler.coupledTo)
             {
                 if (turntable == null || turntable != null && !turntable.IsAnyoneInControlArea)
                 {
-                    bool authNeedsChange = true;
+                    bool authNeedsChange = false;
+                    GameObject player = null;
+                    NetworkPlayerManager playerManager = SingletonBehaviour<NetworkPlayerManager>.Instance;
                     if (!resetAuthority)
                     {
-                        foreach (TrainCar car in trainCar.trainset.cars)
+                        GameObject ply;
+                        if (serverState.AuthorityPlayerId != 0)
+                            ply = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayerById(serverState.AuthorityPlayerId);
+                        else
+                            ply = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
+
+                        if (ply)
                         {
-                            if (car)
+                            TrainCar car = ply.GetComponent<NetworkPlayerSync>().Train;
+                            if(!car)
                             {
-                                if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(car).Select(p => p.GetComponent<NetworkPlayerSync>().Id).Contains(serverState.AuthorityPlayerId))
+                                foreach (int locoId in trainCar.trainset.locoIndices)
                                 {
-                                    authNeedsChange = false;
-                                    break;
+                                    GameObject[] playersInLoco = playerManager.GetPlayersInTrain(trainCar.trainset.cars[locoId]);
+                                    if(playersInLoco.Length > 0)
+                                    {
+                                        player = playersInLoco[0];
+                                        authNeedsChange = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if(car && !trainCar.trainset.cars.Contains(car))
+                                {
+                                    authNeedsChange = true;
+                                    foreach (int locoId in trainCar.trainset.locoIndices)
+                                    {
+                                        GameObject[] playersInLoco = playerManager.GetPlayersInTrain(trainCar.trainset.cars[locoId]);
+                                        if (playersInLoco.Length > 0)
+                                        {
+                                            player = playersInLoco[0];
+                                            break;
+                                        }
+                                    }
+
+                                    if(!player)
+                                        player = playerManager.GetLocalPlayer();
                                 }
                             }
                         }
+                        else
+                        {
+                            player = playerManager.GetLocalPlayer();
+                            authNeedsChange = true;
+                        }
+                    }
+                    else
+                    {
+                        authNeedsChange = true;
+                        foreach (int locoId in trainCar.trainset.locoIndices)
+                        {
+                            GameObject[] playersInLoco = playerManager.GetPlayersInTrain(trainCar.trainset.cars[locoId]);
+                            if (playersInLoco.Length > 0)
+                            {
+                                player = playersInLoco[0];
+                            }
+                            WorldTrain train = trainCar.trainset.cars[locoId].GetComponent<NetworkTrainPosSync>().serverState;
+                            if(train.AuthorityPlayerId != 0)
+                            {
+                                player = playerManager.GetPlayerById(train.AuthorityPlayerId);
+                            }
+
+                            if (player)
+                                break;
+                        }
+                        if(!player)
+                            player = playerManager.GetLocalPlayer();
                     }
 
                     if (authNeedsChange)
                     {
-                        GameObject player = null;
-                        foreach (TrainCar car in trainCar.trainset.cars)
-                        {
-                            if (car)
-                            {
-                                if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(car).Length > 0)
-                                    player = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(car)[0];
-                            }
-                        }
-
-                        if (!player)
-                            player = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
-
                         if (player.GetComponent<NetworkPlayerSync>() && player.GetComponent<NetworkPlayerSync>().Id != serverState.AuthorityPlayerId || resetAuthority)
                             SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, player.GetComponent<NetworkPlayerSync>().Id);
 
