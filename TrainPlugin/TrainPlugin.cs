@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.35");
+        public override Version Version => new Version("1.6.36");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -537,7 +537,7 @@ namespace TrainPlugin
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
                 writer.Write(worldTrains);
-                using (Message msg = Message.Create((ushort)NetworkTags.TRAIN_SYNC_ALL, writer))
+                using (Message msg = Message.Create((ushort)NetworkTags.TRAINS_INIT, writer))
                     ReliableSendToOthers(msg, sender);
             }
         }
