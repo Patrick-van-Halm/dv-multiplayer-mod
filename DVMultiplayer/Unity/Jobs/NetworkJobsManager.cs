@@ -109,14 +109,13 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
     private void OnJobCompleted(DV.Logic.Job.Job job)
     {
         Job sJob = jobs.FirstOrDefault(j => j.GameId == job.ID);
-        if (sJob != null && !sJob.IsCompleted)
+        if (sJob != null && !sJob.IsCompleted && sJob.IsTakenByLocalPlayer)
         {
             SendJobCompleted(sJob.Id);
             sJob.IsCompleted = true;
             if (NetworkManager.IsHost())
                 UpdateChainSaveData(sJob.ChainId);
         }
-        jobs.Remove(sJob);
     }
 
     private void OnJobChainCompleted(JobChainController chainController)
