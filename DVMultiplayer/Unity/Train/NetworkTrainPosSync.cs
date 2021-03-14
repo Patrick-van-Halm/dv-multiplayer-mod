@@ -236,19 +236,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         //}
 
         bool willLocalPlayerGetAuthority = localPlayer.Id == serverState.AuthorityPlayerId;
-
-        if (overrideDamageDisabled && IsCarDamageEnabled)
-        {
-            Main.Log($"Ignoring damage on train {trainCar.CarGUID}");
-            trainCar.CarDamage.IgnoreDamage(true);
-            trainCar.stress.enabled = false;
-            trainCar.TrainCarCollisions.enabled = false;
-        }
-        else if(!overrideDamageDisabled && !IsCarDamageEnabled && damageEnablerCoro == null && (hasLocalPlayerAuthority || (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)))
-        {
-            Main.Log($"Accepting damage on train {trainCar.CarGUID}");
-            damageEnablerCoro = StartCoroutine(ToggleDamageAfterSeconds(1));
-        }
+        
 
         //if (!(hasLocalPlayerAuthority || (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)))
         //{

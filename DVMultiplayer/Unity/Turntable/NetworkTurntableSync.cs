@@ -1,4 +1,4 @@
-﻿using DV.CabControls;
+using DV.CabControls;
 using DVMultiplayer;
 using DVMultiplayer.DTO.Turntable;
 using DVMultiplayer.Networking;
@@ -89,7 +89,7 @@ internal class NetworkTurntableSync : MonoBehaviour
         {
             if (!currentCarsOnTurntable.Contains(bogie.Car))
             {
-                bogie.Car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = true;
+                bogie.Car.CarDamage.IgnoreDamage(true);
                 if(turntable.turntable.Track.onTrackBogies.Contains(bogie.Car.Bogies[0]) && turntable.turntable.Track.onTrackBogies.Contains(bogie.Car.Bogies[bogie.Car.Bogies.Length - 1]))
                     currentCarsOnTurntable.Add(bogie.Car);
             }
@@ -97,13 +97,12 @@ internal class NetworkTurntableSync : MonoBehaviour
 
         foreach (TrainCar car in carsOnTurntable.ToList())
         {
-            if(currentCarsOnTurntable.Count == 0 || !carsOnTurntable.Contains(car))
+            if(currentCarsOnTurntable.Count == 0 || !currentCarsOnTurntable.Contains(car))
             {
                 carsOnTurntable.Remove(car);
                 if(car.logicCar != null)
                 {
                     car.GetComponent<NetworkTrainPosSync>().turntable = null;
-                    car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = false;
                     Main.Log($"Train: {car.CarGUID} left turntable");
                 }
             }
@@ -115,7 +114,6 @@ internal class NetworkTurntableSync : MonoBehaviour
             {
                 if (car.logicCar != null)
                 {
-                    car.GetComponent<NetworkTrainPosSync>().overrideDamageDisabled = true;
                     car.GetComponent<NetworkTrainPosSync>().turntable = this;
                     Main.Log($"Train: {car.CarGUID} entered turntable");
                     carsOnTurntable.Add(car);
