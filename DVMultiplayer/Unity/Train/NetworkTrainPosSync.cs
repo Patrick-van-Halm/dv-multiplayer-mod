@@ -253,8 +253,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
             if (!hasLocalPlayerAuthority && !willLocalPlayerGetAuthority)
             {
                 float increment = (velocity.magnitude * 3f);
-                if (increment <= .1f)
-                    increment = 1;
+                if (increment <= 5f)
+                    increment = 5;
                 float step = increment * Time.deltaTime; // calculate distance to move
                 if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > 1e-5)
                 {
