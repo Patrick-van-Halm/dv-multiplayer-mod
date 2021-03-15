@@ -44,6 +44,7 @@ class NetworkJobsSync : MonoBehaviour
 
     internal void OnSingleChainGeneratedWithExistingCars(JobChainController chain)
     {
+        Main.Log("Single Chain with existing cars generated");
         currentChains.Add(chain);
         OnJobsGenerated?.Invoke(station, new JobChainController[] { chain });
     }
