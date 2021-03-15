@@ -40,7 +40,7 @@ internal class NetworkJunctionManager : SingletonBehaviour<NetworkJunctionManage
     protected override void OnDestroy()
     {
         base.OnDestroy();
-        if (SingletonBehaviour<UnityClient>.Instance)
+        if (SingletonBehaviour<UnityClient>.Exists)
             SingletonBehaviour<UnityClient>.Instance.MessageReceived -= MessageReceived;
 
         if (junctions == null)

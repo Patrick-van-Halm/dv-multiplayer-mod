@@ -1,4 +1,4 @@
-using DV.CabControls;
+﻿using DV.CabControls;
 using DVMultiplayer;
 using DVMultiplayer.DTO.Turntable;
 using DVMultiplayer.Networking;
@@ -93,6 +93,20 @@ internal class NetworkTurntableSync : MonoBehaviour
                 if(turntable.turntable.Track.onTrackBogies.Contains(bogie.Car.Bogies[0]) && turntable.turntable.Track.onTrackBogies.Contains(bogie.Car.Bogies[bogie.Car.Bogies.Length - 1]))
                     currentCarsOnTurntable.Add(bogie.Car);
             }
+        }
+
+        TrainCar prevCar = null;
+        foreach(TrainCar car in currentCarsOnTurntable.ToList())
+        {
+            if (!car.trainset.cars.Contains(prevCar))
+            {
+                foreach (TrainCar setCar in car.trainset.cars)
+                {
+                    if (!currentCarsOnTurntable.Contains(setCar))
+                        currentCarsOnTurntable.Add(setCar);
+                }
+            }
+            prevCar = car;
         }
 
         foreach (TrainCar car in carsOnTurntable.ToList())

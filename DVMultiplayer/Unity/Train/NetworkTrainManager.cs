@@ -23,6 +23,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     public bool IsSynced { get; private set; }
     public bool SaveCarsLoaded { get; internal set; }
     public bool IsSpawningTrains { get; set; } = false;
+    public bool IsDisconnecting { get; set; } = false;
     private readonly BufferQueue buffer = new BufferQueue();
 
     protected override void Awake()
@@ -107,7 +108,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     protected override void OnDestroy()
     {
         base.OnDestroy();
-        if (SingletonBehaviour<UnityClient>.Instance)
+        IsDisconnecting = true;
+        if (SingletonBehaviour<UnityClient>.Exists)
             SingletonBehaviour<UnityClient>.Instance.MessageReceived -= OnMessageReceived;
         PlayerManager.CarChanged -= OnPlayerSwitchTrainCarEvent;
         CarSpawner.CarSpawned -= OnCarSpawned;

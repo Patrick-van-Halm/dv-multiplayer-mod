@@ -57,6 +57,8 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         }
         else
         {
+            CarSpawner.useCarPooling = true;
+            SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
             IsOfflineSaveLoaded = true;
         }
     }
@@ -72,75 +74,71 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         yield return new WaitUntil(() => CustomUI.currentScreen == CustomUI.PopupUI);
         CarSpawner.useCarPooling = true;
         bool carsLoadedSuccessfully = false;
-
-        if (!NetworkManager.IsHost())
+        ResetDebts();
+        JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
+        if (jObject != null)
         {
-            ResetDebts();
-            JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
-            if (jObject != null)
+            TurntableRailTrack.SetSaveData(jObject);
+        }
+        else
+        {
+            Main.Log("[WARNING] Turntables data not found!");
+        }
+        jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
+        if (jObject != null)
+        {
+            JunctionsSaveManager.Load(jObject);
+        }
+        else
+        {
+            Main.Log("[WARNING] Junctions save not found!");
+        }
+
+        jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
+        if (jObject != null)
+        {
+            carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jObject);
+            if (!carsLoadedSuccessfully)
+                Main.Log("[WARNING] Cars not loaded successfully!");
+        }
+        else
+            Main.Log("[WARNING] Cars save not found!");
+
+        if (carsLoadedSuccessfully)
+        {
+            JobsSaveGameData saveData = SaveGameManager.data.GetObject<JobsSaveGameData>(SaveGameKeys.Jobs, JobSaveManager.serializeSettings);
+            if (saveData != null)
             {
-                TurntableRailTrack.SetSaveData(jObject);
+                SingletonBehaviour<JobSaveManager>.Instance.LoadJobSaveGameData(saveData);
             }
             else
-            {
-                Main.Log("[WARNING] Turntables data not found!");
-            }
-            jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
-            if (jObject != null)
-            {
-                JunctionsSaveManager.Load(jObject);
-            }
-            else
-            {
-                Main.Log("[WARNING] Junctions save not found!");
-            }
+                Main.Log("[WARNING] Jobs save not found!");
+            SingletonBehaviour<JobSaveManager>.Instance.MarkAllNonJobCarsAsUnused();
+        }
 
-            jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
-            if (jObject != null)
-            {
-                carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jObject);
-                if (!carsLoadedSuccessfully)
-                    Main.Log("[WARNING] Cars not loaded successfully!");
-            }
-            else
-                Main.Log("[WARNING] Cars save not found!");
-
-            if (carsLoadedSuccessfully)
-            {
-                JobsSaveGameData saveData = SaveGameManager.data.GetObject<JobsSaveGameData>(SaveGameKeys.Jobs, JobSaveManager.serializeSettings);
-                if (saveData != null)
-                {
-                    SingletonBehaviour<JobSaveManager>.Instance.LoadJobSaveGameData(saveData);
-                }
-                else
-                    Main.Log("[WARNING] Jobs save not found!");
-                SingletonBehaviour<JobSaveManager>.Instance.MarkAllNonJobCarsAsUnused();
-            }
-
-            jObject = SaveGameManager.data.GetJObject("Debt_deleted_locos");
-            if (jObject != null)
-            {
-                SingletonBehaviour<LocoDebtController>.Instance.LoadDestroyedLocosDebtsSaveData(jObject);
-                Main.Log("Loaded destroyed locos debt");
-            }
-            jObject = SaveGameManager.data.GetJObject("Debt_staged_jobs");
-            if (jObject != null)
-            {
-                SingletonBehaviour<JobDebtController>.Instance.LoadStagedJobsDebtsSaveData(jObject);
-                Main.Log("Loaded staged jobs debt");
-            }
-            jObject = SaveGameManager.data.GetJObject("Debt_jobless_cars");
-            if (jObject != null)
-            {
-                SingletonBehaviour<JobDebtController>.Instance.LoadDeletedJoblessCarDebtsSaveData(jObject);
-                Main.Log("Loaded jobless cars debt");
-            }
-            jObject = SaveGameManager.data.GetJObject("Debt_insurance");
-            if (jObject != null)
-            {
-                SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.LoadSaveData(jObject);
-                Main.Log("Loaded insurance fee data");
-            }
+        jObject = SaveGameManager.data.GetJObject("Debt_deleted_locos");
+        if (jObject != null)
+        {
+            SingletonBehaviour<LocoDebtController>.Instance.LoadDestroyedLocosDebtsSaveData(jObject);
+            Main.Log("Loaded destroyed locos debt");
+        }
+        jObject = SaveGameManager.data.GetJObject("Debt_staged_jobs");
+        if (jObject != null)
+        {
+            SingletonBehaviour<JobDebtController>.Instance.LoadStagedJobsDebtsSaveData(jObject);
+            Main.Log("Loaded staged jobs debt");
+        }
+        jObject = SaveGameManager.data.GetJObject("Debt_jobless_cars");
+        if (jObject != null)
+        {
+            SingletonBehaviour<JobDebtController>.Instance.LoadDeletedJoblessCarDebtsSaveData(jObject);
+            Main.Log("Loaded jobless cars debt");
+        }
+        jObject = SaveGameManager.data.GetJObject("Debt_insurance");
+        if (jObject != null)
+        {
+            SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.LoadSaveData(jObject);
+            Main.Log("Loaded insurance fee data");
         }
         SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
         AppUtil.Instance.UnpauseGame();
