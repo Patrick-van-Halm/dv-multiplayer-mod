@@ -1,4 +1,4 @@
-using DarkRift;
+﻿using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DV.Logic.Job;
@@ -34,12 +34,12 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
     protected override void OnDestroy()
     {
         base.OnDestroy();
-        if (SingletonBehaviour<UnityClient>.Instance)
+        if (SingletonBehaviour<UnityClient>.Exists)
             SingletonBehaviour<UnityClient>.Instance.MessageReceived -= MessageReceived;
 
-        Main.Log("Destroying all NetworkJobsSync");
         if (NetworkManager.IsHost())
         {
+            Main.Log("Destroying all NetworkJobsSync");
             foreach (StationController station in StationController.allStations)
             {
                 if (station.GetComponent<NetworkJobsSync>())
@@ -84,13 +84,13 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
         if (NetworkManager.IsHost())
         {
             SendCurrentJobs();
-            IsSynced = true;
-        }
 
-        foreach (StationController station in StationController.allStations)
-        {
-            NetworkJobsSync jobSync = station.gameObject.AddComponent<NetworkJobsSync>();
-            jobSync.OnJobsGenerated += SendJobCreatedMessage;
+            foreach (StationController station in StationController.allStations)
+            {
+                NetworkJobsSync jobSync = station.gameObject.AddComponent<NetworkJobsSync>();
+                jobSync.OnJobsGenerated += SendJobCreatedMessage;
+            }
+            IsSynced = true;
         }
     }
 
@@ -401,9 +401,6 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
     #region Sending Messages
     internal void SendJobCreatedMessage(StationController station, JobChainController[] chainControllers)
     {
-        if (IsChangedByNetwork || !IsSynced)
-            return;
-
         Main.Log($"[CLIENT] > JOB_CREATED");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
