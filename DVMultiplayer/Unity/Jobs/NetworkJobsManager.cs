@@ -213,7 +213,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                 StationController station = StationController.allStations.FirstOrDefault(s => s.logicStation.ID == id);
                 if (station != null)
                 {
-                    station.ExpireAllAvailableJobsInStation();
+                    ExpireJobsUnTakenInStation(station);
                 }
                 IsChangedByNetwork = false;
             }
@@ -552,6 +552,18 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
         // Wait 2 minutes so the user can still accept the job
         yield return new WaitForSeconds(2 * 60);
         job.CanTakeJob = false;
+    }
+
+    internal void ExpireJobsUnTakenInStation(StationController station)
+    {
+        foreach (DV.Logic.Job.Job job in station.logicStation.availableJobs)
+        {
+            Job sjob = jobs.FirstOrDefault(j => j.GameId == job.ID);
+            if (sjob != null && !sjob.IsTaken)
+            {
+                job.ExpireJob();
+            }
+        }
     }
 
     internal bool IsAllowedToTakeJob(string id)

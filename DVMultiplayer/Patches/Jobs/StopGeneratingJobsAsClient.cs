@@ -68,7 +68,7 @@ namespace DVMultiplayer.Patches
                         {
 							___playerEnteredJobGenerationZone = false;
 							Main.Log("No one in area reseting generation flag");
-							__instance.ExpireAllAvailableJobsInStation();
+							SingletonBehaviour<NetworkJobsManager>.Instance.ExpireJobsUnTakenInStation(__instance);
 							SingletonBehaviour<NetworkJobsManager>.Instance.SendJobsExpirationInStation(__instance.logicStation.ID);
                         }
 					}
