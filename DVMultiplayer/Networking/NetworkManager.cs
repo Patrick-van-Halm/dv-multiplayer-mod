@@ -64,18 +64,18 @@ namespace DVMultiplayer.Networking
 
         private static IEnumerator DisconnectCoroutine()
         {
-            isClient = false;
             yield return new WaitUntil(() => !CustomUI.currentScreen);
             yield return new WaitForEndOfFrame();
-            foreach (PlayerDistanceMultipleGameObjectsOptimizer disabler in objectDisablers)
-            {
-                disabler.enabled = true;
-            }
             if (scriptsInitialized)
             {
                 yield return DeInitializeUnityScripts();
                 scriptsInitialized = false;
             }
+            foreach (PlayerDistanceMultipleGameObjectsOptimizer disabler in objectDisablers)
+            {
+                disabler.enabled = true;
+            }
+            isClient = false;
             client.Close();
         }
 
