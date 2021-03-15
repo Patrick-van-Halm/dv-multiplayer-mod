@@ -565,7 +565,8 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
 
     internal bool IsAllowedToTakeJob(string id)
     {
-        return jobs.FirstOrDefault(j => j.GameId == id).CanTakeJob;
+        Job job = jobs.FirstOrDefault(j => j.GameId == id);
+        return job != null && job.CanTakeJob;
     }
 
     private void UpdateChainSaveData(string chainId)
