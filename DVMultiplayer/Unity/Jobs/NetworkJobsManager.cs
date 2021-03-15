@@ -1,4 +1,4 @@
-﻿using DarkRift;
+using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DV.Logic.Job;
@@ -19,8 +19,8 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
     private List<Job> jobs;
     public bool IsChangedByNetwork { get; set; }
     public bool IsSynced { get; internal set; }
-    public JobChainController newlyGeneratedJob;
-    public StationController newlyGeneratedJobStation;
+    public JobChainController newlyGeneratedJobChain;
+    public StationController newlyGeneratedJobChainStation;
 
     protected override void Awake()
     {

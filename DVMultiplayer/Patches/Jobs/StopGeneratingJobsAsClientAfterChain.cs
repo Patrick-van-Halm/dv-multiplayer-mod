@@ -28,12 +28,12 @@ namespace DVMultiplayer.Patches
 
         private static void Postfix(Job lastJobInChain)
         {
-            if (NetworkManager.IsClient() && NetworkManager.IsHost() && SingletonBehaviour<NetworkJobsManager>.Instance && SingletonBehaviour<NetworkJobsManager>.Instance.newlyGeneratedJob != null)
+            if (NetworkManager.IsClient() && NetworkManager.IsHost() && SingletonBehaviour<NetworkJobsManager>.Exists && SingletonBehaviour<NetworkJobsManager>.Instance.newlyGeneratedJobChain != null)
             {
                 NetworkJobsManager networkJobsManager = SingletonBehaviour<NetworkJobsManager>.Instance;
-                networkJobsManager.newlyGeneratedJobStation.GetComponent<NetworkJobsSync>().OnSingleChainGeneratedWithExistingCars(networkJobsManager.newlyGeneratedJob);
-                networkJobsManager.newlyGeneratedJob = null;
-                networkJobsManager.newlyGeneratedJobStation = null;
+                networkJobsManager.newlyGeneratedJobChainStation.GetComponent<NetworkJobsSync>().OnSingleChainGeneratedWithExistingCars(networkJobsManager.newlyGeneratedJobChain);
+                networkJobsManager.newlyGeneratedJobChain = null;
+                networkJobsManager.newlyGeneratedJobChainStation = null;
             }
         }
     }
@@ -45,8 +45,8 @@ namespace DVMultiplayer.Patches
         {
             if (NetworkManager.IsClient() && NetworkManager.IsHost() && SingletonBehaviour<NetworkJobsManager>.Instance)
             {
-                SingletonBehaviour<NetworkJobsManager>.Instance.newlyGeneratedJob = __result;
-                SingletonBehaviour<NetworkJobsManager>.Instance.newlyGeneratedJobStation = startingStation;
+                SingletonBehaviour<NetworkJobsManager>.Instance.newlyGeneratedJobChain = __result;
+                SingletonBehaviour<NetworkJobsManager>.Instance.newlyGeneratedJobChainStation = startingStation;
             }
         }
     }
