@@ -23,7 +23,8 @@ namespace DVMultiplayer
             "DVMouseSmoothing",
             "DVSuperGauges",
             "ZSounds",
-            "SkinManagerMod"
+            "SkinManagerMod",
+            "CargoSwapMod"
         };
 
         private static Harmony harmony;
