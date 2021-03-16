@@ -36,7 +36,7 @@ namespace DVMultiplayer
             mod.OnUpdate = OnUpdate;
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-            ModEntry passengerJobsModEntry = UnityModManager.FindMod("PassengerJobs");
+            ModEntry passengerJobsModEntry = FindMod("PassengerJobs");
             if (passengerJobsModEntry != null && passengerJobsModEntry.Active)
                 PassengerJobsModInitializer.Initialize(passengerJobsModEntry, harmony);
 
