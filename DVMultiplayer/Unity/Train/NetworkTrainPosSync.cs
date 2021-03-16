@@ -142,7 +142,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
                         if (ply)
                         {
                             TrainCar car = ply.GetComponent<NetworkPlayerSync>().Train;
-                            if(!car && Vector3.Distance(ply.transform.position - WorldMover.currentMove, transform.position - WorldMover.currentMove) > 10 && isStationary)
+                            if(!car && Vector3.Distance(ply.transform.position - WorldMover.currentMove, transform.position - WorldMover.currentMove) > 10 && velocity.magnitude * 3.6f < 1)
                             {
                                 foreach (int locoId in trainCar.trainset.locoIndices)
                                 {
@@ -279,13 +279,14 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             if (!hasLocalPlayerAuthority && !willLocalPlayerGetAuthority)
             {
+                if (isDerailed)
+                    trainCar.rb.isKinematic = true;
                 float increment = (velocity.magnitude * 3f);
                 if (increment <= 5f)
                     increment = 5;
                 float step = increment * Time.deltaTime; // calculate distance to move
                 if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > 1e-5)
                 {
-                    //Main.Log($"Moving train");
                     trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
                 }
 
@@ -301,6 +302,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
                         trainCar.rb.MoveRotation(newRot);
                     }
                 }
+
+                if (isDerailed)
+                    trainCar.rb.isKinematic = false;
             }
 
             if (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)
@@ -327,12 +331,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         //    trainCar.rb.MovePosition(newPos);
         //    trainCar.rb.MoveRotation(newRot);
         //}
-
-        if (trainCar.rb.isKinematic && isDerailed && trainCar.isStationary)
-        {
-            Main.Log($"Apply physics on derailed train");
-            trainCar.rb.isKinematic = false;
-        }
     }
 
     private void SetAuthority(bool gain)
@@ -350,6 +348,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
         //}
         Main.Log($"Set kinematic state {!gain}");
         trainCar.rb.isKinematic = !gain;
+        foreach(Bogie bogie in trainCar.Bogies)
+        {
+            bogie.RefreshBogiePoints();
+        }
+
         Main.Log($"Set velocity and drag");
         trainCar.rb.velocity = velocity;
         trainCar.rb.drag = drag;
@@ -413,6 +416,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainRerail()
     {
+        if(!hasLocalPlayerAuthority)
+            trainCar.rb.isKinematic = true;
+
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
             return;
 
@@ -477,24 +483,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             yield return SingletonBehaviour<NetworkTrainManager>.Instance.RerailDesynced(trainCar, serverState, true);
         }
-        else if (trainCar.derailed && isDerailed)
-        {
-            location.Position += WorldMover.currentMove;
-            trainCar.transform.position = location.Position;
-            trainCar.transform.rotation = location.Rotation;
-            trainCar.transform.forward = location.Forward;
-            yield break;
-        }
-        //location.Position += WorldMover.currentMove;
 
-        //for (int i = 0; i < location.Bogies.Length; i++)
-        //{
-        //    TrainBogie bogie = location.Bogies[i];
-        //    trainCar.Bogies[i].transform.position = bogie.Position;
-        //    trainCar.Bogies[i].transform.rotation = bogie.Rotation;
-        //}
-
-        //isLocationApplied = false;
         isStationary = location.IsStationary;
         newPos = location.Position;
         newRot = location.Rotation;
