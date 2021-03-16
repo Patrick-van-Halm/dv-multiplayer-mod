@@ -1,8 +1,10 @@
 ﻿using DVMultiplayer.Networking;
+using DVMultiplayer.Patches.PassengerJobs;
 using HarmonyLib;
 using System;
 using System.Linq;
 using System.Reflection;
+using UnityModManagerNet;
 using static UnityModManagerNet.UnityModManager;
 
 namespace DVMultiplayer
@@ -33,6 +35,11 @@ namespace DVMultiplayer
             mod.OnToggle = OnToggle;
             mod.OnUpdate = OnUpdate;
             harmony.PatchAll(Assembly.GetExecutingAssembly());
+
+            ModEntry passengerJobsModEntry = UnityModManager.FindMod("PassengerJobs");
+            if (passengerJobsModEntry != null && passengerJobsModEntry.Active)
+                PassengerJobsModInitializer.Initialize(passengerJobsModEntry, harmony);
+
             return true;
         }
 

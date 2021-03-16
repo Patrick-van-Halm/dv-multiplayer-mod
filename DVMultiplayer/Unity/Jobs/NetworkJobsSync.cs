@@ -49,25 +49,12 @@ class NetworkJobsSync : MonoBehaviour
         OnJobsGenerated?.Invoke(station, new JobChainController[] { chain });
     }
 
-    internal void OnSingleChainGenerated(bool trainsNotInitialized = false)
+    internal void OnSingleChainGenerated(JobChainController chain)
     {
-        List<JobChainController> newJobs = station.ProceduralJobsController.GetCurrentJobChains();
-        foreach (JobChainController chain in currentChains)
-        {
-            newJobs.RemoveAll(j => j.currentJobInChain.ID == chain.currentJobInChain.ID);
-        }
-
-        currentChains.AddRange(newJobs);
-        if (trainsNotInitialized)
-        {
-            List<TrainCar> newJobTrains = new List<TrainCar>();
-            foreach (JobChainController job in newJobs)
-            {
-                newJobTrains.AddRange(job.trainCarsForJobChain);
-            }
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendNewJobChainCars(newJobTrains);
-        }
-        OnJobsGenerated?.Invoke(station, newJobs.ToArray());
+        Main.Log("Single Chain with existing cars generated");
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewJobChainCars(chain.trainCarsForJobChain);
+        currentChains.Add(chain);
+        OnJobsGenerated?.Invoke(station, new JobChainController[] { chain });
     }
 
     private IEnumerator WaitTillGenerationFinished()
