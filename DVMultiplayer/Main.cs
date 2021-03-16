@@ -21,7 +21,9 @@ namespace DVMultiplayer
         {
             "UnencryptedSaveGameMod",
             "DVMouseSmoothing",
-            "DVSuperGauges"
+            "DVSuperGauges",
+            "ZSounds",
+            "SkinManagerMod"
         };
 
         private static Harmony harmony;
