@@ -1416,6 +1416,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         Main.Log($"[CLIENT] > TRAIN_CARGO_CHANGE: Car: {carId} {(isLoaded ? $"Loaded {loadedCargo.GetCargoName()}" : "Unloaded")}");
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
+            if (warehouseId == null)
+                warehouseId = "";
+
             writer.Write(new TrainCargoChanged() { Id = carId, Amount = loadedCargoAmount, Type = loadedCargo, WarehouseId = warehouseId, IsLoading = isLoaded });
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_CARGO_CHANGE, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
