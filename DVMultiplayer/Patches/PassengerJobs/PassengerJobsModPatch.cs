@@ -21,28 +21,33 @@ namespace DVMultiplayer.Patches.PassengerJobs
             {
                 // Passenger Jobs spawning
                 Type passengerJobsGen = passengerJobsModEntry.Assembly.GetType("PassengerJobsMod.PassengerJobGenerator", true);
-                
+
                 // Patch StartGenerationAsync method
+                Main.Log("Patching PassengerJobsMod.PassengerJobGenerator.StartGenerationAsync");
                 MethodInfo StartGenerationAsync = AccessTools.Method(passengerJobsGen, "StartGenerationAsync");
                 MethodInfo StartGenerationAsyncPrefix = AccessTools.Method(typeof(PassengerJobs_StartGenerationAsync_Patch), "Prefix");
                 harmony.Patch(StartGenerationAsync, prefix: new HarmonyMethod(StartGenerationAsyncPrefix));
 
                 // Patch GenerateNewTransportJob method
+                Main.Log("Patching PassengerJobsMod.PassengerJobGenerator.GenerateNewTransportJob");
                 MethodInfo GenerateNewTransportJob = AccessTools.Method(passengerJobsGen, "GenerateNewTransportJob");
                 MethodInfo GenerateNewTransportJobPostfix = AccessTools.Method(typeof(PassengerJobs_GenerateNewTransportJob_Patch), "Postfix");
                 harmony.Patch(GenerateNewTransportJob, postfix: new HarmonyMethod(GenerateNewTransportJobPostfix));
 
                 // Patch GenerateNewCommuterRun method
-                MethodInfo GenerateNewCommuterRun = AccessTools.Method(passengerJobsGen, "GenerateNewCommutersJob");
+                Main.Log("Patching PassengerJobsMod.PassengerJobGenerator.GenerateNewCommuterRun");
+                MethodInfo GenerateNewCommuterRun = AccessTools.Method(passengerJobsGen, "GenerateNewCommuterRun");
                 MethodInfo GenerateNewCommuterRunPostfix = AccessTools.Method(typeof(PassengerJobs_GenerateNewCommuterRun_Patch), "Postfix");
                 harmony.Patch(GenerateNewCommuterRun, postfix: new HarmonyMethod(GenerateNewCommuterRunPostfix));
 
                 // Patch GenerateCommuterReturnTrip method
+                Main.Log("Patching PassengerJobsMod.PassengerJobGenerator.GenerateCommuterReturnTrip");
                 MethodInfo GenerateCommuterReturnTrip = AccessTools.Method(passengerJobsGen, "GenerateCommuterReturnTrip");
                 MethodInfo GenerateCommuterReturnTripPostfix = AccessTools.Method(typeof(PassengerJobs_GenerateCommuterReturnTrip_Patch), "Postfix");
                 harmony.Patch(GenerateCommuterReturnTrip, postfix: new HarmonyMethod(GenerateCommuterReturnTripPostfix));
 
                 // Patch GetJobTypeFromDefinition method
+                Main.Log("Patching DVMultiplayer.NetworkJobsManager.GetJobTypeFromDefinition");
                 MethodInfo GetJobTypeFromDefinition = AccessTools.Method(typeof(NetworkJobsManager), "GetJobTypeFromDefinition");
                 MethodInfo GetJobTypeFromDefinitionPostfix = AccessTools.Method(typeof(PassengerJobs_GetJobTypeFromDefinition_Patch), "Postfix");
                 harmony.Patch(GetJobTypeFromDefinition, postfix: new HarmonyMethod(GetJobTypeFromDefinitionPostfix));
