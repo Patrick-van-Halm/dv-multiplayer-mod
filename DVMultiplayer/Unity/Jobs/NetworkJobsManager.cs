@@ -553,7 +553,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
 
     internal void ExpireJobsUnTakenInStation(StationController station)
     {
-        foreach (DV.Logic.Job.Job job in station.logicStation.availableJobs)
+        foreach (DV.Logic.Job.Job job in station.logicStation.availableJobs.ToList())
         {
             Job sjob = jobs.FirstOrDefault(j => j.GameId == job.ID);
             if (sjob != null && !sjob.IsTaken)
