@@ -11,10 +11,11 @@ internal class NetworkTrainSync : MonoBehaviour
     public TrainCar loco;
     public bool listenToLocalPlayerInputs = false;
     private LocoControllerBase baseController;
+    private bool isAlreadyListening = false;
 
     public void ListenToTrainInputEvents()
     {
-        if (!loco.IsLoco)
+        if (!loco.IsLoco && isAlreadyListening)
             return;
 
         if (loco.logicCar != null)
@@ -62,6 +63,8 @@ internal class NetworkTrainSync : MonoBehaviour
                 SingletonBehaviour<CoroutineManager>.Instance.Run(RotaryAmplitudeCheckerStartListen(fuseBox));
                 break;
         }
+
+        isAlreadyListening = true;
     }
 
     public void StopListeningToTrainInputEvents()
@@ -114,37 +117,6 @@ internal class NetworkTrainSync : MonoBehaviour
     {
         Main.Log($"NetworkTrainSync.Awake()");
         loco = GetComponent<TrainCar>();
-        if (loco.logicCar != null)
-            Main.Log($"[{loco.ID}] NetworkTrainSync Awake called");
-        if (loco.logicCar != null)
-            Main.Log($"[{loco.ID}] Load interior");
-        if (!loco.IsInteriorLoaded)
-            loco.LoadInterior();
-        if (loco.logicCar != null)
-            Main.Log($"[{loco.ID}] Keep interior loaded");
-        loco.keepInteriorLoaded = true;
-
-        if (loco.logicCar != null)
-            Main.Log($"[{loco.ID}] Listen to inputEvents");
-        ListenToTrainInputEvents();
-    }
-
-    public void OnDestroy()
-    {
-        if (loco && NetworkManager.IsHost())
-        {
-            if (loco.logicCar != null)
-                Main.Log($"[{loco.ID}] NetworkTrainSync.OnDestroy()");
-            if (loco.logicCar != null)
-                Main.Log($"[{loco.ID}] Stop listening to input");
-            //StopListeningToTrainInputEvents();
-            if (loco.logicCar != null)
-                Main.Log($"[{loco.ID}] Stop keeping interior loaded");
-            loco.keepInteriorLoaded = false;
-
-            if (loco.IsInteriorLoaded)
-                loco.UnloadInterior();
-        }
     }
 
     private IEnumerator RotaryAmplitudeCheckerStartListen(FuseBoxPowerController fuseBox)

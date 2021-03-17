@@ -181,7 +181,11 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         SendPlayerCarChange(trainCar);
 
         if (trainCar && trainCar.IsLoco)
-            trainCar.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = true;
+        {
+            NetworkTrainSync trainSync = trainCar.GetComponent<NetworkTrainSync>();
+            trainSync.ListenToTrainInputEvents();
+            trainSync.listenToLocalPlayerInputs = true;
+        }
     }
 
     private void NetworkTrainManager_OnTrainCarInitialized(TrainCar train)
@@ -588,72 +592,75 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     Main.Log($"[CLIENT] < TRAIN_LEVER: Packet size: {reader.Length}, TrainID: {train.ID}, Lever: {lever.Lever}, Value: {lever.Value}");
                     IsChangeByNetwork = true;
                     LocoControllerBase baseController = train.GetComponent<LocoControllerBase>();
-                    switch (lever.Lever)
-                    {
-                        case Levers.Throttle:
-                            baseController.SetThrottle(lever.Value);
-                            break;
+                    if (train.IsInteriorLoaded) 
+                    { 
+                        switch (lever.Lever)
+                        {
+                            case Levers.Throttle:
+                                baseController.SetThrottle(lever.Value);
+                                break;
 
-                        case Levers.Brake:
-                            baseController.SetBrake(lever.Value);
-                            break;
+                            case Levers.Brake:
+                                baseController.SetBrake(lever.Value);
+                                break;
 
-                        case Levers.IndependentBrake:
-                            baseController.SetIndependentBrake(lever.Value);
-                            break;
+                            case Levers.IndependentBrake:
+                                baseController.SetIndependentBrake(lever.Value);
+                                break;
 
-                        case Levers.Reverser:
-                            baseController.SetReverser(lever.Value);
-                            break;
+                            case Levers.Reverser:
+                                baseController.SetReverser(lever.Value);
+                                break;
 
-                        case Levers.Sander:
-                            baseController.SetSanders(lever.Value);
-                            break;
+                            case Levers.Sander:
+                                baseController.SetSanders(lever.Value);
+                                break;
 
-                        case Levers.SideFuse_1:
-                            if (train.carType == TrainCarType.LocoShunter)
-                            {
-                                train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Use();
-                                if (train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1 && lever.Value == 0)
+                            case Levers.SideFuse_1:
+                                if (train.carType == TrainCarType.LocoShunter)
+                                {
+                                    train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Use();
+                                    if (train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1 && lever.Value == 0)
+                                        train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Use();
+                                }
+                                break;
+
+                            case Levers.SideFuse_2:
+                                if (train.carType == TrainCarType.LocoShunter)
+                                {
+                                    train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Use();
+                                    if (train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1 && lever.Value == 0)
+                                        train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Use();
+                                }
+                                break;
+
+                            case Levers.MainFuse:
+                                if (train.carType == TrainCarType.LocoShunter)
+                                {
                                     train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Use();
-                            }
-                            break;
+                                }
+                                break;
 
-                        case Levers.SideFuse_2:
-                            if (train.carType == TrainCarType.LocoShunter)
-                            {
-                                train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Use();
-                                if (train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1 && lever.Value == 0)
-                                    train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Use();
-                            }
-                            break;
+                            case Levers.FusePowerStarter:
+                                if (train.carType == TrainCarType.LocoShunter)
+                                {
+                                    train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.powerRotaryObj.GetComponent<RotaryBase>().SetValue(lever.Value);
+                                }
+                                break;
 
-                        case Levers.MainFuse:
-                            if (train.carType == TrainCarType.LocoShunter)
-                            {
-                                train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Use();
-                            }
-                            break;
-
-                        case Levers.FusePowerStarter:
-                            if (train.carType == TrainCarType.LocoShunter)
-                            {
-                                train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.powerRotaryObj.GetComponent<RotaryBase>().SetValue(lever.Value);
-                            }
-                            break;
-
-                        case Levers.Horn:
-                            float valHorn = lever.Value;
-                            if (train.carType == TrainCarType.LocoShunter)
-                            {
-                                train.interior.GetComponentInChildren<ShunterDashboardControls>().hornObj.GetComponent<LeverBase>().SetValue(valHorn);
-                                if (valHorn < 0.5)
-                                    valHorn *= 2;
-                                else
-                                    valHorn = (valHorn - 0.5f) * 2;
-                            }
-                            baseController.UpdateHorn(valHorn);
-                            break;
+                            case Levers.Horn:
+                                float valHorn = lever.Value;
+                                if (train.carType == TrainCarType.LocoShunter)
+                                {
+                                    train.interior.GetComponentInChildren<ShunterDashboardControls>().hornObj.GetComponent<LeverBase>().SetValue(valHorn);
+                                    if (valHorn < 0.5)
+                                        valHorn *= 2;
+                                    else
+                                        valHorn = (valHorn - 0.5f) * 2;
+                                }
+                                baseController.UpdateHorn(valHorn);
+                                break;
+                        }
                     }
                     IsChangeByNetwork = false;
                 }
@@ -1475,11 +1482,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private IEnumerator FullResyncCar(TrainCar train, WorldTrain serverState)
     {
-        Main.Log($"Train load interior");
-        train.LoadInterior();
-        train.keepInteriorLoaded = true;
-        Main.Log($"Train interior should stay loaded: {train.keepInteriorLoaded}");
-
         Main.Log($"Train set derailed");
         bool isDerailed = train.derailed;
         Main.Log($"Train is derailed: {isDerailed}");
@@ -1607,15 +1609,18 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 Main.Log($"Train Loco Server data found {shunter != null}");
                 if (shunter != null)
                 {
-                    ShunterDashboardControls shunterDashboard = train.interior.GetComponentInChildren<ShunterDashboardControls>();
-                    Main.Log($"Shunter dashboard found {shunterDashboard != null}");
-                    Main.Log($"Sync engine state");
-                    if (!shunter.IsEngineOn)
+                    if (train.IsInteriorLoaded)
                     {
-                        Main.Log($"Sync engine fuses");
-                        shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse1On ? 1 : 0);
-                        shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse2On ? 1 : 0);
-                        shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().SetValue(shunter.IsMainFuseOn ? 1 : 0);
+                        ShunterDashboardControls shunterDashboard = train.interior.GetComponentInChildren<ShunterDashboardControls>();
+                        Main.Log($"Shunter dashboard found {shunterDashboard != null}");
+                        Main.Log($"Sync engine state");
+                        if (!shunter.IsEngineOn)
+                        {
+                            Main.Log($"Sync engine fuses");
+                            shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse1On ? 1 : 0);
+                            shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse2On ? 1 : 0);
+                            shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().SetValue(shunter.IsMainFuseOn ? 1 : 0);
+                        }
                     }
                     Main.Log($"Sync engine on");
                     controllerShunter.SetEngineRunning(shunter.IsEngineOn);
@@ -1639,8 +1644,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         bogie2.Derailed, RailTrackRegistry.GetTrackWithName(bogie2.TrackName), bogie2.PositionAlongTrack,
         false, false);
         newTrain.CarDamage.IgnoreDamage(true);
-        newTrain.LoadInterior();
-        newTrain.keepInteriorLoaded = true;
 
         NetworkTrainPosSync posSyncer = newTrain.gameObject.AddComponent<NetworkTrainPosSync>();
         if (newTrain.IsLoco)
@@ -1940,12 +1943,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void AddNetworkingScripts(TrainCar car)
     {
-        if(!car.IsInteriorLoaded)
-            car.LoadInterior();
-
-        if(!car.keepInteriorLoaded)
-            car.keepInteriorLoaded = true;
-
         if (!car.GetComponent<NetworkTrainSync>() && car.IsLoco)
             car.gameObject.AddComponent<NetworkTrainSync>();
 

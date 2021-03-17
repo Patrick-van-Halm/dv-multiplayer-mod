@@ -309,6 +309,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
             {
                 Main.Log($"Car {trainCar.CarGUID}: Changing authority [GAINED]");
                 SetAuthority(true);
+                if (!trainCar.IsInteriorLoaded)
+                {
+                    trainCar.LoadInterior();
+                    trainCar.keepInteriorLoaded = true;
+                }
             }
             else if (!willLocalPlayerGetAuthority && hasLocalPlayerAuthority)
             {
@@ -316,6 +321,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 SetAuthority(false);
                 newPos = transform.position - WorldMover.currentMove;
                 newRot = transform.rotation;
+                trainCar.keepInteriorLoaded = false;
             }
         }
         catch (Exception ex)
