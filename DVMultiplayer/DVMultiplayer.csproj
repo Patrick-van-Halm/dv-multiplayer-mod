@@ -286,4 +286,19 @@
       <UserProperties info_1json__JsonSchema="https://json.schemastore.org/config" />
     </VisualStudio>
   </ProjectExtensions>
+  <PropertyGroup>
+    <PreBuildEvent>SET BUILDFOLDER=$(SolutionDir)Build\
+
+if not exist %25BUILDFOLDER%25 mkdir %25BUILDFOLDER%25
+del /S /Q %25BUILDFOLDER%25
+rd /S /Q %25BUILDFOLDER%25Resources
+rd /S /Q %25BUILDFOLDER%25Plugins
+mkdir %25BUILDFOLDER%25Plugins</PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>SET BUILDFOLDER=$(SolutionDir)Build\
+xcopy $(TargetDir)*.dll %25BUILDFOLDER%25 /Y /I /E
+xcopy $(TargetDir)info.json %25BUILDFOLDER%25
+xcopy $(TargetDir)Resources\* %25BUILDFOLDER%25Resources /Y /I /E</PostBuildEvent>
+  </PropertyGroup>
 </Project>

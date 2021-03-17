@@ -74,4 +74,8 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>SET BUILDFOLDER=$(SolutionDir)Build\Plugins\
+xcopy $(TargetDir)*.dll %25BUILDFOLDER%25 /Y /I /E</PostBuildEvent>
+  </PropertyGroup>
 </Project>
