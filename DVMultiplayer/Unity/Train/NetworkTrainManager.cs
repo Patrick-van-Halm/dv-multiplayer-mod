@@ -1806,7 +1806,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             IsSideFuse2On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1
                         };
                     }
-                    train.Shunter.IsEngineOn = loco.GetEngineRunning(),
+                    train.Shunter.IsEngineOn = loco.GetEngineRunning();
                     Main.Log($"Shunter set: IsEngineOn: {train.Shunter.IsEngineOn}, IsMainFuseOn: {train.Shunter.IsMainFuseOn}, IsSideFuse1On: {train.Shunter.IsSideFuse1On}, IsSideFuse2On: {train.Shunter.IsSideFuse2On}");
                     break;
             }
