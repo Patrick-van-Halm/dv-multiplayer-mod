@@ -617,7 +617,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                                 break;
 
                             case Levers.SideFuse_1:
-                                if (train.carType == TrainCarType.LocoShunter)
+                                if (train.carType == TrainCarType.LocoShunter && train.IsInteriorLoaded)
                                 {
                                     train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Use();
                                     if (train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1 && lever.Value == 0)
@@ -626,7 +626,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                                 break;
 
                             case Levers.SideFuse_2:
-                                if (train.carType == TrainCarType.LocoShunter)
+                                if (train.carType == TrainCarType.LocoShunter && train.IsInteriorLoaded)
                                 {
                                     train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().Use();
                                     if (train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1 && lever.Value == 0)
@@ -635,7 +635,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                                 break;
 
                             case Levers.MainFuse:
-                                if (train.carType == TrainCarType.LocoShunter)
+                                if (train.carType == TrainCarType.LocoShunter && train.IsInteriorLoaded)
                                 {
                                     train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Use();
                                 }
@@ -644,7 +644,17 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             case Levers.FusePowerStarter:
                                 if (train.carType == TrainCarType.LocoShunter)
                                 {
-                                    train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.powerRotaryObj.GetComponent<RotaryBase>().SetValue(lever.Value);
+                                    if (train.IsInteriorLoaded)
+                                    {
+                                        train.interior.GetComponentInChildren<ShunterDashboardControls>().fuseBoxPowerController.powerRotaryObj.GetComponent<RotaryBase>().SetValue(lever.Value);
+                                    }
+                                    else
+                                    {
+                                        if (lever.Value == 0)
+                                            (baseController as LocoControllerShunter).SetEngineRunning(false);
+                                        else if (serverTrainState != null && serverTrainState.Shunter.IsEngineOn)
+                                            (baseController as LocoControllerShunter).SetEngineRunning(true);
+                                    }
                                 }
                                 break;
 
