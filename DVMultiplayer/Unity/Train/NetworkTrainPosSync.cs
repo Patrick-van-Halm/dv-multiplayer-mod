@@ -279,8 +279,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             if (!hasLocalPlayerAuthority && !willLocalPlayerGetAuthority)
             {
-                if (isDerailed)
-                    trainCar.rb.isKinematic = true;
                 float increment = (velocity.magnitude * 3f);
                 if (increment <= 5f)
                     increment = 5;
@@ -303,7 +301,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
                     }
                 }
 
-                if (isDerailed)
+                if (isDerailed && isStationary)
                     trainCar.rb.isKinematic = false;
             }
 
