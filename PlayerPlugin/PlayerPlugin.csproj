@@ -7,8 +7,8 @@
     <ProjectGuid>{B065403B-A846-4F7E-82CE-18DF9639171F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PlayerManager</RootNamespace>
-    <AssemblyName>PlayerManager</AssemblyName>
+    <RootNamespace>PlayerPlugin</RootNamespace>
+    <AssemblyName>PlayerPlugin</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
