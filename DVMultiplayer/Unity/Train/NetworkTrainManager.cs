@@ -1785,15 +1785,18 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     Main.Log($"Set shunter defaults");
                     LocoControllerShunter loco = car.GetComponent<LocoControllerShunter>();
                     Main.Log($"Shunter controller found: {loco != null}");
-                    ShunterDashboardControls dashboard = car.interior.GetComponentInChildren<ShunterDashboardControls>();
-                    Main.Log($"Shunter dashboard found: {dashboard != null}");
-                    train.Shunter = new Shunter()
+                    if (car.IsInteriorLoaded)
                     {
-                        IsEngineOn = loco.GetEngineRunning(),
-                        IsMainFuseOn = dashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1,
-                        IsSideFuse1On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1,
-                        IsSideFuse2On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1
-                    };
+                        ShunterDashboardControls dashboard = car.interior.GetComponentInChildren<ShunterDashboardControls>();
+                        Main.Log($"Shunter dashboard found: {dashboard != null}");
+                        train.Shunter = new Shunter()
+                        {
+                            IsMainFuseOn = dashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().Value == 1,
+                            IsSideFuse1On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1,
+                            IsSideFuse2On = dashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().Value == 1
+                        };
+                    }
+                    train.Shunter.IsEngineOn = loco.GetEngineRunning(),
                     Main.Log($"Shunter set: IsEngineOn: {train.Shunter.IsEngineOn}, IsMainFuseOn: {train.Shunter.IsMainFuseOn}, IsSideFuse1On: {train.Shunter.IsSideFuse1On}, IsSideFuse2On: {train.Shunter.IsSideFuse2On}");
                     break;
             }
