@@ -69,14 +69,13 @@ namespace DVMultiplayer.Patches.PassengerJobs
 
     class PassengerJobs_GenerateNewTransportJob_Patch
     {
-        static void Postfix(PassengerTransportChainController __result, object __instance, object consistInfo = null)
+        static void Postfix(PassengerTransportChainController __result, PassengerJobGenerator __instance, TrainCarsPerLogicTrack consistInfo = null)
         {
             if (NetworkManager.IsHost())
             {
-                StationController origin = Traverse.Create(__instance).Field("Controller").GetValue<StationController>();
-                if (origin && origin.GetComponent<NetworkJobsSync>())
+                if (__instance.Controller && __instance.Controller.GetComponent<NetworkJobsSync>())
                 {
-                    NetworkJobsSync jobSync = origin.GetComponent<NetworkJobsSync>();
+                    NetworkJobsSync jobSync = __instance.Controller.GetComponent<NetworkJobsSync>();
                     if(consistInfo != null)
                         jobSync.OnSingleChainGeneratedWithExistingCars(__result);
                     else
@@ -88,14 +87,13 @@ namespace DVMultiplayer.Patches.PassengerJobs
 
     class PassengerJobs_GenerateNewCommuterRun_Patch
     {
-        static void Postfix(CommuterChainController __result, object __instance, object consistInfo = null)
+        static void Postfix(CommuterChainController __result, PassengerJobGenerator __instance, TrainCarsPerLogicTrack consistInfo = null)
         {
             if (NetworkManager.IsHost())
             {
-                StationController origin = Traverse.Create(__instance).Field("Controller").GetValue<StationController>();
-                if (origin && origin.GetComponent<NetworkJobsSync>())
+                if (__instance.Controller && __instance.Controller.GetComponent<NetworkJobsSync>())
                 {
-                    NetworkJobsSync jobSync = origin.GetComponent<NetworkJobsSync>();
+                    NetworkJobsSync jobSync = __instance.Controller.GetComponent<NetworkJobsSync>();
                     if (consistInfo != null)
                         jobSync.OnSingleChainGeneratedWithExistingCars(__result);
                     else
@@ -107,17 +105,14 @@ namespace DVMultiplayer.Patches.PassengerJobs
 
     class PassengerJobs_GenerateCommuterReturnTrip_Patch
     {
-        static void Postfix(CommuterChainController __result, object consistInfo, StationController sourceStation)
+        static void Postfix(CommuterChainController __result, StationController sourceStation)
         {
             if (NetworkManager.IsHost())
             {
                 NetworkJobsSync jobSync = sourceStation.GetComponent<NetworkJobsSync>();
                 if (jobSync != null)
                 {
-                    if (consistInfo != null)
-                        jobSync.OnSingleChainGeneratedWithExistingCars(__result);
-                    else
-                        jobSync.OnSingleChainGenerated(__result);
+                    jobSync.OnSingleChainGeneratedWithExistingCars(__result);
                 }
             }
         }
