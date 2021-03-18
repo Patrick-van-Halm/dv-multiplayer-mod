@@ -446,6 +446,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void OnCargoDamageTaken(float _)
     {
+        if (!hasLocalPlayerAuthority)
+            Main.Log("Cargo Damage taken while not having authority");
+
         if (!IsCarDamageEnabled && hasLocalPlayerAuthority)
             Main.Log($"Cargo took damage but should be ignored");
 
@@ -457,7 +460,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void OnBodyDamageTaken(float _)
     {
-        if(!IsCarDamageEnabled && hasLocalPlayerAuthority)
+        if (!hasLocalPlayerAuthority)
+            Main.Log("Train Damage taken while not having authority");
+
+        if (!IsCarDamageEnabled && hasLocalPlayerAuthority)
             Main.Log($"Train took damage but should be ignored");
 
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || !IsCarDamageEnabled)
