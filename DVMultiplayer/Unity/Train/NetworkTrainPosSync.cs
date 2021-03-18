@@ -341,20 +341,16 @@ internal class NetworkTrainPosSync : MonoBehaviour
     {
         Main.Log($"Setting authority");
         hasLocalPlayerAuthority = gain;
-        //Main.Log($"Set bogies non kinematic");
-        //foreach (Bogie bogie in trainCar.Bogies)
-        //{
-        //    if (bogie.rb == null)
-        //    {
-        //        bogie.RefreshBogiePoints();
-        //    }
-        //    bogie.rb.isKinematic = false;
-        //}
         Main.Log($"Set kinematic state {!gain}");
         trainCar.rb.isKinematic = !gain;
+        Main.Log($"Set bogies");
         foreach(Bogie bogie in trainCar.Bogies)
         {
             bogie.RefreshBogiePoints();
+            if (bogie.rb != null)
+            {
+                bogie.rb.isKinematic = !gain;
+            }
         }
 
         Main.Log($"Set velocity and drag");
@@ -420,6 +416,15 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainRerail()
     {
+        foreach (Bogie bogie in trainCar.Bogies)
+        {
+            bogie.RefreshBogiePoints();
+            if (bogie.rb != null)
+            {
+                bogie.rb.isKinematic = !hasLocalPlayerAuthority;
+            }
+        }
+
         if (!hasLocalPlayerAuthority)
         {
             newPos = transform.position - WorldMover.currentMove;
@@ -438,6 +443,15 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainDerail(TrainCar derailedCar)
     {
+        foreach (Bogie bogie in trainCar.Bogies)
+        {
+            if (bogie.rb != null)
+            {
+                bogie.rb.isKinematic = true;
+            }
+            bogie.RefreshBogiePoints();
+        }
+
         if (!hasLocalPlayerAuthority || SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
             return;
 
