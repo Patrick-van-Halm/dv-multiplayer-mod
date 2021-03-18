@@ -469,7 +469,6 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
 
     private void SendCurrentJobs()
     {
-        Main.Log($"[CLIENT] > JOB_HOST_SYNC");
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
@@ -482,6 +481,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
                 chains.AddRange(data.Item1);
                 jobs.AddRange(data.Item2);
             }
+            Main.Log($"[CLIENT] > JOB_HOST_SYNC: chain amount: {chains.Count}, job amount: {jobs.Count}");
 
             writer.Write(chains.ToArray());
             writer.Write(jobs.ToArray());
