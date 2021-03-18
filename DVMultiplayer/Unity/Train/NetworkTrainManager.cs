@@ -1087,8 +1087,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 Position = trainCar.transform.position - WorldMover.currentMove,
                 Forward = trainCar.transform.forward,
                 Rotation = trainCar.transform.rotation,
-                Bogie1TrackName = bogie1.track.name,
-                Bogie2TrackName = bogie2.track.name,
+                Bogie1TrackName = (bogie1.track.name == "Turntable Track" ? "" : bogie1.track.name),
+                Bogie2TrackName = (bogie2.track.name == "Turntable Track" ? "" : bogie2.track.name),
                 Bogie1PositionAlongTrack = bogie1.traveller.pointRelativeSpan + bogie1.traveller.curPoint.span,
                 Bogie2PositionAlongTrack = bogie2.traveller.pointRelativeSpan + bogie2.traveller.curPoint.span,
                 CarHealth = trainCar.CarDamage.currentHealth,
@@ -1691,12 +1691,13 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     internal IEnumerator RerailDesynced(TrainCar trainCar, Vector3 pos, Vector3 fwd)
     {
+        Main.Log("Train desynced and derailed");
         IsChangeByNetwork = true;
         trainCar.CarDamage.IgnoreDamage(true);
         trainCar.rb.isKinematic = false;
         RailTrack track = null;
         WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID);
-        if (serverState != null && serverState.AuthorityPlayerId != SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id)
+        if (serverState != null && serverState.Bogies[0].TrackName != "")
             track = RailTrackRegistry.GetTrackWithName(serverState.Bogies[0].TrackName);
         else
             track = RailTrack.GetClosest(pos + WorldMover.currentMove).track;

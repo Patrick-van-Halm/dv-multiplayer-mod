@@ -312,8 +312,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 if (!trainCar.IsInteriorLoaded)
                 {
                     trainCar.LoadInterior();
-                    trainCar.keepInteriorLoaded = true;
                 }
+                trainCar.keepInteriorLoaded = true;
             }
             else if (!willLocalPlayerGetAuthority && hasLocalPlayerAuthority)
             {
@@ -420,8 +420,15 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainRerail()
     {
-        if(!hasLocalPlayerAuthority)
-            trainCar.rb.isKinematic = true;
+        if (!hasLocalPlayerAuthority)
+        {
+            newPos = transform.position - WorldMover.currentMove;
+            newRot = transform.rotation;
+        }
+        else
+        {
+            prevPos = transform.position - WorldMover.currentMove;
+        }
 
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
             return;

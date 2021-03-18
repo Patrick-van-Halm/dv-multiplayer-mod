@@ -22,6 +22,9 @@ namespace DVMultiplayer.Patches.Train
                 if(state != null)
                 {
                     state.Shunter.IsEngineOn = false;
+                    state.Shunter.IsMainFuseOn = false;
+                    state.Shunter.IsSideFuse1On = false;
+                    state.Shunter.IsSideFuse2On = false;
                     state.Sander = 0;
                     state.Throttle = 0;
                     state.Reverser = 0;
