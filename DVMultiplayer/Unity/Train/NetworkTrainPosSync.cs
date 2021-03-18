@@ -463,8 +463,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (!hasLocalPlayerAuthority && !SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork && trainCar.CargoDamage.currentHealth != serverState.CargoHealth)
             trainCar.CargoDamage.LoadCargoDamageState(serverState.CargoHealth);
 
-        if (!IsCarDamageEnabled && hasLocalPlayerAuthority)
+        if (!IsCarDamageEnabled && hasLocalPlayerAuthority && trainCar.CargoDamage.currentHealth != serverState.CargoHealth)
+        {
             Main.Log($"Cargo took damage but should be ignored");
+            trainCar.CargoDamage.LoadCargoDamageState(serverState.CargoHealth);
+        }
 
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || !IsCarDamageEnabled)
             return;
@@ -477,8 +480,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (!hasLocalPlayerAuthority && !SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork && trainCar.CarDamage.currentHealth != serverState.CarHealth)
             trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
 
-        if (!IsCarDamageEnabled && hasLocalPlayerAuthority)
+        if (!IsCarDamageEnabled && hasLocalPlayerAuthority && trainCar.CarDamage.currentHealth != serverState.CarHealth)
+        {
             Main.Log($"Train took damage but should be ignored");
+            trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
+        }
 
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || !IsCarDamageEnabled)
             return;
