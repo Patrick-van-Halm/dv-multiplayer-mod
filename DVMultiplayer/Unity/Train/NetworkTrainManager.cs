@@ -1821,11 +1821,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         newTrain.CarDamage.IgnoreDamage(true);
 
         NetworkTrainPosSync posSyncer = newTrain.gameObject.AddComponent<NetworkTrainPosSync>();
-        if (newTrain.IsLoco)
-            newTrain.gameObject.AddComponent<NetworkTrainSync>();
-
-        newTrain.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
-        newTrain.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+        AddNetworkingScripts(newTrain);
 
         if(newTrain.logicCar != null && !newTrain.IsLoco && serverState.CargoType != CargoType.None)
             newTrain.logicCar.LoadCargo(serverState.CargoAmount, serverState.CargoType);
@@ -2124,6 +2120,16 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         if (!car.GetComponent<NetworkTrainSync>() && car.IsLoco)
             car.gameObject.AddComponent<NetworkTrainSync>();
+
+        if (car.GetComponent<MultipleUnitModule>() && car.IsLoco)
+        {
+            MultipleUnitModule multipleUnitModule = car.GetComponent<MultipleUnitModule>();
+            if (!multipleUnitModule.frontCableAdapter.GetComponent<NetworkTrainMUSync>())
+                multipleUnitModule.frontCableAdapter.gameObject.AddComponent<NetworkTrainMUSync>();
+
+            if (!multipleUnitModule.rearCableAdapter.GetComponent<NetworkTrainMUSync>())
+                multipleUnitModule.rearCableAdapter.gameObject.AddComponent<NetworkTrainMUSync>();
+        }
 
         if (!car.GetComponent<NetworkTrainPosSync>())
             car.gameObject.AddComponent<NetworkTrainPosSync>();
