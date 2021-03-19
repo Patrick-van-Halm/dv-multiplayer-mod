@@ -139,28 +139,37 @@ namespace TrainPlugin
                 WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == data.TrainId1);
                 if (!(train is null))
                 {
+                    string value = "";
+                    if (data.IsConnected)
+                        value = data.TrainId2;
                     switch (train.CarType)
                     {
                         case TrainCarType.LocoShunter:
                             if (data.Train1IsFront)
-                                train.Shunter.IsFrontMUConnected = data.IsConnected;
+                                train.Shunter.IsFrontMUConnectedTo = value;
                             else
-                                train.Shunter.IsRearMUConnected = data.IsConnected;
+                                train.Shunter.IsRearMUConnectedTo = value;
                             break;
                     }
                 }
 
-                train = worldTrains.FirstOrDefault(t => t.Guid == data.TrainId2);
-                if (!(train is null))
+                if (data.IsConnected)
                 {
-                    switch (train.CarType)
+                    train = worldTrains.FirstOrDefault(t => t.Guid == data.TrainId2);
+                    if (!(train is null))
                     {
-                        case TrainCarType.LocoShunter:
-                            if (data.Train2IsFront)
-                                train.Shunter.IsFrontMUConnected = data.IsConnected;
-                            else
-                                train.Shunter.IsRearMUConnected = data.IsConnected;
-                            break;
+                        string value = "";
+                        if (data.IsConnected)
+                            value = data.TrainId1;
+                        switch (train.CarType)
+                        {
+                            case TrainCarType.LocoShunter:
+                                if (data.Train2IsFront)
+                                    train.Shunter.IsFrontMUConnectedTo = value;
+                                else
+                                    train.Shunter.IsRearMUConnectedTo = value;
+                                break;
+                        }
                     }
                 }
             }

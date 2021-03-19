@@ -1007,20 +1007,23 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     }
                 }
 
-                train = serverCarStates.FirstOrDefault(t => t.Guid == data.TrainId2);
-                if (!(train is null))
+                if (data.IsConnected)
                 {
-                    string value = "";
-                    if (data.IsConnected)
-                        value = data.TrainId1;
-                    switch (train.CarType)
+                    train = serverCarStates.FirstOrDefault(t => t.Guid == data.TrainId2);
+                    if (!(train is null))
                     {
-                        case TrainCarType.LocoShunter:
-                            if (data.Train2IsFront)
-                                train.Shunter.IsFrontMUConnectedTo = value;
-                            else
-                                train.Shunter.IsRearMUConnectedTo = value;
-                            break;
+                        string value = "";
+                        if (data.IsConnected)
+                            value = data.TrainId1;
+                        switch (train.CarType)
+                        {
+                            case TrainCarType.LocoShunter:
+                                if (data.Train2IsFront)
+                                    train.Shunter.IsFrontMUConnectedTo = value;
+                                else
+                                    train.Shunter.IsRearMUConnectedTo = value;
+                                break;
+                        }
                     }
                 }
 

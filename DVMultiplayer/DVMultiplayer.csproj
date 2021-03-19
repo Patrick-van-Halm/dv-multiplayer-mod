@@ -179,6 +179,7 @@
     <Compile Include="DTO\Player\SetSpawn.cs" />
     <Compile Include="DTO\Savegame\OfflineSave.cs" />
     <Compile Include="DTO\Train\CarDamage.cs" />
+    <Compile Include="DTO\Train\CarMUChange.cs" />
     <Compile Include="DTO\Train\CarsAuthChange.cs" />
     <Compile Include="DTO\Train\CarRemoval.cs" />
     <Compile Include="DTO\Train\Shunter.cs" />
@@ -234,6 +235,7 @@
     <Compile Include="Unity\Junction\NetworkJunctionManager.cs" />
     <Compile Include="Unity\Player\RotateTowardsPlayer.cs" />
     <Compile Include="Unity\Savegame\NetworkSaveGameManager.cs" />
+    <Compile Include="Unity\Train\NetworkTrainMUSync.cs" />
     <Compile Include="Unity\Train\NetworkTrainPosSync.cs" />
     <Compile Include="Unity\Player\NetworkPlayerSync.cs" />
     <Compile Include="Unity\Player\NetworkPlayerManager.cs" />
