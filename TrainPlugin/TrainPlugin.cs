@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.37");
+        public override Version Version => new Version("1.6.38");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -123,8 +123,49 @@ namespace TrainPlugin
                     case NetworkTags.TRAIN_CARGO_CHANGE:
                         OnCargoChange(message, e.Client);
                         break;
+
+                    case NetworkTags.TRAIN_MU_CHANGE:
+                        OnCarMUChange(message, e.Client);
+                        break;
                 }
             }
+        }
+
+        private void OnCarMUChange(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                CarMUChange data = reader.ReadSerializable<CarMUChange>();
+                WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == data.TrainId1);
+                if (!(train is null))
+                {
+                    switch (train.CarType)
+                    {
+                        case TrainCarType.LocoShunter:
+                            if (data.Train1IsFront)
+                                train.Shunter.IsFrontMUConnected = data.IsConnected;
+                            else
+                                train.Shunter.IsRearMUConnected = data.IsConnected;
+                            break;
+                    }
+                }
+
+                train = worldTrains.FirstOrDefault(t => t.Guid == data.TrainId2);
+                if (!(train is null))
+                {
+                    switch (train.CarType)
+                    {
+                        case TrainCarType.LocoShunter:
+                            if (data.Train2IsFront)
+                                train.Shunter.IsFrontMUConnected = data.IsConnected;
+                            else
+                                train.Shunter.IsRearMUConnected = data.IsConnected;
+                            break;
+                    }
+                }
+            }
+
+            ReliableSendToOthers(message, client);
         }
 
         private void OnCargoChange(Message message, IClient client)

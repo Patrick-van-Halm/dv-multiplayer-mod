@@ -49,5 +49,6 @@
         DEBT_LOCO_PAID,
         JOB_CHAIN_EXPIRED,
         JOB_STATION_EXPIRATION,
+        TRAIN_MU_CHANGE,
     }
 }
