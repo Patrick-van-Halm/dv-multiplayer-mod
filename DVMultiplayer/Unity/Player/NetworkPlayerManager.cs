@@ -599,6 +599,17 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         return allPlayers.Values.Where(p => p.GetComponent<NetworkPlayerSync>().Train?.CarGUID == train.CarGUID).ToArray();
     }
 
+    internal GameObject[] GetPlayersInTrainSet(Trainset trainset)
+    {
+        List<GameObject> players = new List<GameObject>();
+        foreach(TrainCar car in trainset.cars)
+        {
+            if(car)
+                players.AddRange(GetPlayersInTrain(car));
+        }
+        return players.ToArray();
+    }
+
     internal bool IsAnyoneInLocalPlayerRegion()
     {
         foreach (GameObject playerObject in networkPlayers.Values)

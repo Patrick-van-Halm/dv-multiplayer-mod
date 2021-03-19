@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.36");
+        public override Version Version => new Version("1.6.37");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -187,7 +187,8 @@ namespace TrainPlugin
         private void CheckIfAllPlayersLoadedTrain()
         {
             bool allPlayersHaveLoadedTrains = true;
-            foreach (IClient client in PluginManager.GetPluginByType<PlayerPlugin.PlayerPlugin>().GetPlayers())
+            IEnumerable<IClient> clients = PluginManager.GetPluginByType<PlayerPlugin.PlayerPlugin>().GetPlayers();
+            foreach (IClient client in clients)
             {
                 if (!playerHasInitializedTrain.Contains(client))
                 {
@@ -213,7 +214,7 @@ namespace TrainPlugin
             }
             else
             {
-                foreach (IClient client in PluginManager.GetPluginByType<PlayerPlugin.PlayerPlugin>().GetPlayers())
+                foreach (IClient client in clients)
                 {
                     if (!playerHasInitializedTrain.Contains(client))
                     {

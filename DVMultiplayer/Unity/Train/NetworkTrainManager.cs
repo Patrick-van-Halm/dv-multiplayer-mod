@@ -412,6 +412,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             }
                         }
                     }
+                    train.GetComponent<NetworkTrainPosSync>().isDerailed = false;
                     SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(train, data.Position, data.Forward));
                 }
             }
@@ -1134,6 +1135,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     SyncLocomotiveWithServerState(trainCar, serverState);
                 }
             }
+            trainCar.GetComponent<NetworkTrainPosSync>().isDerailed = true;
             IsChangeByNetwork = false;
 
             writer.Write(data);
@@ -1159,6 +1161,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             float cargoDmg = 0;
             if (!trainCar.IsLoco)
                 cargoDmg = trainCar.CargoDamage.currentHealth;
+
+            trainCar.GetComponent<NetworkTrainPosSync>().isDerailed = true;
             writer.Write(new TrainDerail()
             {
                 TrainId = trainCar.CarGUID,
@@ -1693,14 +1697,17 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         Main.Log("Train desynced and derailed");
         IsChangeByNetwork = true;
-        trainCar.CarDamage.IgnoreDamage(true);
-        trainCar.rb.isKinematic = false;
         RailTrack track = null;
         WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == trainCar.CarGUID);
         if (serverState != null && serverState.Bogies[0].TrackName != "")
             track = RailTrackRegistry.GetTrackWithName(serverState.Bogies[0].TrackName);
         else
             track = RailTrack.GetClosest(pos + WorldMover.currentMove).track;
+
+        if(Vector3.Distance(track.transform.position - WorldMover.currentMove, pos) > 100)
+        {
+            track = RailTrack.GetClosest(pos + WorldMover.currentMove).track;
+        }
 
         if (track)
         {
@@ -1712,9 +1719,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 SyncLocomotiveWithServerState(trainCar, serverState);
             }
         }
-        if(serverState != null && serverState.AuthorityPlayerId != SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Id)
-            trainCar.rb.isKinematic = true;
-        trainCar.CarDamage.IgnoreDamage(false);
         IsChangeByNetwork = false;
     }
 
