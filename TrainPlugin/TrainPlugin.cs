@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.39");
+        public override Version Version => new Version("1.6.43");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -771,18 +771,18 @@ namespace TrainPlugin
                 client.SendMessage(message, SendMode.Reliable);
         }
 
-        private void UpdateMULevers(WorldTrain train, TrainLever lever, WorldTrain prevTrain = null)
+        private void UpdateMULevers(WorldTrain train, TrainLever lever, string prevGuid = "")
         {
-            if (prevTrain == train && train != null)
+            if (train == null)
                 return;
 
-            if(train.MultipleUnit.IsFrontMUConnectedTo != train.Guid)
-                UpdateMULevers(worldTrains.FirstOrDefault(t => t.Guid == train.MultipleUnit.IsFrontMUConnectedTo), lever, train);
-
-            if(train.MultipleUnit.IsRearMUConnectedTo != train.Guid)
-                UpdateMULevers(worldTrains.FirstOrDefault(t => t.Guid == train.MultipleUnit.IsRearMUConnectedTo), lever, train);
-
             UpdateLeverTrain(train, lever);
+
+            if(train.MultipleUnit.IsFrontMUConnectedTo != "" && train.MultipleUnit.IsFrontMUConnectedTo != prevGuid)
+                UpdateMULevers(worldTrains.FirstOrDefault(t => t.Guid == train.MultipleUnit.IsFrontMUConnectedTo), lever, train.Guid);
+
+            if(train.MultipleUnit.IsRearMUConnectedTo != "" && train.MultipleUnit.IsFrontMUConnectedTo != prevGuid)
+                UpdateMULevers(worldTrains.FirstOrDefault(t => t.Guid == train.MultipleUnit.IsRearMUConnectedTo), lever, train.Guid);
         }
 
         private void UpdateLeverTrain(WorldTrain train, TrainLever lever)
