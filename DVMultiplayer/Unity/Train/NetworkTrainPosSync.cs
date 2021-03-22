@@ -281,7 +281,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 if (increment <= 5f)
                     increment = 5;
                 float step = increment * Time.deltaTime; // calculate distance to move
-                if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > .25)
+                if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > 1e-2f)
                 {
                     List<Vector3> bogiespos = new List<Vector3>();
                     foreach(Bogie bogie in trainCar.Bogies)
@@ -501,7 +501,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         while (hasLocalPlayerAuthority && !trainCar.frontCoupler.coupledTo)
         {
             yield return new WaitForSeconds(.005f);
-            yield return new WaitUntil(() => Vector3.Distance(transform.position - WorldMover.currentMove, prevPos) > 1e-5f && !trainCar.isStationary);
+            yield return new WaitUntil(() => Vector3.Distance(transform.position - WorldMover.currentMove, prevPos) > 1e-2f && !trainCar.isStationary);
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar);
             prevPos = transform.position - WorldMover.currentMove;
 
