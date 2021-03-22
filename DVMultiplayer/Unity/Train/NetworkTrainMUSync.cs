@@ -60,13 +60,19 @@ internal class NetworkTrainMUSync : MonoBehaviour
     {
         if (!SingletonBehaviour<NetworkTrainManager>.Exists || SingletonBehaviour<NetworkTrainManager>.Instance.IsDisconnecting || SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced || mu is null || SingletonBehaviour<NetworkTrainManager>.Instance.IsSpawningTrains)
             return;
+        var newlyConnected = mu.rearCableAdapter.muCable.connectedTo;
 
-        rearConnectedTo = mu.rearCableAdapter.muCable.connectedTo;
-        if (rearConnectedTo.isFront && rearConnectedTo == rearConnectedTo.muModule.GetComponent<NetworkTrainMUSync>().frontConnectedTo)
+        if (newlyConnected == rearConnectedTo)
             return;
+        rearConnectedTo = newlyConnected;
 
-        if (!rearConnectedTo.isFront && rearConnectedTo == rearConnectedTo.muModule.GetComponent<NetworkTrainMUSync>().rearConnectedTo)
-            return;
+        if(rearConnectedTo != null)
+        {
+            if (rearConnectedTo.isFront)
+                rearConnectedTo.muModule.GetComponent<NetworkTrainMUSync>().frontConnectedTo = mu.rearCableAdapter.muCable;
+            else
+                rearConnectedTo.muModule.GetComponent<NetworkTrainMUSync>().rearConnectedTo = mu.rearCableAdapter.muCable;
+        }
         MUConnectionChanged(isConnected, isAudioPlayed, false, rearConnectedTo);
     }
 
@@ -75,13 +81,18 @@ internal class NetworkTrainMUSync : MonoBehaviour
         if (!SingletonBehaviour<NetworkTrainManager>.Exists || SingletonBehaviour<NetworkTrainManager>.Instance.IsDisconnecting || SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced || mu is null || SingletonBehaviour<NetworkTrainManager>.Instance.IsSpawningTrains)
             return;
 
-        frontConnectedTo = mu.frontCableAdapter.muCable.connectedTo;
-        if (frontConnectedTo.isFront && frontConnectedTo == frontConnectedTo.muModule.GetComponent<NetworkTrainMUSync>().frontConnectedTo)
+        var newlyConnected = mu.rearCableAdapter.muCable.connectedTo;
+        if (newlyConnected == frontConnectedTo)
             return;
+        frontConnectedTo = newlyConnected;
 
-        if (!frontConnectedTo.isFront && frontConnectedTo == frontConnectedTo.muModule.GetComponent<NetworkTrainMUSync>().rearConnectedTo)
-            return;
-
+        if (frontConnectedTo != null)
+        {
+            if (frontConnectedTo.isFront)
+                frontConnectedTo.muModule.GetComponent<NetworkTrainMUSync>().frontConnectedTo = mu.frontCableAdapter.muCable;
+            else
+                frontConnectedTo.muModule.GetComponent<NetworkTrainMUSync>().rearConnectedTo = mu.frontCableAdapter.muCable;
+        }
         MUConnectionChanged(isConnected, isAudioPlayed, true, frontConnectedTo);
     }
 
