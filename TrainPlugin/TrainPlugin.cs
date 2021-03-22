@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.38");
+        public override Version Version => new Version("1.6.39");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -146,9 +146,9 @@ namespace TrainPlugin
                     {
                         case TrainCarType.LocoShunter:
                             if (data.Train1IsFront)
-                                train.Shunter.IsFrontMUConnectedTo = value;
+                                train.MultipleUnit.IsFrontMUConnectedTo = value;
                             else
-                                train.Shunter.IsRearMUConnectedTo = value;
+                                train.MultipleUnit.IsRearMUConnectedTo = value;
                             break;
                     }
                 }
@@ -165,9 +165,9 @@ namespace TrainPlugin
                         {
                             case TrainCarType.LocoShunter:
                                 if (data.Train2IsFront)
-                                    train.Shunter.IsFrontMUConnectedTo = value;
+                                    train.MultipleUnit.IsFrontMUConnectedTo = value;
                                 else
-                                    train.Shunter.IsRearMUConnectedTo = value;
+                                    train.MultipleUnit.IsRearMUConnectedTo = value;
                                 break;
                         }
                     }
@@ -723,66 +723,10 @@ namespace TrainPlugin
                         Logger.Trace($"Train not found adding new one");
                     }
 
-                    switch (lever.Lever)
-                    {
-                        case Levers.Throttle:
-                            train.Throttle = lever.Value;
-                            break;
-
-                        case Levers.Brake:
-                            train.Brake = lever.Value;
-                            break;
-
-                        case Levers.IndependentBrake:
-                            Logger.Trace($"Changed independent brake of {train.Guid}");
-                            train.IndepBrake = lever.Value;
-                            break;
-
-                        case Levers.Sander:
-                            train.Sander = lever.Value;
-                            break;
-
-                        case Levers.Reverser:
-                            train.Reverser = lever.Value;
-                            break;
-                    }
-
-                    switch (train.CarType)
-                    {
-                        case TrainCarType.LocoShunter:
-                            if (train.Shunter == null)
-                                train.Shunter = new Shunter();
-
-                            Shunter shunter = train.Shunter;
-                            switch (lever.Lever)
-                            {
-                                case Levers.MainFuse:
-                                    shunter.IsMainFuseOn = lever.Value == 1;
-                                    if (lever.Value == 0)
-                                        shunter.IsEngineOn = false;
-                                    break;
-
-                                case Levers.SideFuse_1:
-                                    shunter.IsSideFuse1On = lever.Value == 1;
-                                    if (lever.Value == 0)
-                                        shunter.IsEngineOn = false;
-                                    break;
-
-                                case Levers.SideFuse_2:
-                                    shunter.IsSideFuse2On = lever.Value == 1;
-                                    if (lever.Value == 0)
-                                        shunter.IsEngineOn = false;
-                                    break;
-
-                                case Levers.FusePowerStarter:
-                                    if (shunter.IsSideFuse1On && shunter.IsSideFuse2On && shunter.IsMainFuseOn && lever.Value == 1)
-                                        shunter.IsEngineOn = true;
-                                    else if (lever.Value == 0)
-                                        shunter.IsEngineOn = false;
-                                    break;
-                            }
-                            break;
-                    }
+                    if (train.CarType == TrainCarType.LocoShunter)
+                        UpdateMULevers(train, lever);
+                    else
+                        UpdateLeverTrain(train, lever);
                 }
             }
             Logger.Trace("[SERVER] > TRAIN_LEVER");
@@ -825,6 +769,84 @@ namespace TrainPlugin
         {
             foreach (IClient client in ClientManager.GetAllClients().Where(client => client != sender))
                 client.SendMessage(message, SendMode.Reliable);
+        }
+
+        private void UpdateMULevers(WorldTrain train, TrainLever lever, WorldTrain prevTrain = null)
+        {
+            if (prevTrain == train && train != null)
+                return;
+
+            if(train.MultipleUnit.IsFrontMUConnectedTo != train.Guid)
+                UpdateMULevers(worldTrains.FirstOrDefault(t => t.Guid == train.MultipleUnit.IsFrontMUConnectedTo), lever, train);
+
+            if(train.MultipleUnit.IsRearMUConnectedTo != train.Guid)
+                UpdateMULevers(worldTrains.FirstOrDefault(t => t.Guid == train.MultipleUnit.IsRearMUConnectedTo), lever, train);
+
+            UpdateLeverTrain(train, lever);
+        }
+
+        private void UpdateLeverTrain(WorldTrain train, TrainLever lever)
+        {
+            switch (lever.Lever)
+            {
+                case Levers.Throttle:
+                    train.Throttle = lever.Value;
+                    break;
+
+                case Levers.Brake:
+                    train.Brake = lever.Value;
+                    break;
+
+                case Levers.IndependentBrake:
+                    Logger.Trace($"Changed independent brake of {train.Guid}");
+                    train.IndepBrake = lever.Value;
+                    break;
+
+                case Levers.Sander:
+                    train.Sander = lever.Value;
+                    break;
+
+                case Levers.Reverser:
+                    train.Reverser = lever.Value;
+                    break;
+            }
+
+            switch (train.CarType)
+            {
+                case TrainCarType.LocoShunter:
+                    if (train.Shunter == null)
+                        train.Shunter = new Shunter();
+
+                    Shunter shunter = train.Shunter;
+                    switch (lever.Lever)
+                    {
+                        case Levers.MainFuse:
+                            shunter.IsMainFuseOn = lever.Value == 1;
+                            if (lever.Value == 0)
+                                shunter.IsEngineOn = false;
+                            break;
+
+                        case Levers.SideFuse_1:
+                            shunter.IsSideFuse1On = lever.Value == 1;
+                            if (lever.Value == 0)
+                                shunter.IsEngineOn = false;
+                            break;
+
+                        case Levers.SideFuse_2:
+                            shunter.IsSideFuse2On = lever.Value == 1;
+                            if (lever.Value == 0)
+                                shunter.IsEngineOn = false;
+                            break;
+
+                        case Levers.FusePowerStarter:
+                            if (shunter.IsSideFuse1On && shunter.IsSideFuse2On && shunter.IsMainFuseOn && lever.Value == 1)
+                                shunter.IsEngineOn = true;
+                            else if (lever.Value == 0)
+                                shunter.IsEngineOn = false;
+                            break;
+                    }
+                    break;
+            }
         }
     }
 }

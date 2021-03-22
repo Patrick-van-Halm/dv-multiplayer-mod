@@ -161,17 +161,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         if (trainCar)
         {
-            if (!trainCar.GetComponent<NetworkTrainSync>() && trainCar.IsLoco)
-                trainCar.gameObject.AddComponent<NetworkTrainSync>();
-
-            if (!trainCar.GetComponent<NetworkTrainPosSync>())
-                trainCar.gameObject.AddComponent<NetworkTrainPosSync>();
-
-            if (!trainCar.frontCoupler.GetComponent<NetworkTrainCouplerSync>())
-                trainCar.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
-
-            if (!trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>())
-                trainCar.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
+            AddNetworkingScripts(trainCar);
         }
 
         NetworkPlayerSync playerSync = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync();
@@ -586,12 +576,20 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
                 TrainCar train = localCars.FirstOrDefault(t => t.IsLoco && t.CarGUID == lever.TrainId);
                 if (train && train.IsLoco)
-                {
+                {                    
                     WorldTrain serverTrainState = serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID);
-                    if (serverTrainState != null)
+                    if (train.GetComponent<MultipleUnitModule>())
                     {
-                        UpdateServerStateLeverChange(serverTrainState, lever.Lever, lever.Value);
+                        UpdateMUServerStateLeverChange(train.GetComponent<MultipleUnitModule>(), lever.Lever, lever.Value);
                     }
+                    else
+                    {
+                        if (serverTrainState != null)
+                        {
+                            UpdateServerStateLeverChange(serverTrainState, lever.Lever, lever.Value);
+                        }
+                    }
+
                     Main.Log($"[CLIENT] < TRAIN_LEVER: Packet size: {reader.Length}, TrainID: {train.ID}, Lever: {lever.Lever}, Value: {lever.Value}");
                     IsChangeByNetwork = true;
                     LocoControllerBase baseController = train.GetComponent<LocoControllerBase>();
@@ -677,6 +675,31 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 }
             }
         }
+    }
+
+    private void UpdateMUServerStateLeverChange(MultipleUnitModule trainMU, Levers lever, float value, MultipleUnitCable prevCable = null)
+    {
+        if (trainMU.frontCableAdapter.muCable.IsConnected)
+        {
+            var connectedCable = trainMU.frontCableAdapter.muCable;
+            if (connectedCable.muModule.rearCableAdapter.muCable.IsConnected && connectedCable.muModule.rearCableAdapter.muCable.connectedTo != prevCable)
+            {
+                UpdateMUServerStateLeverChange(connectedCable.muModule, lever, value, connectedCable);
+            }
+        }
+
+        if (trainMU.rearCableAdapter.muCable.IsConnected)
+        {
+            var connectedCable = trainMU.rearCableAdapter.muCable;
+            if (connectedCable.muModule.frontCableAdapter.muCable.IsConnected && connectedCable.muModule.frontCableAdapter.muCable.connectedTo != prevCable)
+            {
+                UpdateMUServerStateLeverChange(connectedCable.muModule, lever, value, connectedCable);
+            }
+        }
+
+        WorldTrain serverState = serverCarStates.FirstOrDefault(s => s.Guid == trainMU.loco.train.CarGUID);
+        if (serverState != null)
+            UpdateServerStateLeverChange(serverState, lever, value);
     }
 
     private void OnCarCoupleChangeMessage(Message message, bool isCoupled)
@@ -990,43 +1013,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             {
                 CarMUChange data = reader.ReadSerializable<CarMUChange>();
                 Main.Log($"[CLIENT] < TRAIN_MU_CHANGE: Car: {data.TrainId1} {(data.Train1IsFront ? "Front" : "Back")} MU {(data.IsConnected ? "Connected" : "Disconnected")}");
-                WorldTrain train = serverCarStates.FirstOrDefault(t => t.Guid == data.TrainId1);
-                if (!(train is null))
-                {
-                    string value = "";
-                    if (data.IsConnected)
-                        value = data.TrainId2;
-                    switch (train.CarType)
-                    {
-                        case TrainCarType.LocoShunter:
-                            if (data.Train1IsFront)
-                                train.Shunter.IsFrontMUConnectedTo = value;
-                            else
-                                train.Shunter.IsRearMUConnectedTo = value;
-                            break;
-                    }
-                }
+                UpdateMUServerState(data);
 
-                if (data.IsConnected)
-                {
-                    train = serverCarStates.FirstOrDefault(t => t.Guid == data.TrainId2);
-                    if (!(train is null))
-                    {
-                        string value = "";
-                        if (data.IsConnected)
-                            value = data.TrainId1;
-                        switch (train.CarType)
-                        {
-                            case TrainCarType.LocoShunter:
-                                if (data.Train2IsFront)
-                                    train.Shunter.IsFrontMUConnectedTo = value;
-                                else
-                                    train.Shunter.IsRearMUConnectedTo = value;
-                                break;
-                        }
-                    }
-                }
-
+                IsChangeByNetwork = true;
                 TrainCar car1 = localCars.FirstOrDefault(t => t.CarGUID == data.TrainId1);
                 if (data.IsConnected)
                 {
@@ -1051,6 +1040,45 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         car1.GetComponent<MultipleUnitModule>().frontCableAdapter.muCable.Disconnect(data.AudioPlayed);
                     else
                         car1.GetComponent<MultipleUnitModule>().rearCableAdapter.muCable.Disconnect(data.AudioPlayed);
+                }
+                IsChangeByNetwork = false;
+            }
+        }
+    }
+
+    private void UpdateMUServerState(CarMUChange data)
+    {
+        WorldTrain train = serverCarStates.FirstOrDefault(t => t.Guid == data.TrainId1);
+        if (!(train is null))
+        {
+            string value = "";
+            if (data.IsConnected)
+                value = data.TrainId2;
+
+            if (train.CarType == TrainCarType.LocoShunter)
+            {
+                if (data.Train1IsFront)
+                    train.MultipleUnit.IsFrontMUConnectedTo = value;
+                else
+                    train.MultipleUnit.IsRearMUConnectedTo = value;
+            }
+        }
+
+        if (data.IsConnected)
+        {
+            train = serverCarStates.FirstOrDefault(t => t.Guid == data.TrainId2);
+            if (!(train is null))
+            {
+                string value = "";
+                if (data.IsConnected)
+                    value = data.TrainId1;
+
+                if (train.CarType == TrainCarType.LocoShunter)
+                {
+                    if (data.Train1IsFront)
+                        train.MultipleUnit.IsFrontMUConnectedTo = value;
+                    else
+                        train.MultipleUnit.IsRearMUConnectedTo = value;
                 }
             }
         }
@@ -1322,22 +1350,28 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
     }
 
-    internal void SendNewLocoLeverValue(Levers lever, float value)
+    internal void SendNewLocoLeverValue(TrainCar train, Levers lever, float value)
     {
         if (!IsSynced)
             return;
 
-        TrainCar curTrain = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync().Train;
-        UpdateServerStateLeverChange(serverCarStates.FirstOrDefault(t => t.Guid == curTrain.CarGUID), lever, value);
-        Main.Log($"[CLIENT] > TRAIN_LEVER: TrainID: {curTrain.ID}, Lever: {lever}, value: {value}");
-        if (!curTrain.IsLoco)
+        if (train.GetComponent<MultipleUnitModule>())
+        {
+            UpdateMUServerStateLeverChange(train.GetComponent<MultipleUnitModule>(), lever, value);
+        }
+        else
+        {
+            UpdateServerStateLeverChange(serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID), lever, value);
+        }
+        Main.Log($"[CLIENT] > TRAIN_LEVER: TrainID: {train.ID}, Lever: {lever}, value: {value}");
+        if (!train.IsLoco)
             return;
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
             writer.Write<TrainLever>(new TrainLever()
             {
-                TrainId = curTrain.CarGUID,
+                TrainId = train.CarGUID,
                 Lever = lever,
                 Value = value
             });
@@ -1525,46 +1559,12 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     internal void OnMUConnectionChanged(string carId, bool isFront, string otherCarId, bool isOtherFront, bool isConnected, bool isAudioPlayed)
     {
-        WorldTrain train = serverCarStates.FirstOrDefault(t => t.Guid == carId);
-        if (!(train is null))
-        {
-            string value = "";
-            if (isConnected)
-                value = carId;
-            switch (train.CarType)
-            {
-                case TrainCarType.LocoShunter:
-                    if (isFront)
-                        train.Shunter.IsFrontMUConnectedTo = value;
-                    else
-                        train.Shunter.IsRearMUConnectedTo = value;
-                    break;
-            }
-        }
-        if (isConnected)
-        {
-            train = serverCarStates.FirstOrDefault(t => t.Guid == otherCarId);
-            if (!(train is null))
-            {
-                string value = "";
-                if (isConnected)
-                    value = otherCarId;
-                switch (train.CarType)
-                {
-                    case TrainCarType.LocoShunter:
-                        if (isOtherFront)
-                            train.Shunter.IsFrontMUConnectedTo = value;
-                        else
-                            train.Shunter.IsRearMUConnectedTo = value;
-                        break;
-                }
-            }
-        }
-
         Main.Log($"[CLIENT] > TRAIN_MU_CHANGE: Car: {carId} {(isFront ? "Front" : "Back")} MU {(isConnected ? "Connected" : "Disconnected")}");
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
-            writer.Write(new CarMUChange() { TrainId1 = carId, TrainId2 = otherCarId, Train1IsFront = isFront, Train2IsFront = isOtherFront, IsConnected = isConnected, AudioPlayed = isAudioPlayed });
+            CarMUChange data = new CarMUChange() { TrainId1 = carId, TrainId2 = otherCarId, Train1IsFront = isFront, Train2IsFront = isOtherFront, IsConnected = isConnected, AudioPlayed = isAudioPlayed };
+            UpdateMUServerState(data);
+            writer.Write(data);
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_MU_CHANGE, writer))
                 SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
         }
@@ -1627,28 +1627,28 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         if(serverState.CarType == TrainCarType.LocoShunter)
         {
-            if(serverState.Shunter.IsFrontMUConnectedTo != "")
+            if(serverState.MultipleUnit.IsFrontMUConnectedTo != "")
             {
-                TrainCar car2 = localCars.FirstOrDefault(t => t.CarGUID == serverState.Shunter.IsFrontMUConnectedTo);
-                WorldTrain worldTrain = serverCarStates.FirstOrDefault(t => t.Guid == serverState.Shunter.IsFrontMUConnectedTo);
+                TrainCar car2 = localCars.FirstOrDefault(t => t.CarGUID == serverState.MultipleUnit.IsFrontMUConnectedTo);
+                WorldTrain worldTrain = serverCarStates.FirstOrDefault(t => t.Guid == serverState.MultipleUnit.IsFrontMUConnectedTo);
                 if(worldTrain.CarType == TrainCarType.LocoShunter)
                 {
-                    if(worldTrain.Shunter.IsFrontMUConnectedTo == serverState.Shunter.IsFrontMUConnectedTo)
+                    if(worldTrain.MultipleUnit.IsFrontMUConnectedTo == serverState.MultipleUnit.IsFrontMUConnectedTo)
                         train.GetComponent<MultipleUnitModule>().frontCableAdapter.muCable.Connect(car2.GetComponent<MultipleUnitModule>().frontCableAdapter.muCable, false);
-                    else if(worldTrain.Shunter.IsRearMUConnectedTo == serverState.Shunter.IsFrontMUConnectedTo)
+                    else if(worldTrain.MultipleUnit.IsRearMUConnectedTo == serverState.MultipleUnit.IsFrontMUConnectedTo)
                         train.GetComponent<MultipleUnitModule>().frontCableAdapter.muCable.Connect(car2.GetComponent<MultipleUnitModule>().rearCableAdapter.muCable, false);
                 }
             }
 
-            if (serverState.Shunter.IsRearMUConnectedTo != "")
+            if (serverState.MultipleUnit.IsRearMUConnectedTo != "")
             {
-                TrainCar car2 = localCars.FirstOrDefault(t => t.CarGUID == serverState.Shunter.IsRearMUConnectedTo);
-                WorldTrain worldTrain = serverCarStates.FirstOrDefault(t => t.Guid == serverState.Shunter.IsRearMUConnectedTo);
+                TrainCar car2 = localCars.FirstOrDefault(t => t.CarGUID == serverState.MultipleUnit.IsRearMUConnectedTo);
+                WorldTrain worldTrain = serverCarStates.FirstOrDefault(t => t.Guid == serverState.MultipleUnit.IsRearMUConnectedTo);
                 if (worldTrain.CarType == TrainCarType.LocoShunter)
                 {
-                    if (worldTrain.Shunter.IsFrontMUConnectedTo == serverState.Shunter.IsRearMUConnectedTo)
+                    if (worldTrain.MultipleUnit.IsFrontMUConnectedTo == serverState.MultipleUnit.IsRearMUConnectedTo)
                         train.GetComponent<MultipleUnitModule>().rearCableAdapter.muCable.Connect(car2.GetComponent<MultipleUnitModule>().frontCableAdapter.muCable, false);
-                    else if (worldTrain.Shunter.IsRearMUConnectedTo == serverState.Shunter.IsRearMUConnectedTo)
+                    else if (worldTrain.MultipleUnit.IsRearMUConnectedTo == serverState.MultipleUnit.IsRearMUConnectedTo)
                         train.GetComponent<MultipleUnitModule>().rearCableAdapter.muCable.Connect(car2.GetComponent<MultipleUnitModule>().rearCableAdapter.muCable, false);
                 }
             }
@@ -2121,15 +2121,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         if (!car.GetComponent<NetworkTrainSync>() && car.IsLoco)
             car.gameObject.AddComponent<NetworkTrainSync>();
 
-        if (car.GetComponent<MultipleUnitModule>() && car.IsLoco)
-        {
-            MultipleUnitModule multipleUnitModule = car.GetComponent<MultipleUnitModule>();
-            if (!multipleUnitModule.frontCableAdapter.GetComponent<NetworkTrainMUSync>())
-                multipleUnitModule.frontCableAdapter.gameObject.AddComponent<NetworkTrainMUSync>();
-
-            if (!multipleUnitModule.rearCableAdapter.GetComponent<NetworkTrainMUSync>())
-                multipleUnitModule.rearCableAdapter.gameObject.AddComponent<NetworkTrainMUSync>();
-        }
+        if (!car.GetComponent<NetworkTrainMUSync>() && car.IsLoco)
+            car.gameObject.AddComponent<NetworkTrainMUSync>();
 
         if (!car.GetComponent<NetworkTrainPosSync>())
             car.gameObject.AddComponent<NetworkTrainPosSync>();

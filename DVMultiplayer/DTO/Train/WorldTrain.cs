@@ -45,6 +45,7 @@ namespace DVMultiplayer.DTO.Train
 
         // Specific Train states
         public Shunter Shunter { get; set; } = new Shunter();
+        public MultipleUnit MultipleUnit { get; set; } = new MultipleUnit();
 
         // Cargo based trains
         public float CargoAmount { get; set; }
@@ -99,6 +100,7 @@ namespace DVMultiplayer.DTO.Train
             {
                 case TrainCarType.LocoShunter:
                     Shunter = e.Reader.ReadSerializable<Shunter>();
+                    MultipleUnit = e.Reader.ReadSerializable<MultipleUnit>();
                     break;
             }
 
@@ -150,6 +152,7 @@ namespace DVMultiplayer.DTO.Train
             {
                 case TrainCarType.LocoShunter:
                     e.Writer.Write(Shunter);
+                    e.Writer.Write(MultipleUnit);
                     break;
             }
             e.Writer.Write(updatedAt);

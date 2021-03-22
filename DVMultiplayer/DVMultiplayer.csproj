@@ -182,6 +182,7 @@
     <Compile Include="DTO\Train\CarMUChange.cs" />
     <Compile Include="DTO\Train\CarsAuthChange.cs" />
     <Compile Include="DTO\Train\CarRemoval.cs" />
+    <Compile Include="DTO\Train\MultipleUnit.cs" />
     <Compile Include="DTO\Train\Shunter.cs" />
     <Compile Include="DTO\Train\TrainCargoChanged.cs" />
     <Compile Include="DTO\Train\TrainCouplerCockChange.cs" />
