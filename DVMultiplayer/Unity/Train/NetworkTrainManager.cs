@@ -580,7 +580,24 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     WorldTrain serverTrainState = serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID);
                     if (train.GetComponent<MultipleUnitModule>())
                     {
-                        UpdateMUServerStateLeverChange(train.GetComponent<MultipleUnitModule>(), lever.Lever, lever.Value);
+                        switch (lever.Lever)
+                        {
+                            case Levers.Brake:
+                            case Levers.IndependentBrake:
+                            case Levers.Reverser:
+                            case Levers.Sander:
+                            case Levers.Throttle:
+                                UpdateMUServerStateLeverChange(train.GetComponent<MultipleUnitModule>(), lever.Lever, lever.Value);
+                                break;
+
+                            default:
+                                if (serverTrainState != null)
+                                {
+                                    UpdateServerStateLeverChange(serverTrainState, lever.Lever, lever.Value);
+                                }
+                                break;
+
+                        }
                     }
                     else
                     {
@@ -1357,7 +1374,21 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         if (train.GetComponent<MultipleUnitModule>())
         {
-            UpdateMUServerStateLeverChange(train.GetComponent<MultipleUnitModule>(), lever, value);
+            switch (lever)
+            {
+                case Levers.Brake:
+                case Levers.IndependentBrake:
+                case Levers.Reverser:
+                case Levers.Sander:
+                case Levers.Throttle:
+                    UpdateMUServerStateLeverChange(train.GetComponent<MultipleUnitModule>(), lever, value);
+                    break;
+
+                default:
+                    UpdateServerStateLeverChange(serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID), lever, value);
+                    break;
+
+            }
         }
         else
         {

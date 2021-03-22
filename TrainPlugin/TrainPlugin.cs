@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.43");
+        public override Version Version => new Version("1.6.44");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -724,7 +724,20 @@ namespace TrainPlugin
                     }
 
                     if (train.CarType == TrainCarType.LocoShunter)
-                        UpdateMULevers(train, lever);
+                        switch (lever.Lever)
+                        {
+                            case Levers.Brake:
+                            case Levers.IndependentBrake:
+                            case Levers.Reverser:
+                            case Levers.Sander:
+                            case Levers.Throttle:
+                                UpdateMULevers(train, lever);
+                                break;
+
+                            default:
+                                UpdateLeverTrain(train, lever);
+                                break;
+                        }
                     else
                         UpdateLeverTrain(train, lever);
                 }
