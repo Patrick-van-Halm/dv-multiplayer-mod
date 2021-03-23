@@ -81,7 +81,7 @@ internal class NetworkTrainMUSync : MonoBehaviour
         if (!SingletonBehaviour<NetworkTrainManager>.Exists || SingletonBehaviour<NetworkTrainManager>.Instance.IsDisconnecting || SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced || mu is null || SingletonBehaviour<NetworkTrainManager>.Instance.IsSpawningTrains)
             return;
 
-        var newlyConnected = mu.rearCableAdapter.muCable.connectedTo;
+        var newlyConnected = mu.frontCableAdapter.muCable.connectedTo;
         if (newlyConnected == frontConnectedTo)
             return;
         frontConnectedTo = newlyConnected;
@@ -98,8 +98,6 @@ internal class NetworkTrainMUSync : MonoBehaviour
 
     private void MUConnectionChanged(bool isConnected, bool isAudioPlayed, bool isFront, MultipleUnitCable connectedTo = null)
     {
-        
-
         if (isConnected)
             SingletonBehaviour<NetworkTrainManager>.Instance.OnMUConnectionChanged(mu.loco.train.CarGUID, isFront, connectedTo.muModule.loco.train.CarGUID, connectedTo.isFront, isConnected, isAudioPlayed);
         else
