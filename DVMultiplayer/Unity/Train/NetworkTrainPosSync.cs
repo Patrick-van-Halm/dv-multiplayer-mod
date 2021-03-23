@@ -240,6 +240,17 @@ internal class NetworkTrainPosSync : MonoBehaviour
         StopAllCoroutines();
         if(authorityCoro != null)
             SingletonBehaviour<CoroutineManager>.Instance.Stop(authorityCoro);
+
+        trainCar.MovementStateChanged -= TrainCar_MovementStateChanged;
+        trainCar.CarDamage.CarEffectiveHealthStateUpdate -= OnBodyDamageTaken;
+
+        if (!trainCar.IsLoco)
+        {
+            trainCar.CargoDamage.CargoDamaged -= OnCargoDamageTaken;
+            trainCar.CargoLoaded -= OnCargoLoaded;
+            trainCar.CargoUnloaded -= OnCargoUnloaded;
+        }
+
         Main.Log($"NetworkTrainPosSync.OnDestroy()");
     }
 
@@ -278,8 +289,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
             if (!hasLocalPlayerAuthority && !willLocalPlayerGetAuthority)
             {
                 float increment = (velocity.magnitude * 3f);
-                if (increment <= 5f)
+                if (increment <= 5f && turntable)
                     increment = 5;
+
                 float step = increment * Time.deltaTime; // calculate distance to move
                 if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > Mathf.Lerp(1e-2f, .25f, velocity.magnitude * 3.6f / 50))
                 {
@@ -423,7 +435,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         isStationary = !isMoving;
 
         Main.Log($"Movement state changed is moving: {isMoving}");
-        if(!isMoving)
+        if(!isMoving && SingletonBehaviour<NetworkTrainManager>.Exists)
         {
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, true);
             prevPos = trainCar.transform.position;

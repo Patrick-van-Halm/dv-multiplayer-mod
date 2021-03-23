@@ -40,7 +40,7 @@ namespace DVMultiplayer.Patches
 				}
 
 
-                if (NetworkManager.IsHost() && SingletonBehaviour<NetworkPlayerManager>.Instance.IsSynced && SingletonBehaviour<NetworkJobsManager>.Exists)
+                if (NetworkManager.IsHost() && SingletonBehaviour<NetworkPlayerManager>.Exists && SingletonBehaviour<NetworkPlayerManager>.Instance.IsSynced && SingletonBehaviour<NetworkJobsManager>.Exists)
                 {
 					if (SingletonBehaviour<NetworkPlayerManager>.Instance.newPlayerConnecting)
 						return false;

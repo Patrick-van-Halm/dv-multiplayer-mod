@@ -60,8 +60,13 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
             Main.Log("Stop listening to Job events");
             foreach (Job data in jobs)
             {
-                data.Definition.job.JobTaken -= OnJobTaken;
-                data.Definition.job.JobCompleted -= OnJobCompleted;
+                if (!data.Definition || data.Definition.job == null)
+                    continue;
+
+                if (data.Definition.job.State == JobState.Available)
+                    data.Definition.job.JobTaken -= OnJobTaken;
+                if(data.Definition.job.State == JobState.InProgress)
+                    data.Definition.job.JobCompleted -= OnJobCompleted;
             }
         }
 
