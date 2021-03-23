@@ -90,8 +90,14 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (NetworkManager.IsHost())
         {
             authorityCoro = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
+            trainCar.TrainsetChanged += TrainCar_TrainsetChanged;
             SetAuthority(true);
         }
+    }
+
+    private void TrainCar_TrainsetChanged(Trainset obj)
+    {
+        resetAuthority = true;
     }
 
     private void OnCargoUnloaded()
@@ -290,6 +296,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
             {
                 float increment = (velocity.magnitude * 3f);
                 if (increment <= 5f && turntable)
+                    increment = 5;
+
+                if (increment <= 5f && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 1 && isDerailed)
+                    increment = 5;
+
+                if (increment <= 5f && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 10)
                     increment = 5;
 
                 float step = increment * Time.deltaTime; // calculate distance to move

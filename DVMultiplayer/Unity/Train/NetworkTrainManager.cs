@@ -737,12 +737,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 TrainCouplingChange coupled = reader.ReadSerializable<TrainCouplingChange>();
                 TrainCar trainCoupler1 = localCars.FirstOrDefault(t => t.CarGUID == coupled.TrainIdC1);
                 TrainCar trainCoupler2 = localCars.FirstOrDefault(t => t.CarGUID == coupled.TrainIdC2);
-                if (NetworkManager.IsHost())
-                {
-                    trainCoupler1.GetComponent<NetworkTrainPosSync>().resetAuthority = true;
-                    if (!isCoupled)
-                        trainCoupler2.GetComponent<NetworkTrainPosSync>().resetAuthority = true;
-                }
                 if (trainCoupler1 && trainCoupler2)
                 {
                     WorldTrain train = serverCarStates.FirstOrDefault(t => t.Guid == trainCoupler1.CarGUID);
@@ -1460,13 +1454,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
-            if (NetworkManager.IsHost())
-            {
-                thisCoupler.train.GetComponent<NetworkTrainPosSync>().resetAuthority = true;
-                if(!isCoupled)
-                    otherCoupler.train.GetComponent<NetworkTrainPosSync>().resetAuthority = true;
-            }
-
             writer.Write<TrainCouplingChange>(new TrainCouplingChange()
             {
                 TrainIdC1 = thisCoupler.train.CarGUID,
