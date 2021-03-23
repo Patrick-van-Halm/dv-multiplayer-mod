@@ -50,5 +50,7 @@
         JOB_CHAIN_EXPIRED,
         JOB_STATION_EXPIRATION,
         TRAIN_MU_CHANGE,
+        DEBT_JOB_PAID,
+        DEBT_OTHER_PAID,
     }
 }

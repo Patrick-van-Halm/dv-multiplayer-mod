@@ -168,7 +168,7 @@
     <Compile Include="Darkrift\Server\XmlUnityServer.cs" />
     <Compile Include="Darkrift\WriterExtends.cs" />
     <Compile Include="DebugUI.cs" />
-    <Compile Include="DTO\Debt\LocoDebtPaid.cs" />
+    <Compile Include="DTO\Debt\DebtPaid.cs" />
     <Compile Include="DTO\Job\Chain.cs" />
     <Compile Include="DTO\Job\Job.cs" />
     <Compile Include="DTO\Junction\Switch.cs" />
@@ -202,6 +202,7 @@
     <Compile Include="Networking\NetworkingUI.cs" />
     <Compile Include="Networking\NetworkManager.cs" />
     <Compile Include="Networking\NetworkTags.cs" />
+    <Compile Include="Patches\Debt\JobDebtControllerPatch.cs" />
     <Compile Include="Patches\Debt\LocoDebtControllerPatch.cs" />
     <Compile Include="Patches\Jobs\JobValidatorStopAcceptingJobIfNotAllowed.cs" />
     <Compile Include="Patches\Jobs\StaticJobDefinitionPatch.cs" />

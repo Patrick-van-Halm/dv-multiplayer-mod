@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DVMultiplayer.DTO.Debt
 {
-    class LocoDebtPaid : IDarkRiftSerializable
+    class DebtPaid : IDarkRiftSerializable
     {
         public string Id { get; set; }
         public bool isDestroyed { get; set; }

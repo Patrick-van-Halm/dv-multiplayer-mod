@@ -9,11 +9,11 @@ namespace DVMultiplayer.Patches.Debt
     [HarmonyPatch(typeof(LocoDebtController), "PayExistingLocoDebt")]
     internal class LocoDebtControllerExistingPatch
     {
-        private static void Postfix(LocoDebtController __instance, ExistingLocoDebt locoDebtToPay)
+        private static void Postfix(ExistingLocoDebt locoDebtToPay)
         {
             if(NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced && SingletonBehaviour<NetworkDebtManager>.Exists && !SingletonBehaviour<NetworkDebtManager>.Instance.IsChangeByNetwork)
             {
-                SingletonBehaviour<NetworkDebtManager>.Instance.OnLocoDeptPaid(locoDebtToPay.ID, false);
+                SingletonBehaviour<NetworkDebtManager>.Instance.OnJobDeptPaid(locoDebtToPay.ID, false);
             }
         }
     }
@@ -21,11 +21,11 @@ namespace DVMultiplayer.Patches.Debt
     [HarmonyPatch(typeof(LocoDebtController), "PayStagedLocoDebt")]
     internal class LocoDebtControllerDestroyedPatch
     {
-        private static void Postfix(LocoDebtController __instance, ExistingLocoDebt locoDebtToPay)
+        private static void Postfix(StagedLocoDebt locoDebtToPay)
         {
             if (NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced && SingletonBehaviour<NetworkDebtManager>.Exists && !SingletonBehaviour<NetworkDebtManager>.Instance.IsChangeByNetwork)
             {
-                SingletonBehaviour<NetworkDebtManager>.Instance.OnLocoDeptPaid(locoDebtToPay.ID, true);
+                SingletonBehaviour<NetworkDebtManager>.Instance.OnJobDeptPaid(locoDebtToPay.ID, true);
             }
         }
     }

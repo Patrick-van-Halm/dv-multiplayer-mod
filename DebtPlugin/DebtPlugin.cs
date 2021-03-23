@@ -12,7 +12,7 @@ namespace DebtPlugin
     public class DebtPlugin : Plugin
     {
         public override bool ThreadSafe => false;
-        public override Version Version => new Version("1.0.0");
+        public override Version Version => new Version("1.0.1");
 
         public DebtPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -37,16 +37,21 @@ namespace DebtPlugin
                 switch (tag)
                 {
                     case NetworkTags.DEBT_LOCO_PAID:
-                        OnLocoDebtPaid(message, e.Client);
+                        Logger.Trace($"[SERVER] > DEBT_LOCO_PAID");
+                        ReliableSendToOthers(message, e.Client);
+                        break;
+
+                    case NetworkTags.DEBT_JOB_PAID:
+                        Logger.Trace($"[SERVER] > DEBT_JOB_PAID");
+                        ReliableSendToOthers(message, e.Client);
+                        break;
+
+                    case NetworkTags.DEBT_OTHER_PAID:
+                        Logger.Trace($"[SERVER] > DEBT_OTHER_PAID");
+                        ReliableSendToOthers(message, e.Client);
                         break;
                 }
             }
-        }
-
-        private void OnLocoDebtPaid(Message message, IClient client)
-        {
-            Logger.Trace($"[SERVER] > DEBT_LOCO_PAID");
-            ReliableSendToOthers(message, client);
         }
 
         private void ReliableSendToOthers(Message message, IClient sender)
