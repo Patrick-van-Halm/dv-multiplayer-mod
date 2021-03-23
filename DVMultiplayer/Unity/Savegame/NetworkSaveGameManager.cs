@@ -66,7 +66,14 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
     private IEnumerator LoadOfflineSave()
     {
         TutorialController.movementAllowed = false;
+        SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
+        AppUtil.Instance.UnpauseGame();
+        yield return new WaitUntil(() => !AppUtil.IsPaused);
+        yield return new WaitForEndOfFrame();
+        PlayerManager.TeleportPlayer(vector3_1 + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
+        UUI.UnlockMouse(true);
+        yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
         AppUtil.Instance.PauseGame();
         yield return new WaitUntil(() => AppUtil.IsPaused);
         yield return new WaitForEndOfFrame();
@@ -140,18 +147,10 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
             SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.LoadSaveData(jObject);
             Main.Log("Loaded insurance fee data");
         }
-        SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
-        AppUtil.Instance.UnpauseGame();
-        yield return new WaitUntil(() => !AppUtil.IsPaused);
-        yield return new WaitForEndOfFrame();
-        PlayerManager.TeleportPlayer(vector3_1 + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
-        UUI.UnlockMouse(true);
-        yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
         UUI.UnlockMouse(false);
         CustomUI.Close();
         yield return new WaitUntil(() => !CustomUI.currentScreen);
         TutorialController.movementAllowed = true;
-
         SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
         IsOfflineSaveLoaded = true;
     }
@@ -168,7 +167,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
             SaveDataStagedJobDebt = SaveGameManager.data.GetJObject("Debt_staged_jobs").ToString(Formatting.None),
             SaveDataDeletedJoblessCarsDept = SaveGameManager.data.GetJObject("Debt_jobless_cars").ToString(Formatting.None),
             SaveDataInsuranceDept = SaveGameManager.data.GetJObject("Debt_insurance").ToString(Formatting.None),
-            SaveDataPosition = PlayerManager.GetWorldAbsolutePlayerPosition()
+            SaveDataPosition = PlayerManager.PlayerTransform.position - WorldMover.currentMove
         };
     }
 

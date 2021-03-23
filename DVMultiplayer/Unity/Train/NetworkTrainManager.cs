@@ -127,7 +127,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             {
                 if(PlayerManager.Car)
                 {
-                    KeyValuePair<string, Vector3> closestStation = SavedPositions.Stations.Where(pair => pair.Value == SavedPositions.Stations.Values.OrderBy(x => Vector3.Distance(x, PlayerManager.GetWorldAbsolutePlayerPosition())).First()).FirstOrDefault();
+                    KeyValuePair<string, Vector3> closestStation = SavedPositions.Stations.Where(pair => pair.Value == SavedPositions.Stations.Values.OrderBy(x => Vector3.Distance(x, PlayerManager.PlayerTransform.position - WorldMover.currentMove)).First()).FirstOrDefault();
                     PlayerManager.TeleportPlayer(closestStation.Value + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
                 }
                 SingletonBehaviour<CarsSaveManager>.Instance.DeleteAllExistingCars();
