@@ -66,14 +66,8 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
     private IEnumerator LoadOfflineSave()
     {
         TutorialController.movementAllowed = false;
-        SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
-        AppUtil.Instance.UnpauseGame();
-        yield return new WaitUntil(() => !AppUtil.IsPaused);
-        yield return new WaitForEndOfFrame();
-        PlayerManager.TeleportPlayer(vector3_1 + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
-        UUI.UnlockMouse(true);
-        yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
+        SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
         AppUtil.Instance.PauseGame();
         yield return new WaitUntil(() => AppUtil.IsPaused);
         yield return new WaitForEndOfFrame();
@@ -151,6 +145,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         CustomUI.Close();
         yield return new WaitUntil(() => !CustomUI.currentScreen);
         TutorialController.movementAllowed = true;
+
         SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
         IsOfflineSaveLoaded = true;
     }
