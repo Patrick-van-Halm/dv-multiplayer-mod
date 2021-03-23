@@ -34,6 +34,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="RedworkDE.Publicizer" Version="0.2.2" />
+    <PublicizeAssembly Include="Assembly-CSharp" Private="True" Readonly="True" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>lib\0Harmony.dll</HintPath>
       <Private>False</Private>
@@ -217,6 +221,7 @@
     <Compile Include="Patches\Train\ChangeSpeedCalculationWhenPhysicsAreOff.cs" />
     <Compile Include="Patches\Train\AllowUpdateWhenKinematic.cs" />
     <Compile Include="Patches\Spawning\StopCreatingLocosAsClient.cs" />
+    <Compile Include="Patches\Train\HoseSeperationCheck.cs" />
     <Compile Include="Patches\Train\Shunter\LocoControllerShunterSetNeutralStatePatch.cs" />
     <Compile Include="Patches\Train\Shunter\ShunterLocoSimulationPatch.cs" />
     <Compile Include="Patches\UI\StopClosingUIIfNotAllowed.cs" />
