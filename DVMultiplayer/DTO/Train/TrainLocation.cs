@@ -1,9 +1,5 @@
 ﻿using DarkRift;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using DVMultiplayer.Darkrift;
 using UnityEngine;
 
 namespace DVMultiplayer.DTO.Train
@@ -12,64 +8,71 @@ namespace DVMultiplayer.DTO.Train
     {
         public string TrainId { get; set; }
         public Vector3 Forward { get; set; }
-        public Vector3 Velocity { get; set; }
-        public Vector3 AngularVelocity { get; set; }
-        public bool IsDerailed { get; set; }
-        public uint AmountCars { get; set; }
-        public uint LocoInTrainSetIndex { get; set; }
-        public Vector3[] CarsPositions { get; set; }
-        public Quaternion[] CarsRotation { get; set; }
+        public Vector3 Position { get; set; }
+        public Quaternion Rotation { get; set; }
+        public TrainBogie[] Bogies { get; set; }
+        public bool IsStationary { get; set; }
+        public Vector3 Velocity { get; internal set; }
+        public float Drag { get; internal set; }
+        public float Temperature { get; internal set; }
+        public float RPM { get; internal set; }
+        public long Timestamp { get; internal set; }
 
         public void Deserialize(DeserializeEvent e)
         {
             TrainId = e.Reader.ReadString();
-            this.Forward = new Vector3(e.Reader.ReadSingle(), e.Reader.ReadSingle(), e.Reader.ReadSingle());
-            this.Velocity = new Vector3(e.Reader.ReadSingle(), e.Reader.ReadSingle(), e.Reader.ReadSingle());
-            this.AngularVelocity = new Vector3(e.Reader.ReadSingle(), e.Reader.ReadSingle(), e.Reader.ReadSingle());
-            this.IsDerailed = e.Reader.ReadBoolean();
-            AmountCars = e.Reader.ReadUInt32();
-            LocoInTrainSetIndex = e.Reader.ReadUInt32();
-
-            CarsPositions = new Vector3[AmountCars];
-            for (int i = 0; i < AmountCars; i++)
-            {
-                CarsPositions[i] = new Vector3(e.Reader.ReadSingle(), e.Reader.ReadSingle(), e.Reader.ReadSingle());
-            }
-            CarsRotation = new Quaternion[AmountCars];
-            for (int i = 0; i < AmountCars; i++)
-            {
-                CarsRotation[i] = new Quaternion(e.Reader.ReadSingle(), e.Reader.ReadSingle(), e.Reader.ReadSingle(), e.Reader.ReadSingle());
-            }
+            Forward = e.Reader.ReadVector3();
+            Position = e.Reader.ReadVector3();
+            Rotation = e.Reader.ReadQuaternion();
+            Bogies = e.Reader.ReadSerializables<TrainBogie>();
+            IsStationary = e.Reader.ReadBoolean();
+            Velocity = e.Reader.ReadVector3();
+            Drag = e.Reader.ReadSingle();
+            Temperature = e.Reader.ReadSingle();
+            RPM = e.Reader.ReadSingle();
+            Timestamp = e.Reader.ReadInt64();
         }
 
         public void Serialize(SerializeEvent e)
         {
             e.Writer.Write(TrainId);
-            e.Writer.Write(this.Forward.x);
-            e.Writer.Write(this.Forward.y);
-            e.Writer.Write(this.Forward.z);
-            e.Writer.Write(this.Velocity.x);
-            e.Writer.Write(this.Velocity.y);
-            e.Writer.Write(this.Velocity.z);
-            e.Writer.Write(this.AngularVelocity.x);
-            e.Writer.Write(this.AngularVelocity.y);
-            e.Writer.Write(this.AngularVelocity.z);
-            e.Writer.Write(this.IsDerailed);
-            e.Writer.Write(AmountCars);
-            e.Writer.Write(LocoInTrainSetIndex);
-            for(int i = 0; i < AmountCars; i++)
-            {
-                e.Writer.Write(this.CarsPositions[i].x);
-                e.Writer.Write(this.CarsPositions[i].y);
-                e.Writer.Write(this.CarsPositions[i].z);
-            }
-            for (int i = 0; i < AmountCars; i++)
-            {
-                e.Writer.Write(this.CarsRotation[i].x);
-                e.Writer.Write(this.CarsRotation[i].y);
-                e.Writer.Write(this.CarsRotation[i].z);
-                e.Writer.Write(this.CarsRotation[i].w);
-            }
+            e.Writer.Write(Forward);
+            e.Writer.Write(Position);
+            e.Writer.Write(Rotation);
+            e.Writer.Write(Bogies);
+            e.Writer.Write(IsStationary);
+            e.Writer.Write(Velocity);
+            e.Writer.Write(Drag);
+            e.Writer.Write(Temperature);
+            e.Writer.Write(RPM);
+            e.Writer.Write(Timestamp);
+        }
+    }
+
+    public class TrainBogie : IDarkRiftSerializable
+    {
+        public string TrackName { get; set; }
+        public bool Derailed { get; set; } = false;
+        public double PositionAlongTrack { get; set; } = 0;
+        public Vector3 Position { get; set; } = Vector3.zero;
+        public Quaternion Rotation { get; set; } = Quaternion.identity;
+
+        public void Deserialize(DeserializeEvent e)
+        {
+            TrackName = e.Reader.ReadString();
+            Derailed = e.Reader.ReadBoolean();
+            PositionAlongTrack = e.Reader.ReadDouble();
+            Position = e.Reader.ReadVector3();
+            Rotation = e.Reader.ReadQuaternion();
+        }
+
+        public void Serialize(SerializeEvent e)
+        {
+            e.Writer.Write(TrackName);
+            e.Writer.Write(Derailed);
+            e.Writer.Write(PositionAlongTrack);
+            e.Writer.Write(Position);
+            e.Writer.Write(Rotation);
         }
     }
 }

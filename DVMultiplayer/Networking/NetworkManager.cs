@@ -1,9 +1,6 @@
-using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DarkRift.Server.Unity;
-using DVMultiplayer.DTO.Player;
-using DVMultiplayer.DTO.Savegame;
 using DVMultiplayer.Utils;
 using System;
 using System.Collections;
@@ -21,10 +18,13 @@ namespace DVMultiplayer.Networking
         private static GameObject networkManager;
         private static bool isHost;
         private static bool isClient;
+        private static bool isConnecting;
         private static string host;
         private static int port;
         internal static string username;
         private static bool scriptsInitialized = false;
+        private static int tries = 1;
+        private static PlayerDistanceMultipleGameObjectsOptimizer[] objectDisablers;
 
         /// <summary>
         /// Initializes the NetworkManager by:
@@ -33,7 +33,7 @@ namespace DVMultiplayer.Networking
         /// </summary>
         public static void Initialize()
         {
-            Main.DebugLog("Initializing NetworkManager");
+            Main.Log("Initializing NetworkManager");
             isHost = false;
             isClient = false;
             if (!UGameObject.Exists("NetworkManager"))
@@ -59,11 +59,21 @@ namespace DVMultiplayer.Networking
 
         private static void OnClientDisconnected(object sender, DisconnectedEventArgs e)
         {
-            UI.HideUI();
+            SingletonBehaviour<CoroutineManager>.Instance.Run(DisconnectCoroutine());
+        }
+
+        private static IEnumerator DisconnectCoroutine()
+        {
+            yield return new WaitUntil(() => !CustomUI.currentScreen);
+            yield return new WaitForEndOfFrame();
             if (scriptsInitialized)
             {
-                DeInitializeUnityScripts();
+                yield return DeInitializeUnityScripts();
                 scriptsInitialized = false;
+            }
+            foreach (PlayerDistanceMultipleGameObjectsOptimizer disabler in objectDisablers)
+            {
+                disabler.enabled = true;
             }
             isClient = false;
             client.Close();
@@ -74,7 +84,7 @@ namespace DVMultiplayer.Networking
         /// </summary>
         public static void Deinitialize()
         {
-            Main.DebugLog("Deinitializing NetworkManager");
+            Main.Log("Deinitializing NetworkManager");
 
             if (UGameObject.Exists("NetworkManager"))
             {
@@ -97,11 +107,11 @@ namespace DVMultiplayer.Networking
 
         private static void ClientConnect()
         {
-            if (isClient)
+            if (isClient || isConnecting)
                 return;
 
-            isClient = true;
-            Main.DebugLog("[CLIENT] Connecting to server");
+            isConnecting = true;
+            Main.Log("[CLIENT] Connecting to server");
             client.ConnectInBackground(host, port, true, OnConnected);
         }
 
@@ -113,14 +123,14 @@ namespace DVMultiplayer.Networking
             if (!isClient)
                 return;
 
-            Main.DebugLog($"Disconnecting client");
+            Main.Log($"Disconnecting client");
             try
             {
                 client.Disconnect();
             }
             catch (Exception ex)
             {
-                Main.DebugLog($"[ERROR] {ex.InnerException}");
+                Main.Log($"[ERROR] {ex.InnerException}");
             }
         }
 
@@ -133,7 +143,7 @@ namespace DVMultiplayer.Networking
                 return;
 
             NetworkManager.username = username;
-            Main.DebugLog("Start hosting server");
+            Main.Log("Start hosting server");
             server.port = port;
             NetworkManager.port = port;
             try
@@ -150,7 +160,7 @@ namespace DVMultiplayer.Networking
         {
             server.Create();
             yield return new WaitUntil(() => server.CheckTCPSocketReady());
-            Main.DebugLog($"Server should be started connecting client now");
+            Main.Log($"Server should be started connecting client now");
             isHost = true;
             host = "127.0.0.1";
             ClientConnect();
@@ -164,11 +174,11 @@ namespace DVMultiplayer.Networking
             if (!isHost)
                 return;
 
-            Main.DebugLog("Stop hosting server");
+            Main.Log("Stop hosting server");
             SingletonBehaviour<CoroutineManager>.Instance.Run(StopHosting());
         }
 
-        static IEnumerator StopHosting()
+        private static IEnumerator StopHosting()
         {
             Disconnect();
             yield return new WaitUntil(() => !isClient);
@@ -176,80 +186,103 @@ namespace DVMultiplayer.Networking
             {
                 server.Close();
                 isHost = false;
+                TutorialController.movementAllowed = true;
             }
             catch (Exception ex)
             {
-                Main.DebugLog($"[ERROR] {ex.Message}");
+                Main.Log($"[ERROR] {ex.Message}");
             }
         }
 
         private static void OnConnected(Exception ex)
         {
+            isConnecting = false;
             if (ex != null && !string.IsNullOrEmpty(ex.Message))
             {
                 isClient = false;
-                Main.DebugLog($"[ERROR] {ex.Message}");
-                Main.DebugLog($"Client connecting failed retrying");
-                ClientConnect();
+                Main.Log($"[ERROR] {ex.Message}");
+                Main.mod.Logger.Log($"[CLIENT] Connecting failed retrying..., tries: {tries}/5");
+                if (tries < 5)
+                {
+                    tries++;
+                    ClientConnect();
+                }
+                else
+                {
+                    Main.mod.Logger.Log($"[CLIENT] Connecting failed stopping retries.");
+                    tries = 1;
+                }
             }
             else
             {
+                isClient = true;
                 UI.HideUI();
+                Main.Log($"Disabling autosave");
+                SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = true;
+                CarSpawner.useCarPooling = false;
                 if (!scriptsInitialized)
                 {
-                    Main.DebugLog($"Client connected loading required unity scripts");
+                    Main.Log($"Client connected loading required unity scripts");
                     InitializeUnityScripts();
                     scriptsInitialized = true;
                 }
 
-                Main.DebugLog($"Disabling autosave");
-                SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = true;
+                objectDisablers = GameObject.FindObjectsOfType<PlayerDistanceMultipleGameObjectsOptimizer>();
+                foreach(PlayerDistanceMultipleGameObjectsOptimizer disabler in objectDisablers)
+                {
+                    disabler.enabled = false;
+                }
 
-                Main.DebugLog($"Everything should be initialized running PlayerConnect method");
+                Main.Log($"Everything should be initialized running PlayerConnect method");
                 SingletonBehaviour<NetworkPlayerManager>.Instance.PlayerConnect();
-                Main.DebugLog($"Connecting finished");
+                Main.Log($"Connecting finished");
             }
         }
 
         private static void InitializeUnityScripts()
         {
-            Main.DebugLog($"[CLIENT] Initializing Player");
+            Main.Log($"[CLIENT] Initializing Player");
             NetworkPlayerSync playerSync = PlayerManager.PlayerTransform.gameObject.AddComponent<NetworkPlayerSync>();
             playerSync.IsLocal = true;
             playerSync.Username = username;
+            playerSync.Id = client.ID;
 
-            Main.DebugLog($"[CLIENT] Initializing NetworkPlayerManager");
+            Main.Log($"[CLIENT] Initializing NetworkPlayerManager");
             networkManager.AddComponent<NetworkPlayerManager>();
-            Main.DebugLog($"[CLIENT] Initializing NetworkTrainManager");
+            Main.Log($"[CLIENT] Initializing NetworkTrainManager");
             networkManager.AddComponent<NetworkTrainManager>();
-            Main.DebugLog($"[CLIENT] Initializing NetworkJunctionManager");
+            Main.Log($"[CLIENT] Initializing NetworkJunctionManager");
             networkManager.AddComponent<NetworkJunctionManager>();
-            Main.DebugLog($"[CLIENT] Initializing NetworkSaveGameManager");
+            Main.Log($"[CLIENT] Initializing NetworkSaveGameManager");
             networkManager.AddComponent<NetworkSaveGameManager>();
-            Main.DebugLog($"[CLIENT] Initializing NetworkJobsManager");
+            Main.Log($"[CLIENT] Initializing NetworkJobsManager");
             networkManager.AddComponent<NetworkJobsManager>();
+            Main.Log($"[CLIENT] Initializing NetworkTurntableManager");
+            networkManager.AddComponent<NetworkTurntableManager>();
+            Main.Log($"[CLIENT] Initializing NetworkDebtManager");
+            networkManager.AddComponent<NetworkDebtManager>();
         }
 
-        private static void DeInitializeUnityScripts()
+        private static IEnumerator DeInitializeUnityScripts()
         {
-            Main.DebugLog($"[DISCONNECTING] NetworkPlayerManager Deinitializing");
-            networkManager.GetComponent<NetworkPlayerManager>().PlayerDisconnect();
-            Object.Destroy(networkManager.GetComponent<NetworkPlayerManager>());
-            Main.DebugLog($"[DISCONNECTING] NetworkTrainManager Deinitializing");
-            networkManager.GetComponent<NetworkTrainManager>().PlayerDisconnect();
-            Object.Destroy(networkManager.GetComponent<NetworkTrainManager>());
-            Main.DebugLog($"[DISCONNECTING] NetworkJunctionManager Deinitializing");
-            networkManager.GetComponent<NetworkJunctionManager>().PlayerDisconnect();
-            Object.Destroy(networkManager.GetComponent<NetworkJunctionManager>());
-            Main.DebugLog($"[DISCONNECTING] NetworkJobsManager Deinitializing");
-            SingletonBehaviour<NetworkJobsManager>.Instance.PlayerDisconnect();
-            Object.Destroy(networkManager.GetComponent<NetworkJobsManager>());
-            Main.DebugLog($"[DISCONNECTING] NetworkSaveGameManager Deinitializing");
+            Main.Log($"[DISCONNECTING] NetworkPlayerSync Deinitializing");
+            Object.DestroyImmediate(PlayerManager.PlayerTransform.GetComponent<NetworkPlayerSync>());
+            Main.Log($"[DISCONNECTING] NetworkPlayerManager Deinitializing");
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkPlayerManager>());
+            Main.Log($"[DISCONNECTING] NetworkJobsManager Deinitializing");
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkJobsManager>());
+            Main.Log($"[DISCONNECTING] NetworkTrainManager Deinitializing");
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkTrainManager>());
+            Main.Log($"[DISCONNECTING] NetworkJunctionManager Deinitializing");
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkJunctionManager>());
+            Main.Log($"[DISCONNECTING] NetworkTurntableManager Deinitializing");
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkTurntableManager>());
+            Main.Log($"[DISCONNECTING] NetworkDebtManager Deinitializing");
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkDebtManager>());
+            Main.Log($"[DISCONNECTING] NetworkSaveGameManager Deinitializing");
             networkManager.GetComponent<NetworkSaveGameManager>().PlayerDisconnect();
-            Object.Destroy(networkManager.GetComponent<NetworkSaveGameManager>());
-
-            Main.DebugLog($"[DISCONNECTING] NetworkPlayerSync Deinitializing");
-            Object.Destroy(PlayerManager.PlayerTransform.gameObject.GetComponent<NetworkPlayerSync>());
+            yield return new WaitUntil(() => networkManager.GetComponent<NetworkSaveGameManager>().IsOfflineSaveLoaded);
+            Object.DestroyImmediate(networkManager.GetComponent<NetworkSaveGameManager>());
         }
 
         /// <summary>

@@ -1,9 +1,4 @@
 ﻿using DarkRift;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DVMultiplayer.DTO.Train
 {
@@ -17,11 +12,11 @@ namespace DVMultiplayer.DTO.Train
 
         public void Deserialize(DeserializeEvent e)
         {
-            this.TrainIdC1 = e.Reader.ReadString();
-            this.IsC1Front = e.Reader.ReadBoolean();
-            this.TrainIdC2 = e.Reader.ReadString();
-            this.IsC2Front = e.Reader.ReadBoolean();
-            this.IsConnected = e.Reader.ReadBoolean();
+            TrainIdC1 = e.Reader.ReadString();
+            IsC1Front = e.Reader.ReadBoolean();
+            TrainIdC2 = e.Reader.ReadString();
+            IsC2Front = e.Reader.ReadBoolean();
+            IsConnected = e.Reader.ReadBoolean();
         }
 
         public void Serialize(SerializeEvent e)

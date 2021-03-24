@@ -9,10 +9,12 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DVMultiplayer</RootNamespace>
     <AssemblyName>DVMultiplayer</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -31,6 +33,10 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="RedworkDE.Publicizer" Version="0.2.2" />
+    <PublicizeAssembly Include="Assembly-CSharp" Private="True" Readonly="True" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>lib\0Harmony.dll</HintPath>
@@ -52,6 +58,14 @@
       <HintPath>lib\DarkRift.Server.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="DV.BrakeSystem">
+      <HintPath>lib\DV.BrakeSystem.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="DV.PointSet">
+      <HintPath>lib\DV.PointSet.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="DV.TerrainSystem">
       <HintPath>lib\DV.TerrainSystem.dll</HintPath>
       <Private>False</Private>
@@ -60,9 +74,18 @@
       <HintPath>lib\DV.Utils.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="net.smkd.vector3d">
+      <HintPath>lib\net.smkd.vector3d.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>lib\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PassengerJobs">
+      <HintPath>lib\PassengerJobs.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -108,6 +131,10 @@
       <HintPath>lib\UnityEngine.InputModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>lib\UnityEngine.ParticleSystemModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.PhysicsModule">
       <HintPath>lib\UnityEngine.PhysicsModule.dll</HintPath>
       <Private>False</Private>
@@ -135,6 +162,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CustomUI.cs" />
+    <Compile Include="Darkrift\BufferQueue.cs" />
     <Compile Include="Darkrift\Client\SerializableObjectCacheSettings.cs" />
     <Compile Include="Darkrift\Client\UnityClient.cs" />
     <Compile Include="Darkrift\Server\UnityModManagerWriter.cs" />
@@ -142,35 +170,79 @@
     <Compile Include="Darkrift\Server\UnityServer.cs" />
     <Compile Include="Darkrift\Server\UnityServerHelper.cs" />
     <Compile Include="Darkrift\Server\XmlUnityServer.cs" />
+    <Compile Include="Darkrift\WriterExtends.cs" />
     <Compile Include="DebugUI.cs" />
+    <Compile Include="DTO\Debt\DebtPaid.cs" />
+    <Compile Include="DTO\Job\Chain.cs" />
+    <Compile Include="DTO\Job\Job.cs" />
     <Compile Include="DTO\Junction\Switch.cs" />
     <Compile Include="DTO\Player\Disconnect.cs" />
     <Compile Include="DTO\Player\Location.cs" />
+    <Compile Include="DTO\Player\PlayerLoaded.cs" />
     <Compile Include="DTO\Player\NPlayer.cs" />
-    <Compile Include="DTO\Savegame\Savegame.cs" />
-    <Compile Include="DTO\Player\WorldMove.cs" />
+    <Compile Include="DTO\Player\SetSpawn.cs" />
+    <Compile Include="DTO\Savegame\OfflineSave.cs" />
+    <Compile Include="DTO\Train\CarDamage.cs" />
+    <Compile Include="DTO\Train\CarMUChange.cs" />
+    <Compile Include="DTO\Train\CarsAuthChange.cs" />
+    <Compile Include="DTO\Train\CarRemoval.cs" />
+    <Compile Include="DTO\Train\MultipleUnit.cs" />
+    <Compile Include="DTO\Train\Shunter.cs" />
+    <Compile Include="DTO\Train\TrainCargoChanged.cs" />
     <Compile Include="DTO\Train\TrainCouplerCockChange.cs" />
     <Compile Include="DTO\Train\TrainCouplerHoseChange.cs" />
     <Compile Include="DTO\Train\TrainCouplingChange.cs" />
     <Compile Include="DTO\Train\TrainCarChange.cs" />
+    <Compile Include="DTO\Train\TrainRerail.cs" />
     <Compile Include="DTO\Train\TrainLever.cs" />
     <Compile Include="DTO\Train\TrainDerail.cs" />
     <Compile Include="DTO\Train\TrainLocation.cs" />
+    <Compile Include="DTO\Train\WorldTrain.cs" />
+    <Compile Include="DTO\Turntable\RequestAuthority.cs" />
+    <Compile Include="DTO\Turntable\ReleaseAuthority.cs" />
+    <Compile Include="DTO\Turntable\Turntable.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Networking\FavoritesManager.cs" />
     <Compile Include="Networking\NetworkingUI.cs" />
     <Compile Include="Networking\NetworkManager.cs" />
     <Compile Include="Networking\NetworkTags.cs" />
-    <Compile Include="Patches\UpdateImgControllersCanvasSpawner.cs" />
-    <Compile Include="Patches\DontLoadSaveFileIfDataIsSet.cs" />
-    <Compile Include="Patches\EnableMovementOutsidePauseMenus.cs" />
-    <Compile Include="Patches\StopGamePauseInMenus.cs" />
-    <Compile Include="Patches\StopGeneratingJobsAsClient.cs" />
+    <Compile Include="Patches\Debt\JobDebtControllerPatch.cs" />
+    <Compile Include="Patches\Debt\LocoDebtControllerPatch.cs" />
+    <Compile Include="Patches\Jobs\JobValidatorStopAcceptingJobIfNotAllowed.cs" />
+    <Compile Include="Patches\Jobs\StaticJobDefinitionPatch.cs" />
+    <Compile Include="Patches\Jobs\StopGeneratingJobsAsClientAfterChain.cs" />
+    <Compile Include="Patches\PassengerJobs\PassengerJobsModPatch.cs" />
+    <Compile Include="Patches\Train\FixBogiesForceSleepNRE.cs" />
+    <Compile Include="Patches\Train\DisallowDeleteIfPlayerInTrain.cs" />
+    <Compile Include="Patches\Train\FixDrivingForceUpdateWheelSlipNRE.cs" />
+    <Compile Include="Patches\Train\CarDamageModelPatch.cs" />
+    <Compile Include="Patches\Train\CargoDamageModelPatch.cs" />
+    <Compile Include="Patches\Train\AllowUpdateWhenBogieKinematic.cs" />
+    <Compile Include="Patches\Train\ChangeSpeedCalculationWhenPhysicsAreOff.cs" />
+    <Compile Include="Patches\Train\AllowUpdateWhenKinematic.cs" />
+    <Compile Include="Patches\Spawning\StopCreatingLocosAsClient.cs" />
+    <Compile Include="Patches\Train\HoseSeperationCheck.cs" />
+    <Compile Include="Patches\Train\Shunter\LocoControllerShunterSetNeutralStatePatch.cs" />
+    <Compile Include="Patches\Train\Shunter\ShunterLocoSimulationPatch.cs" />
+    <Compile Include="Patches\UI\StopClosingUIIfNotAllowed.cs" />
+    <Compile Include="Patches\Train\RemoveScriptsBeforeCarDeletion.cs" />
+    <Compile Include="Patches\Train\StopTrainsToPoolWhenClient.cs" />
+    <Compile Include="Patches\Train\StopRemovingTrainsWhenClient.cs" />
+    <Compile Include="Patches\Turntable\StopTurntablePushWhenClient.cs" />
+    <Compile Include="Patches\Spawning\StopCreatingCarsAsClient.cs" />
+    <Compile Include="Patches\UI\UpdateImgControllersCanvasSpawner.cs" />
+    <Compile Include="Patches\Save\DontLoadSaveFileIfDataIsSet.cs" />
+    <Compile Include="Patches\UI\EnableMovementOutsidePauseMenus.cs" />
+    <Compile Include="Patches\UI\StopGamePauseInMenus.cs" />
+    <Compile Include="Patches\Jobs\StopGeneratingJobsAsClient.cs" />
+    <Compile Include="Unity\Debt\NetworkDebtManager.cs" />
     <Compile Include="Unity\Jobs\NetworkJobsManager.cs" />
+    <Compile Include="Unity\Jobs\NetworkJobsSync.cs" />
     <Compile Include="Unity\Junction\NetworkJunctionSync.cs" />
     <Compile Include="Unity\Junction\NetworkJunctionManager.cs" />
     <Compile Include="Unity\Player\RotateTowardsPlayer.cs" />
     <Compile Include="Unity\Savegame\NetworkSaveGameManager.cs" />
+    <Compile Include="Unity\Train\NetworkTrainMUSync.cs" />
     <Compile Include="Unity\Train\NetworkTrainPosSync.cs" />
     <Compile Include="Unity\Player\NetworkPlayerSync.cs" />
     <Compile Include="Unity\Player\NetworkPlayerManager.cs" />
@@ -178,10 +250,13 @@
     <Compile Include="Unity\Train\NetworkTrainCouplerSync.cs" />
     <Compile Include="Unity\Train\NetworkTrainSync.cs" />
     <Compile Include="Unity\Train\NetworkTrainManager.cs" />
+    <Compile Include="Unity\Turntable\NetworkTurntableManager.cs" />
+    <Compile Include="Unity\Turntable\NetworkTurntableSync.cs" />
     <Compile Include="Unity\UI\ButtonFeatures.cs" />
     <Compile Include="Unity\UI\InputButton.cs" />
     <Compile Include="Unity\UI\InputScreen.cs" />
     <Compile Include="Unity\UI\TextField.cs" />
+    <Compile Include="Utils\Game\SavedPositions.cs" />
     <Compile Include="Utils\UGameObject.cs" />
     <Compile Include="Utils\UUI.cs" />
   </ItemGroup>
@@ -219,4 +294,29 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties info_1json__JsonSchema="https://json.schemastore.org/config" />
+    </VisualStudio>
+  </ProjectExtensions>
+  <PropertyGroup>
+    <PreBuildEvent>SET BUILDFOLDER=$(SolutionDir)Build
+
+if not exist %25BUILDFOLDER%25 (
+  mkdir %25BUILDFOLDER%25
+) else (
+  del /S /Q %25BUILDFOLDER%25\*
+  if exist %25BUILDFOLDER%25\Resources rd /S /Q %25BUILDFOLDER%25\Resources
+  if exist %25BUILDFOLDER%25\Plugins rd /S /Q %25BUILDFOLDER%25\Plugins
+  if exist %25BUILDFOLDER%25\Data rd /S /Q %25BUILDFOLDER%25\Data
+  if exist %25BUILDFOLDER%25\Logs rd /S /Q %25BUILDFOLDER%25\Logs
+)
+mkdir %25BUILDFOLDER%25\Plugins</PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>SET BUILDFOLDER=$(SolutionDir)Build
+xcopy $(TargetDir)*.dll %25BUILDFOLDER%25 /Y /I
+xcopy $(TargetDir)info.json %25BUILDFOLDER%25
+xcopy $(TargetDir)Resources\* %25BUILDFOLDER%25\Resources /Y /I /E</PostBuildEvent>
+  </PropertyGroup>
 </Project>

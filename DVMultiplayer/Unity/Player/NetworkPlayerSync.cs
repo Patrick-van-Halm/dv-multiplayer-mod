@@ -1,55 +1,68 @@
-﻿using DVMultiplayer;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.UI;
 
-class NetworkPlayerSync : MonoBehaviour
+internal class NetworkPlayerSync : MonoBehaviour
 {
     public TrainCar Train { get; set; }
     public bool IsLocal { get; set; } = false;
     public string Username { get; set; }
+    public string[] Mods { get; set; }
     internal ushort Id;
-    internal Vector3 currentWorldMove;
-    internal Vector3 absPosition;
     private Vector3 prevPosition;
     private Vector3 newPosition;
-    private const float SYNC_THRESHOLD = 0.1f;
+    internal bool IsLoaded;
+    private int ping = 0;
+    private long updatedAt;
+
+#pragma warning disable IDE0051 // Remove unused private members
+    private void Start()
+    {
+        newPosition = transform.position - WorldMover.currentMove;
+    }
 
     private void Update()
     {
         if (!IsLocal)
         {
-            if (newPosition == null)
-                newPosition = transform.position;
-            transform.position = Vector3.Lerp(transform.position, newPosition, 15 * (Time.deltaTime / 2));
+            if(Vector3.Distance(transform.position, newPosition + WorldMover.currentMove) >= 2)
+            {
+                transform.position = newPosition + WorldMover.currentMove;
+            }
+            else if (transform.position != newPosition + WorldMover.currentMove)
+            {
+                float increment = 15;
+                if (Train)
+                {
+                    increment = Train.GetVelocity().magnitude * 3.6f;
+                    if (increment <= .1f)
+                        increment = 1;
+                }
+                float step = increment * Time.deltaTime;
+                transform.position = Vector3.MoveTowards(transform.position, newPosition + WorldMover.currentMove, step);
+            }
+            //transform.position = newPosition + WorldMover.currentMove;
+            transform.GetChild(0).Find("Ping").GetComponent<Text>().text = $"{ping}ms";
             return;
         }
 
-        if(prevPosition == null || Vector3.Distance(prevPosition, transform.position) > SYNC_THRESHOLD)
+        if (prevPosition == null || Vector3.Distance(prevPosition, transform.position) > 1e-5)
         {
-            Main.DebugLog("Player location changed sending new location");
-            SingletonBehaviour<NetworkPlayerManager>.Instance.UpdateLocalPositionAndRotation(transform.position - WorldMover.currentMove, transform.rotation);
+            // Main.DebugLog("Player location changed sending new location");
+            SingletonBehaviour<NetworkPlayerManager>.Instance.UpdateLocalPositionAndRotation(transform.position, transform.rotation);
             prevPosition = transform.position;
         }
     }
+#pragma warning restore IDE0051 // Remove unused private members
 
-    //private void FixedUpdate()
-    //{
-    //    if (IsLocal)
-    //        return;
-    //    if(olderPosition != null && prevPosition != null)
-    //    {
-    //        UpdateLocation(transform.position + trainCar.rb.velocity / 2 * Time.deltaTime, transform.rotation);
-    //    }
-    //}
-
-    public void UpdateLocation(Vector3 pos, Quaternion? rot = null)
+    public void UpdateLocation(Vector3 pos, int ping, long updatedAt, Quaternion? rot = null)
     {
-        newPosition = pos;
-        if(rot.HasValue)
-            transform.rotation = rot.Value;
+        if(updatedAt > this.updatedAt)
+        {
+            this.updatedAt = updatedAt;
+            newPosition = pos;
+            this.ping = ping;
+            if (rot.HasValue)
+                transform.rotation = rot.Value;
+        }
     }
 }

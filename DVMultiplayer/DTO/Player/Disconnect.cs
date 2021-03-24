@@ -1,9 +1,4 @@
 ﻿using DarkRift;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DVMultiplayer.DTO.Player
 {
@@ -13,7 +8,7 @@ namespace DVMultiplayer.DTO.Player
 
         public void Deserialize(DeserializeEvent e)
         {
-            this.PlayerId = e.Reader.ReadUInt16();
+            PlayerId = e.Reader.ReadUInt16();
         }
 
         public void Serialize(SerializeEvent e)

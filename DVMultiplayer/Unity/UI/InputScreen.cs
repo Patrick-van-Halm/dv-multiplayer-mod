@@ -1,26 +1,20 @@
-﻿using DVMultiplayer;
-using DVMultiplayer.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-class InputScreen : MonoBehaviour
+internal class InputScreen : MonoBehaviour
 {
     private TextMeshProUGUI label;
 
     private string input;
     public bool isUppercase;
     public bool isDigitOnly = false;
-    Button casingButton;
-    Button confirmButton;
+    private Button casingButton;
+    private Button confirmButton;
     private bool listenToKeyboard = false;
 
-    public string Input {
+    public string Input
+    {
         get
         {
             return input;
@@ -92,7 +86,7 @@ class InputScreen : MonoBehaviour
             }
         }
     }
-     
+
     public void ResetInput()
     {
         Input = "";
@@ -112,7 +106,7 @@ class InputScreen : MonoBehaviour
     {
         if (Input.Length <= 0)
             return;
-        
+
         Input = Input.Substring(0, Input.Length - 1);
     }
 

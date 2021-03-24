@@ -1,15 +1,11 @@
-﻿using HarmonyLib;
+﻿using DVMultiplayer.Networking;
+using DVMultiplayer.Patches.PassengerJobs;
+using HarmonyLib;
+using System;
+using System.Linq;
+using System.Reflection;
 using UnityModManagerNet;
 using static UnityModManagerNet.UnityModManager;
-using System.Reflection;
-using UnityEngine;
-using DVMultiplayer.Utils;
-using DarkRift.Client.Unity;
-using DVMultiplayer.Networking;
-using System.Collections.Generic;
-using System;
-using System.Collections;
-using System.Linq;
 
 namespace DVMultiplayer
 {
@@ -21,9 +17,19 @@ namespace DVMultiplayer
         public static bool isInitialized = false;
         private static bool enabled;
 
+        private static string[] AllowedMods = new string[]
+        {
+            "UnencryptedSaveGameMod",
+            "DVMouseSmoothing",
+            "DVSuperGauges",
+            "ZSounds",
+            "SkinManagerMod",
+            "CargoSwapMod"
+        };
+
         private static Harmony harmony;
 
-        static bool Load(ModEntry entry)
+        private static bool Load(ModEntry entry)
         {
             isInitialized = false;
             harmony = new Harmony(entry.Info.Id);
@@ -32,10 +38,15 @@ namespace DVMultiplayer
             mod.OnToggle = OnToggle;
             mod.OnUpdate = OnUpdate;
             harmony.PatchAll(Assembly.GetExecutingAssembly());
+
+            ModEntry passengerJobsModEntry = FindMod("PassengerJobs");
+            if (passengerJobsModEntry != null && passengerJobsModEntry.Active)
+                PassengerJobsModInitializer.Initialize(passengerJobsModEntry, harmony);
+
             return true;
         }
 
-        static bool OnToggle(ModEntry entry, bool enabled)
+        private static bool OnToggle(ModEntry entry, bool enabled)
         {
             Main.enabled = enabled;
             return true;
@@ -43,12 +54,12 @@ namespace DVMultiplayer
 
         public static string[] GetEnabledMods()
         {
-            return modEntries.Where(m => m.Active && m.Loaded).Select(m => m.Info.Id).Where(m => m != "UnencryptedSaveGameMod").ToArray();
+            return modEntries.Where(m => m.Active && m.Loaded).Select(m => m.Info.Id).Except(AllowedMods).ToArray();
         }
 
-        static void OnUpdate(ModEntry entry, float time)
+        private static void OnUpdate(ModEntry entry, float time)
         {
-            if(!isInitialized && enabled && PlayerManager.PlayerTransform && !LoadingScreenManager.IsLoading && SingletonBehaviour<CanvasSpawner>.Instance)
+            if (!isInitialized && enabled && PlayerManager.PlayerTransform && !LoadingScreenManager.IsLoading && SingletonBehaviour<CanvasSpawner>.Instance)
             {
                 Initialize();
             }
@@ -62,7 +73,7 @@ namespace DVMultiplayer
             }
         }
 
-        static void OnFixedGUI(ModEntry entry)
+        private static void OnFixedGUI(ModEntry entry)
         {
             if (enabled && isInitialized)
             {
@@ -73,19 +84,21 @@ namespace DVMultiplayer
             }
         }
 
-        static void Initialize()
+        private static void Initialize()
         {
-            DebugLog("Initializing...");
+            Log("Initializing...");
             CustomUI.Initialize();
             FavoritesManager.CreateFavoritesFileIfNotExists();
             NetworkManager.Initialize();
             isInitialized = true;
         }
-#if DEBUG
-        public static void DebugLog(string msg)
+
+        public static void Log(string msg)
         {
-            mod.Logger.NativeLog($"[DEBUG] {msg}");
+            if (mod.Info.Version.StartsWith("dev-"))
+                mod.Logger.Log($"[DEBUG] {msg}");
+            else
+                mod.Logger.NativeLog($"[DEBUG] {msg}");
         }
-#endif
     }
 }

@@ -1,105 +1,108 @@
 ﻿using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
+using DV;
+using DV.ServicePenalty;
+using DV.TerrainSystem;
+using DVMultiplayer;
 using DVMultiplayer.DTO.Savegame;
 using DVMultiplayer.Networking;
 using DVMultiplayer.Utils;
-using DVMultiplayer;
-using UnityEngine;
-using System;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections;
-using DV.TerrainSystem;
-using Newtonsoft.Json;
+using UnityEngine;
 
-class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
+internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
 {
-    private SaveGameData offlineSave;
-    public bool isLoadingSave;
+    private OfflineSaveGame offlineSave;
     public bool IsHostSaveReceived { get; private set; }
+    public bool IsHostSaveLoadedFailed { get; internal set; }
     public bool IsHostSaveLoaded { get; private set; }
-    public bool IsHostSaveLoadedFailed { get; private set; }
+    public bool IsOfflineSaveLoaded { get; private set; }
 
     protected override void Awake()
     {
         base.Awake();
-
-        SingletonBehaviour<UnityClient>.Instance.MessageReceived += MessageReceived;
-    }
-
-    public void SyncSave()
-    {
-        if (NetworkManager.IsHost())
-        {
-            Main.DebugLog("[CLIENT] > SAVEGAME_UPDATE");
-            using (DarkRiftWriter writer = DarkRiftWriter.Create())
-            {
-                writer.Write<SaveGame>(new SaveGame()
-                {
-                    SaveDataCars = SaveGameManager.data.GetJObject(SaveGameKeys.Cars).ToString(Formatting.None),
-                    PlayerPos = SaveGameManager.data.GetVector3("Player_position").Value
-                });
-                Main.DebugLog($"[CLIENT] > SAVEGAME_UPDATE {writer.Length}");
-
-                using (Message message = Message.Create((ushort)NetworkTags.SAVEGAME_UPDATE, writer))
-                    SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
-            }
-        }
-        else if (!NetworkManager.IsHost() && NetworkManager.IsClient())
-        {
-            IsHostSaveReceived = false;
-            Main.DebugLog("[CLIENT] > SAVEGAME_GET");
-            using (DarkRiftWriter writer = DarkRiftWriter.Create())
-            {
-                using (Message message = Message.Create((ushort)NetworkTags.SAVEGAME_GET, writer))
-                    SingletonBehaviour<UnityClient>.Instance.SendMessage(message, SendMode.Reliable);
-            }
-        }
-    }
-
-    private void MessageReceived(object sender, MessageReceivedEventArgs e)
-    {
-        using (Message message = e.GetMessage())
-        {
-            switch ((NetworkTags)message.Tag)
-            {
-                case NetworkTags.SAVEGAME_GET:
-                    OnSaveGameReceived(message);
-                    break;
-            }
-        }
     }
 
     public void PlayerDisconnect()
     {
-        if(offlineSave != null)
+        IsOfflineSaveLoaded = false;
+        if (!NetworkManager.IsHost())
         {
-            isLoadingSave = true;
-            SaveGameManager.data = offlineSave;
-            offlineSave = null;
-            SaveGameUpgrader.Upgrade();
-
+            if(offlineSave != null)
+            {
+                SaveGameManager.data.SetJObject(SaveGameKeys.Cars, JObject.Parse(offlineSave.SaveDataCars));
+                SaveGameManager.data.SetObject(SaveGameKeys.Jobs, offlineSave.SaveDataJobs, JobSaveManager.serializeSettings);
+                SaveGameManager.data.SetJObject(SaveGameKeys.Junctions, JObject.Parse(offlineSave.SaveDataSwitches));
+                SaveGameManager.data.SetJObject(SaveGameKeys.Turntables, JObject.Parse(offlineSave.SaveDataTurntables));
+                SaveGameManager.data.SetJObject("Debt_deleted_locos", JObject.Parse(offlineSave.SaveDataDestroyedLocoDebt));
+                SaveGameManager.data.SetJObject("Debt_staged_jobs", JObject.Parse(offlineSave.SaveDataStagedJobDebt));
+                SaveGameManager.data.SetJObject("Debt_jobless_cars", JObject.Parse(offlineSave.SaveDataDeletedJoblessCarsDept));
+                SaveGameManager.data.SetJObject("Debt_insurance", JObject.Parse(offlineSave.SaveDataInsuranceDept));
+                SaveGameManager.data.SetVector3("Player_position", offlineSave.SaveDataPosition);
+                offlineSave = null;
+                SaveGameUpgrader.Upgrade();
+            }
             SingletonBehaviour<CoroutineManager>.Instance.Run(LoadOfflineSave());
+        }
+        else
+        {
+            CarSpawner.useCarPooling = true;
+            SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
+            IsOfflineSaveLoaded = true;
         }
     }
 
     private IEnumerator LoadOfflineSave()
     {
-        SingletonBehaviour<NetworkJobsManager>.Instance.PlayerDisconnect();
-        UUI.UnlockMouse(true);
         TutorialController.movementAllowed = false;
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
-        PlayerManager.PlayerTransform.position = vector3_1 + WorldMover.currentMove;
+        SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
+        AppUtil.Instance.UnpauseGame();
+        yield return new WaitUntil(() => !AppUtil.IsPaused);
+        yield return new WaitForEndOfFrame();
+        PlayerManager.TeleportPlayer(vector3_1 + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
+        UUI.UnlockMouse(true);
+        yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
+        SingletonBehaviour<CarsSaveManager>.Instance.DeleteAllExistingCars();
+        AppUtil.Instance.PauseGame();
+        yield return new WaitUntil(() => AppUtil.IsPaused);
+        yield return new WaitForEndOfFrame();
+        CustomUI.OpenPopup("Disconnecting", "Loading offline save");
+        yield return new WaitUntil(() => CustomUI.currentScreen == CustomUI.PopupUI);
+        CarSpawner.useCarPooling = true;
         bool carsLoadedSuccessfully = false;
-        JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
-        if (jobject3 != null)
+        ResetDebts();
+        JObject jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables);
+        if (jObject != null)
         {
-            carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jobject3);
-            if (!carsLoadedSuccessfully)
-                Main.DebugLog("[WARNING] Cars not loaded successfully!");
+            TurntableRailTrack.SetSaveData(jObject);
         }
         else
-            Main.DebugLog("[WARNING] Cars save not found!");
+        {
+            Main.Log("[WARNING] Turntables data not found!");
+        }
+        jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions);
+        if (jObject != null)
+        {
+            JunctionsSaveManager.Load(jObject);
+        }
+        else
+        {
+            Main.Log("[WARNING] Junctions save not found!");
+        }
+
+        jObject = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
+        if (jObject != null)
+        {
+            carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jObject);
+            if (!carsLoadedSuccessfully)
+                Main.Log("[WARNING] Cars not loaded successfully!");
+        }
+        else
+            Main.Log("[WARNING] Cars save not found!");
 
         if (carsLoadedSuccessfully)
         {
@@ -109,69 +112,68 @@ class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManager>
                 SingletonBehaviour<JobSaveManager>.Instance.LoadJobSaveGameData(saveData);
             }
             else
-                Main.DebugLog("[WARNING] Jobs save not found!");
+                Main.Log("[WARNING] Jobs save not found!");
             SingletonBehaviour<JobSaveManager>.Instance.MarkAllNonJobCarsAsUnused();
         }
 
-        SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
-        yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
-        UUI.UnlockMouse(false);
-        TutorialController.movementAllowed = true;
-        SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
-        isLoadingSave = false;
-    }
-
-    private void OnSaveGameReceived(Message message)
-    {
-        using (DarkRiftReader reader = message.GetReader())
+        jObject = SaveGameManager.data.GetJObject("Debt_deleted_locos");
+        if (jObject != null)
         {
-            Main.DebugLog($"[CLIENT] SAVEGAME_GET received | Packet size: {reader.Length}");
-            //if (reader.Length % 44 != 0 && reader.Length % 34 != 0)
-            //{
-            //    Main.mod.Logger.Warning("Received malformed spawn packet.");
-            //    return;
-            //}
-
-            while (reader.Position < reader.Length)
-            {
-                SaveGame save = reader.ReadSerializable<SaveGame>();
-                offlineSave = SaveGameManager.data;
-                SaveGameManager.data.SetJObject(SaveGameKeys.Cars, JObject.Parse(save.SaveDataCars));
-                SaveGameManager.data.SetVector3(SaveGameKeys.Player_position, save.PlayerPos);
-                SaveGameUpgrader.Upgrade();
-                IsHostSaveLoaded = false;
-                IsHostSaveReceived = true;
-            }
+            SingletonBehaviour<LocoDebtController>.Instance.LoadDestroyedLocosDebtsSaveData(jObject);
+            Main.Log("Loaded destroyed locos debt");
         }
-    }
-
-    public void LoadMultiplayerData()
-    {
-        SingletonBehaviour<NetworkJobsManager>.Instance.PlayerConnect();
-        Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
-        PlayerManager.PlayerTransform.position = vector3_1 + WorldMover.currentMove;
-        bool carsLoadedSuccessfully = false;
-        JObject jobject3 = SaveGameManager.data.GetJObject(SaveGameKeys.Cars);
-        if (jobject3 != null)
+        jObject = SaveGameManager.data.GetJObject("Debt_staged_jobs");
+        if (jObject != null)
         {
-            carsLoadedSuccessfully = SingletonBehaviour<CarsSaveManager>.Instance.Load(jobject3);
-            if (!carsLoadedSuccessfully)
-                Debug.LogError((object)"Cars not loaded successfully!");
+            SingletonBehaviour<JobDebtController>.Instance.LoadStagedJobsDebtsSaveData(jObject);
+            Main.Log("Loaded staged jobs debt");
         }
-        else
-            Main.DebugLog("[WARNING] Cars save not found!");
-
+        jObject = SaveGameManager.data.GetJObject("Debt_jobless_cars");
+        if (jObject != null)
+        {
+            SingletonBehaviour<JobDebtController>.Instance.LoadDeletedJoblessCarDebtsSaveData(jObject);
+            Main.Log("Loaded jobless cars debt");
+        }
+        jObject = SaveGameManager.data.GetJObject("Debt_insurance");
+        if (jObject != null)
+        {
+            SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.LoadSaveData(jObject);
+            Main.Log("Loaded insurance fee data");
+        }
         
-        IsHostSaveLoadedFailed = !carsLoadedSuccessfully;
-        IsHostSaveLoaded = carsLoadedSuccessfully;
+        UUI.UnlockMouse(false);
+        CustomUI.Close();
+        yield return new WaitUntil(() => !CustomUI.currentScreen);
+        TutorialController.movementAllowed = true;
+
+        SingletonBehaviour<SaveGameManager>.Instance.disableAutosave = false;
+        IsOfflineSaveLoaded = true;
     }
 
-    private void OnGUI()
+    internal void CreateOfflineBackup()
     {
-        if (isLoadingSave)
+        offlineSave = new OfflineSaveGame()
         {
-            GUI.Box(new Rect(0, 0, Screen.width, Screen.height), "DV Multiplayer");
-            GUI.Label(new Rect(10, Screen.height / 2 - 20, Screen.width - 20, 40), "Loading SaveGame", UUI.GenerateStyle(fontSize: 40, allignment: TextAnchor.MiddleCenter));
-        }
+            SaveDataCars = SaveGameManager.data.GetJObject(SaveGameKeys.Cars).ToString(Formatting.None),
+            SaveDataJobs = SaveGameManager.data.GetObject<JobsSaveGameData>(SaveGameKeys.Jobs, JobSaveManager.serializeSettings),
+            SaveDataSwitches = SaveGameManager.data.GetJObject(SaveGameKeys.Junctions).ToString(Formatting.None),
+            SaveDataTurntables = SaveGameManager.data.GetJObject(SaveGameKeys.Turntables).ToString(Formatting.None),
+            SaveDataDestroyedLocoDebt = SaveGameManager.data.GetJObject("Debt_deleted_locos").ToString(Formatting.None),
+            SaveDataStagedJobDebt = SaveGameManager.data.GetJObject("Debt_staged_jobs").ToString(Formatting.None),
+            SaveDataDeletedJoblessCarsDept = SaveGameManager.data.GetJObject("Debt_jobless_cars").ToString(Formatting.None),
+            SaveDataInsuranceDept = SaveGameManager.data.GetJObject("Debt_insurance").ToString(Formatting.None),
+            SaveDataPosition = PlayerManager.PlayerTransform.position - WorldMover.currentMove
+        };
+    }
+
+    public void ResetDebts()
+    {
+        SingletonBehaviour<LocoDebtController>.Instance.ClearLocoDebts();
+        SingletonBehaviour<JobDebtController>.Instance.ClearJobDebts();
+        SingletonBehaviour<CareerManagerDebtController>.Instance.ClearDebtsViaInsuranceQuotaReached();
+        SingletonBehaviour<CareerManagerDebtController>.Instance.ClearRestOfThePayableDebts();
+        SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.Quota = LicenseManager.InsuranceFeeQuota;
+        SingletonBehaviour<CareerManagerDebtController>.Instance.RegisterInsuranceFeeQuotaUpdating();
+        SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.ClearPaidQuota();
     }
 }

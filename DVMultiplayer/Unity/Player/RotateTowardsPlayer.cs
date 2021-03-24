@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 
-class RotateTowardsPlayer : MonoBehaviour
+internal class RotateTowardsPlayer : MonoBehaviour
 {
+#pragma warning disable IDE0051 // Remove unused private members
     private Camera camera;
-
     private void Awake()
     {
         camera = PlayerManager.PlayerCamera;

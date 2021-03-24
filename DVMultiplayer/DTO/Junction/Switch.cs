@@ -1,34 +1,27 @@
 ﻿using DarkRift;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using DVMultiplayer.Darkrift;
 using UnityEngine;
-using DV;
 
 namespace DVMultiplayer.DTO.Junction
 {
-    class Switch : IDarkRiftSerializable
+    public class Switch : IDarkRiftSerializable
     {
-        public Vector3 Position { get; set; }
+        public uint Id { get; set; }
         public SwitchMode Mode { get; set; }
         public bool SwitchToLeft { get; set; }
 
         public void Deserialize(DeserializeEvent e)
         {
-            this.Position = new Vector3(e.Reader.ReadSingle(), e.Reader.ReadSingle(), e.Reader.ReadSingle());
-            this.Mode = (SwitchMode)e.Reader.ReadInt32();
-            this.SwitchToLeft = e.Reader.ReadBoolean();
+            Id = e.Reader.ReadUInt32();
+            Mode = (SwitchMode)e.Reader.ReadInt32();
+            SwitchToLeft = e.Reader.ReadBoolean();
         }
 
         public void Serialize(SerializeEvent e)
         {
-            e.Writer.Write(this.Position.x);
-            e.Writer.Write(this.Position.y);
-            e.Writer.Write(this.Position.z);
-            e.Writer.Write((int)this.Mode);
-            e.Writer.Write(this.SwitchToLeft);
+            e.Writer.Write(Id);
+            e.Writer.Write((int)Mode);
+            e.Writer.Write(SwitchToLeft);
         }
     }
 

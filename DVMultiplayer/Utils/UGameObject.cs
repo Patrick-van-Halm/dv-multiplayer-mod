@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using UnityEngine;
 using System.Text.RegularExpressions;
+using UnityEngine;
 
 namespace DVMultiplayer.Utils
 {
@@ -14,10 +14,10 @@ namespace DVMultiplayer.Utils
         public static IEnumerable<Transform> FindAll(this Transform transform, string name)
         {
             List<Transform> transforms = new List<Transform>();
-            for(int i = 0; i < transform.childCount; i++)
+            for (int i = 0; i < transform.childCount; i++)
             {
                 Transform child = transform.GetChild(i);
-                if(Regex.IsMatch(child.gameObject.name, name))
+                if (Regex.IsMatch(child.gameObject.name, name))
                 {
                     transforms.Add(child);
                 }

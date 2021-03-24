@@ -1,13 +1,8 @@
 ﻿using DVMultiplayer.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
-class ButtonFeatures : MonoBehaviour
+internal class ButtonFeatures : MonoBehaviour
 {
     private Button btn;
     private Image btnImage;
@@ -25,9 +20,9 @@ class ButtonFeatures : MonoBehaviour
 
     private void Update()
     {
-        if(btn.interactable && btnImage.sprite == disabledSprite)
+        if (btn.interactable && btnImage.sprite == disabledSprite)
             btnImage.sprite = enabledSprite;
-        else if(!btn.interactable && btnImage.sprite == enabledSprite)
+        else if (!btn.interactable && btnImage.sprite == enabledSprite)
             btnImage.sprite = disabledSprite;
     }
 }

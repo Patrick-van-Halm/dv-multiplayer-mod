@@ -2,13 +2,9 @@ using DVMultiplayer.Utils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using VRTK;
 using Object = UnityEngine.Object;
 
 namespace DVMultiplayer.Networking
@@ -47,6 +43,7 @@ namespace DVMultiplayer.Networking
             UI.transform.Find("Button Connect to Favorite").GetComponent<Button>().onClick.AddListener(() =>
             {
                 selectedFav = null;
+                pagination = 0;
                 LoadFavorites(pagination);
                 CustomUI.Open(FavoritesListUI);
             });
@@ -121,6 +118,13 @@ namespace DVMultiplayer.Networking
                 }
             });
 
+            RequestUsernameUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
+            {
+                selectedFav = null;
+                LoadFavorites(pagination);
+                CustomUI.Open(FavoritesListUI);
+            });
+
             UI.transform.Find("Button Connect").GetComponent<Button>().onClick.AddListener(() =>
             {
                 ConnectUI.transform.Find("TextField IP").GetComponentInChildren<TextMeshProUGUI>().text = "";
@@ -160,7 +164,7 @@ namespace DVMultiplayer.Networking
             SaveFavoriteUI.transform.Find("Button Accept").GetComponent<Button>().onClick.AddListener(() =>
             {
                 string favName = SaveFavoriteUI.transform.Find("TextField Name").GetComponentInChildren<TextMeshProUGUI>().text;
-                if (!string.IsNullOrWhiteSpace(favName))
+                if (string.IsNullOrWhiteSpace(favName))
                     return;
                 string host = ConnectUI.transform.Find("TextField IP").GetComponentInChildren<TextMeshProUGUI>().text;
                 string portString = ConnectUI.transform.Find("TextField Port").GetComponentInChildren<TextMeshProUGUI>().text;
@@ -173,7 +177,7 @@ namespace DVMultiplayer.Networking
                 }
                 catch (Exception ex)
                 {
-                    Main.DebugLog(ex.Message);
+                    Main.Log(ex.Message);
                     SaveFavoriteUI.transform.Find("Label Error").GetComponentInChildren<TextMeshProUGUI>().text = ex.Message;
                 }
             });
@@ -208,12 +212,12 @@ namespace DVMultiplayer.Networking
 
             ClientConnectedMenuUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
             {
-                HideUI();
+                CustomUI.Open();
             });
 
             HostConnectedMenuUI.transform.Find("Button Close").GetComponent<Button>().onClick.AddListener(() =>
             {
-                HideUI();
+                CustomUI.Open();
             });
 
             HostConnectedMenuUI.transform.Find("Button Stop Server").GetComponent<Button>().onClick.AddListener(() =>
@@ -287,7 +291,7 @@ namespace DVMultiplayer.Networking
                     FavoritesListUI.transform.Find($"Button Del Fav{i + 1}").gameObject.SetActive(false);
                 }
             }
-            
+
             FavoritesListUI.transform.Find($"Button NextPage").gameObject.SetActive(favorites.Count > 5 + (pagination * 4));
             FavoritesListUI.transform.Find($"Button PrevPage").gameObject.SetActive(pagination > 0);
         }

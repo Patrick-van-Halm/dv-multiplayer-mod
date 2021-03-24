@@ -1,5 +1,5 @@
 ﻿<configuration>
-  <server maxStrikes="3" />
+  <server maxStrikes="3" reconnectAttempts="0" />
   
   <pluginSearch>
     <pluginSearchPath src="Mods/DVMultiplayer/Plugins" createDir="true" />
@@ -9,7 +9,9 @@
     <plugin type="PlayerPlugin" load="true" />
     <plugin type="TrainPlugin" load="true" />
     <plugin type="JunctionPlugin" load="true" />
-    <plugin type="SaveGamePlugin" load="true" />
+    <plugin type="TurntablePlugin" load="true" />
+    <plugin type="JobsPlugin" load="true" />
+    <plugin type="DebtPlugin" load="true" />
   </plugins>
 
   <data directory="Mods/DVMultiplayer/Data/"/>
