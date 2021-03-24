@@ -1,9 +1,14 @@
 {
 	"Releases": [
 		{
-		"Id": "DVMultiplayer",
-		"Version": "1.2.1",
-		"DownloadUrl": "https://github.com/Patrick-van-Halm/dv-multiplayer-mod/releases/download/v1.2.1/DVMultiplayer-1.2.1.zip"
+			"Id": "DVMultiplayer",
+			"Version": "1.3.0",
+			"DownloadUrl": "https://github.com/Patrick-van-Halm/dv-multiplayer-mod/releases/download/v1.3.0/DVMultiplayer-1.3.0.zip"
+		},
+		{
+			"Id": "DVMultiplayer",
+			"Version": "1.2.1",
+			"DownloadUrl": "https://github.com/Patrick-van-Halm/dv-multiplayer-mod/releases/download/v1.2.1/DVMultiplayer-1.2.1.zip"
 		}
 	]
 }
