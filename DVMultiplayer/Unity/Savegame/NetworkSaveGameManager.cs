@@ -166,6 +166,14 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         };
     }
 
+    public Vector3 GetOfflinePosition()
+    {
+        if (offlineSave != null)
+            return offlineSave.SaveDataPosition;
+        else
+            return PlayerManager.PlayerTransform.position - WorldMover.currentMove;
+    }
+
     public void ResetDebts()
     {
         SingletonBehaviour<LocoDebtController>.Instance.ClearLocoDebts();
