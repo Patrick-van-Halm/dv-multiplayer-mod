@@ -60,6 +60,13 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         TutorialController.movementAllowed = false;
         Vector3 vector3_1 = SaveGameManager.data.GetVector3("Player_position").Value;
         SingletonBehaviour<WorldMover>.Instance.movingEnabled = true;
+        AppUtil.Instance.UnpauseGame();
+        yield return new WaitUntil(() => !AppUtil.IsPaused);
+        yield return new WaitForEndOfFrame();
+        PlayerManager.TeleportPlayer(vector3_1 + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
+        UUI.UnlockMouse(true);
+        yield return new WaitUntil(() => SingletonBehaviour<TerrainGrid>.Instance.IsInLoadedRegion(PlayerManager.PlayerTransform.position));
+        SingletonBehaviour<CarsSaveManager>.Instance.DeleteAllExistingCars();
         AppUtil.Instance.PauseGame();
         yield return new WaitUntil(() => AppUtil.IsPaused);
         yield return new WaitForEndOfFrame();
@@ -133,6 +140,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
             SingletonBehaviour<CareerManagerDebtController>.Instance.feeQuota.LoadSaveData(jObject);
             Main.Log("Loaded insurance fee data");
         }
+        
         UUI.UnlockMouse(false);
         CustomUI.Close();
         yield return new WaitUntil(() => !CustomUI.currentScreen);
@@ -156,14 +164,6 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
             SaveDataInsuranceDept = SaveGameManager.data.GetJObject("Debt_insurance").ToString(Formatting.None),
             SaveDataPosition = PlayerManager.PlayerTransform.position - WorldMover.currentMove
         };
-    }
-
-    public Vector3 GetOfflinePosition()
-    {
-        if (offlineSave != null)
-            return offlineSave.SaveDataPosition;
-        else
-            return PlayerManager.PlayerTransform.position - WorldMover.currentMove;
     }
 
     public void ResetDebts()
