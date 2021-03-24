@@ -118,19 +118,21 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         if (localCars == null)
             return;
 
+        if (!NetworkManager.IsHost())
+        {
+            Vector3 offlinePos = SingletonBehaviour<NetworkSaveGameManager>.Instance.GetOfflinePosition();
+            KeyValuePair<string, Vector3> closestStation = SavedPositions.Stations.Where(pair => pair.Value == SavedPositions.Stations.Values.OrderBy(x => Vector3.Distance(x, offlinePos)).First()).FirstOrDefault();
+            Main.Log($"Teleporting to {closestStation.Key}");
+            PlayerManager.TeleportPlayer(closestStation.Value + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
+            SingletonBehaviour<CarsSaveManager>.Instance.DeleteAllExistingCars();
+        }
+
         foreach (TrainCar trainCar in localCars)
         {
             if (!trainCar)
                 continue;
 
-            if (!NetworkManager.IsHost())
-            {
-                Vector3 offlinePos = SingletonBehaviour<NetworkSaveGameManager>.Instance.GetOfflinePosition();
-                KeyValuePair<string, Vector3> closestStation = SavedPositions.Stations.Where(pair => pair.Value == SavedPositions.Stations.Values.OrderBy(x => Vector3.Distance(x, offlinePos)).First()).FirstOrDefault();
-                PlayerManager.TeleportPlayer(closestStation.Value + WorldMover.currentMove, PlayerManager.PlayerTransform.rotation, null, false);
-                SingletonBehaviour<CarsSaveManager>.Instance.DeleteAllExistingCars();
-            }
-            else
+            if (NetworkManager.IsHost())
             {
                 if (trainCar.GetComponent<NetworkTrainPosSync>())
                     DestroyImmediate(trainCar.GetComponent<NetworkTrainPosSync>());

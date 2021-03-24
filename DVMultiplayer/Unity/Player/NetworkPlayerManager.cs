@@ -294,6 +294,10 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
 
         if (!NetworkManager.IsHost())
         {
+            // Create offline save
+            Main.Log($"[CLIENT] Creating offline save");
+            SingletonBehaviour<NetworkSaveGameManager>.Instance.CreateOfflineBackup();
+
             CustomUI.OpenPopup("Connecting", "Loading savegame");
             Main.Log($"[CLIENT] Receiving savegame");
             AppUtil.Instance.PauseGame();
@@ -327,10 +331,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
             // Remove all Cars
             SingletonBehaviour<CarsSaveManager>.Instance.DeleteAllExistingCars();
 
-            // Get the online save game
-            Main.Log($"Syncing Save");
-            SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
-
             // Load Junction data from server that changed since uptime
             Main.Log($"Syncing Junctions");
             SingletonBehaviour<NetworkJunctionManager>.Instance.SyncJunction();
@@ -360,9 +360,6 @@ public class NetworkPlayerManager : SingletonBehaviour<NetworkPlayerManager>
         }
         else
         {
-            Main.Log($"[CLIENT] Sending savegame");
-            SingletonBehaviour<NetworkSaveGameManager>.Instance.SyncSave();
-
             Main.Log($"Save should be loaded. Run OnFinishedLoading in NetworkTrainManager");
             SingletonBehaviour<NetworkTrainManager>.Instance.OnFinishedLoading();
             yield return new WaitUntil(() => SingletonBehaviour<NetworkTrainManager>.Instance.SaveCarsLoaded);

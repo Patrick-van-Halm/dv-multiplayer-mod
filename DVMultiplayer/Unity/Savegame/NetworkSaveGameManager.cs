@@ -26,14 +26,6 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         base.Awake();
     }
 
-    public void SyncSave()
-    {
-        if (!NetworkManager.IsHost() && NetworkManager.IsClient())
-        {
-            CreateOfflineBackup();
-        }
-    }
-
     public void PlayerDisconnect()
     {
         IsOfflineSaveLoaded = false;
@@ -150,7 +142,7 @@ internal class NetworkSaveGameManager : SingletonBehaviour<NetworkSaveGameManage
         IsOfflineSaveLoaded = true;
     }
 
-    private void CreateOfflineBackup()
+    internal void CreateOfflineBackup()
     {
         offlineSave = new OfflineSaveGame()
         {
