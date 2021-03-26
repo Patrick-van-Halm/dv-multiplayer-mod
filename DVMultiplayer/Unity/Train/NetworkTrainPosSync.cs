@@ -305,7 +305,14 @@ internal class NetworkTrainPosSync : MonoBehaviour
                     increment = 5;
 
                 float step = increment * Time.deltaTime; // calculate distance to move
-                if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > Mathf.Lerp(1e-2f, .25f, velocity.magnitude * 3.6f / 50))
+                if(velocity.magnitude < 1)
+                {
+                    foreach(Bogie bogie in trainCar.Bogies)
+                    { 
+                        bogie.RefreshBogiePoints();
+                    }
+                }
+                if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > Mathf.Lerp(1e-3f, .25f, velocity.magnitude * 3.6f / 80))
                 {
                     List<Vector3> bogiespos = new List<Vector3>();
                     foreach(Bogie bogie in trainCar.Bogies)
@@ -332,6 +339,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
                         trainCar.rb.MoveRotation(newRot);
                     }
                 }
+            }
+
+            if (hasLocalPlayerAuthority)
+            {
+                velocity = trainCar.rb.velocity;
             }
 
             if (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)
@@ -386,16 +398,18 @@ internal class NetworkTrainPosSync : MonoBehaviour
         trainCar.rb.velocity = velocity;
         trainCar.rb.drag = drag;
 
-        if(trainCar.carType == TrainCarType.LocoShunter)
+        Main.Log($"Start position updater");
+        StartCoroutine(UpdateLocation());
+
+        if (trainCar.carType == TrainCarType.LocoShunter)
         {
             shunterExhaust.emitterVelocityMode = gain ? ParticleSystemEmitterVelocityMode.Rigidbody : ParticleSystemEmitterVelocityMode.Transform;
         }
 
-        Main.Log($"Resync train");
-        SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
         Main.Log($"Toggle damage for 2 seconds");
         damageEnablerCoro = StartCoroutine(ToggleDamageAfterSeconds(2));
-        StartCoroutine(UpdateLocation());
+        Main.Log($"Resync train");
+        SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
     }
 #pragma warning restore IDE0051 // Remove unused private members
 
@@ -525,7 +539,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         while (hasLocalPlayerAuthority && !trainCar.frontCoupler.coupledTo)
         {
             yield return new WaitForSeconds(.005f);
-            yield return new WaitUntil(() => Vector3.Distance(transform.position - WorldMover.currentMove, prevPos) > Mathf.Lerp(1e-2f, .25f, velocity.magnitude * 3.6f / 50) && !trainCar.isStationary);
+            yield return new WaitUntil(() => Vector3.Distance(transform.position - WorldMover.currentMove, prevPos) > Mathf.Lerp(1e-3f, .25f, velocity.magnitude * 3.6f / 80) && !trainCar.isStationary);
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar);
             prevPos = transform.position - WorldMover.currentMove;
 
