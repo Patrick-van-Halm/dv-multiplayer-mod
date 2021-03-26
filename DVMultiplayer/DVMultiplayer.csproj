@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -226,6 +226,10 @@
     <Compile Include="Patches\Train\HoseSeperationCheck.cs" />
     <Compile Include="Patches\Train\Shunter\LocoControllerShunterSetNeutralStatePatch.cs" />
     <Compile Include="Patches\Train\Shunter\ShunterLocoSimulationPatch.cs" />
+    <Compile Include="Patches\Train\Steamer\SteamLocoSimulation_SimulateTick_Patch.cs" />
+    <Compile Include="Patches\Train\Steamer\LocoControllerSteam_SetWhistle_Patch.cs" />
+    <Compile Include="Patches\Train\Steamer\LocoControllerSteam_SetFireOn_Patch.cs" />
+    <Compile Include="Patches\Train\Steamer\ShovelUnloadCoalPatch.cs" />
     <Compile Include="Patches\UI\StopClosingUIIfNotAllowed.cs" />
     <Compile Include="Patches\Train\RemoveScriptsBeforeCarDeletion.cs" />
     <Compile Include="Patches\Train\StopTrainsToPoolWhenClient.cs" />
