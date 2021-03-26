@@ -63,18 +63,11 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         localCars = GameObject.FindObjectsOfType<TrainCar>().ToList();
         Main.Log($"{localCars.Count} traincars found, {localCars.Where(car => car.IsLoco).Count()} are locomotives");
 
-        foreach (TrainCar trainCar in localCars)
+        if (NetworkManager.IsHost())
         {
-            Main.Log($"Initializing TrainCar Coupling scripts");
-            trainCar.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
-            trainCar.rearCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
-            Main.Log($"Initializing TrainCar Positioning script");
-            trainCar.gameObject.AddComponent<NetworkTrainPosSync>();
-
-            if (trainCar.IsLoco)
+            foreach (TrainCar trainCar in localCars)
             {
-                Main.Log($"Initializing TrainCar input script");
-                trainCar.gameObject.AddComponent<NetworkTrainSync>();
+                AddNetworkingScripts(trainCar);
             }
         }
 
@@ -2130,7 +2123,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         if (!car.GetComponent<NetworkTrainSync>() && car.IsLoco)
             car.gameObject.AddComponent<NetworkTrainSync>();
 
-        if (!car.GetComponent<NetworkTrainMUSync>() && car.IsLoco)
+        if (!car.GetComponent<NetworkTrainMUSync>() && car.IsLoco && car.GetComponent<MultipleUnitModule>())
             car.gameObject.AddComponent<NetworkTrainMUSync>();
 
         if (!car.GetComponent<NetworkTrainPosSync>())
