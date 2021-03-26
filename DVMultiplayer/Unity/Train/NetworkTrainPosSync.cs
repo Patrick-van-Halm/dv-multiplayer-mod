@@ -76,6 +76,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
             shunterExhaust.emitterVelocityMode = ParticleSystemEmitterVelocityMode.Transform;
         }
 
+        if(trainCar.carType == TrainCarType.LocoSteamHeavy && trainCar.IsInteriorLoaded)
+        {
+            trainCar.interior.GetComponentInChildren<CabInputSteamExtra>().whistleCtrl.enabled = false;
+        }
+
         if (!trainCar.IsLoco)
         {
             trainCar.CargoLoaded += OnCargoLoaded;
@@ -294,6 +299,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             if (!hasLocalPlayerAuthority && !willLocalPlayerGetAuthority)
             {
+                if (trainCar.carType == TrainCarType.LocoSteamHeavy && trainCar.IsInteriorLoaded && trainCar.interior.GetComponentInChildren<CabInputSteamExtra>().whistleCtrl.enabled)
+                {
+                    trainCar.interior.GetComponentInChildren<CabInputSteamExtra>().whistleCtrl.enabled = false;
+                }
+
                 float increment = (velocity.magnitude * 3f);
                 if (increment <= 5f && turntable)
                     increment = 5;
@@ -404,6 +414,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (trainCar.carType == TrainCarType.LocoShunter)
         {
             shunterExhaust.emitterVelocityMode = gain ? ParticleSystemEmitterVelocityMode.Rigidbody : ParticleSystemEmitterVelocityMode.Transform;
+        }
+
+        if (trainCar.carType == TrainCarType.LocoSteamHeavy && trainCar.interior && trainCar.interior.GetComponentInChildren<CabInputSteamExtra>() && trainCar.interior.GetComponentInChildren<CabInputSteamExtra>().whistleCtrl)
+        {
+            trainCar.interior.GetComponentInChildren<CabInputSteamExtra>().whistleCtrl.enabled = gain;
         }
 
         Main.Log($"Toggle damage for 2 seconds");
