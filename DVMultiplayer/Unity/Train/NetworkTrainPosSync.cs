@@ -386,16 +386,18 @@ internal class NetworkTrainPosSync : MonoBehaviour
         trainCar.rb.velocity = velocity;
         trainCar.rb.drag = drag;
 
-        if(trainCar.carType == TrainCarType.LocoShunter)
+        Main.Log($"Start position updater");
+        StartCoroutine(UpdateLocation());
+
+        if (trainCar.carType == TrainCarType.LocoShunter)
         {
             shunterExhaust.emitterVelocityMode = gain ? ParticleSystemEmitterVelocityMode.Rigidbody : ParticleSystemEmitterVelocityMode.Transform;
         }
 
-        Main.Log($"Resync train");
-        SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
         Main.Log($"Toggle damage for 2 seconds");
         damageEnablerCoro = StartCoroutine(ToggleDamageAfterSeconds(2));
-        StartCoroutine(UpdateLocation());
+        Main.Log($"Resync train");
+        SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
     }
 #pragma warning restore IDE0051 // Remove unused private members
 
