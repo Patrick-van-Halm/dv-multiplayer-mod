@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DVMultiplayer.DTO.Train
+namespace DVMultiplayer.DTO.Train.Locomotives
 {
     public abstract class Locomotive : IDarkRiftSerializable
     {

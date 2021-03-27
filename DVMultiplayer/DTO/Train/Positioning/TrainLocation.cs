@@ -2,7 +2,7 @@
 using DVMultiplayer.Darkrift;
 using UnityEngine;
 
-namespace DVMultiplayer.DTO.Train
+namespace DVMultiplayer.DTO.Train.Positioning
 {
     public class TrainLocation : IDarkRiftSerializable
     {
@@ -14,8 +14,6 @@ namespace DVMultiplayer.DTO.Train
         public bool IsStationary { get; set; }
         public Vector3 Velocity { get; internal set; }
         public float Drag { get; internal set; }
-        public float Temperature { get; internal set; }
-        public float RPM { get; internal set; }
         public long Timestamp { get; internal set; }
 
         public void Deserialize(DeserializeEvent e)
@@ -28,8 +26,6 @@ namespace DVMultiplayer.DTO.Train
             IsStationary = e.Reader.ReadBoolean();
             Velocity = e.Reader.ReadVector3();
             Drag = e.Reader.ReadSingle();
-            Temperature = e.Reader.ReadSingle();
-            RPM = e.Reader.ReadSingle();
             Timestamp = e.Reader.ReadInt64();
         }
 
@@ -43,8 +39,6 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(IsStationary);
             e.Writer.Write(Velocity);
             e.Writer.Write(Drag);
-            e.Writer.Write(Temperature);
-            e.Writer.Write(RPM);
             e.Writer.Write(Timestamp);
         }
     }

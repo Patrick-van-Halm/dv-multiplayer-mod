@@ -1,6 +1,7 @@
 ﻿using DarkRift;
+using DVMultiplayer.DTO.Train.SimUpdates;
 
-namespace DVMultiplayer.DTO.Train
+namespace DVMultiplayer.DTO.Train.Locomotives
 {
     public class Shunter : Locomotive
     {
@@ -9,6 +10,7 @@ namespace DVMultiplayer.DTO.Train
         public bool IsSideFuse2On { get; set; } = false;
         public bool IsMainFuseOn { get; set; } = false;
         public MultipleUnit MultipleUnit { get; set; } = new MultipleUnit();
+        public ShunterSimData SimData { get; set; } = new ShunterSimData();
 
         public override void Deserialize(DeserializeEvent e)
         {
@@ -17,6 +19,7 @@ namespace DVMultiplayer.DTO.Train
             IsSideFuse2On = e.Reader.ReadBoolean();
             IsMainFuseOn = e.Reader.ReadBoolean();
             MultipleUnit = e.Reader.ReadSerializable<MultipleUnit>();
+            SimData = e.Reader.ReadSerializable<ShunterSimData>();
         }
 
         public override void Serialize(SerializeEvent e)
@@ -26,6 +29,7 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(IsSideFuse2On);
             e.Writer.Write(IsMainFuseOn);
             e.Writer.Write(MultipleUnit);
+            e.Writer.Write(SimData);
         }
     }
 }

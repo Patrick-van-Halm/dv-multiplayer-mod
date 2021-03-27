@@ -1,6 +1,6 @@
 ﻿using DarkRift;
 
-namespace DVMultiplayer.DTO.Train
+namespace DVMultiplayer.DTO.Train.Locomotives
 {
     public enum Levers
     {
@@ -20,7 +20,9 @@ namespace DVMultiplayer.DTO.Train
         FireboxDoor,
         WaterInjector,
         DraftPuller,
-        Blower
+        Blower,
+        WaterDump,
+        SteamRelease
     }
 
     public class TrainLever : IDarkRiftSerializable
