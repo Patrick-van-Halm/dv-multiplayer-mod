@@ -571,7 +571,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             case Levers.Reverser:
                             case Levers.Sander:
                             case Levers.Throttle:
-                                UpdateMUServerStateLeverChange(train.GetComponent<MultipleUnitModule>(), lever.Lever, lever.Value);
+                                UpdateMUServerStateLeverChange(serverTrainState, lever.Lever, lever.Value);
                                 break;
 
                             default:
@@ -678,29 +678,32 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
     }
 
-    private void UpdateMUServerStateLeverChange(MultipleUnitModule trainMU, Levers lever, float value, MultipleUnitCable prevCable = null)
+    private void UpdateMUServerStateLeverChange(WorldTrain serverState, Levers lever, float value, WorldTrain previousServerState = null)
     {
-        if (trainMU.frontCableAdapter.muCable.IsConnected)
-        {
-            var connectedCable = trainMU.frontCableAdapter.muCable;
-            if (connectedCable.muModule.rearCableAdapter.muCable.IsConnected && connectedCable.muModule.rearCableAdapter.muCable.connectedTo != prevCable)
-            {
-                UpdateMUServerStateLeverChange(connectedCable.muModule, lever, value, connectedCable);
-            }
-        }
-
-        if (trainMU.rearCableAdapter.muCable.IsConnected)
-        {
-            var connectedCable = trainMU.rearCableAdapter.muCable;
-            if (connectedCable.muModule.frontCableAdapter.muCable.IsConnected && connectedCable.muModule.frontCableAdapter.muCable.connectedTo != prevCable)
-            {
-                UpdateMUServerStateLeverChange(connectedCable.muModule, lever, value, connectedCable);
-            }
-        }
-
-        WorldTrain serverState = serverCarStates.FirstOrDefault(s => s.Guid == trainMU.loco.train.CarGUID);
+        Main.Log($"Train Multiple unit lever changed Guid: {serverState.Guid}");
         if (serverState != null)
             UpdateServerStateLeverChange(serverState, lever, value);
+
+        MultipleUnit multipleUnit = null;
+        switch (serverState.CarType)
+        {
+            case TrainCarType.LocoShunter:
+                multipleUnit = serverState.MultipleUnit;
+                break;
+        }
+
+        if (multipleUnit == null)
+            return;
+
+        if (multipleUnit.IsFrontMUConnectedTo != "" && (previousServerState == null || multipleUnit.IsFrontMUConnectedTo != previousServerState.Guid))
+        {
+            UpdateMUServerStateLeverChange(serverCarStates.FirstOrDefault(t => t.Guid == multipleUnit.IsFrontMUConnectedTo), lever, value, serverState);
+        }
+
+        if (multipleUnit.IsRearMUConnectedTo != "" && (previousServerState == null || multipleUnit.IsRearMUConnectedTo != previousServerState.Guid))
+        {
+            UpdateMUServerStateLeverChange(serverCarStates.FirstOrDefault(t => t.Guid == multipleUnit.IsRearMUConnectedTo), lever, value, serverState);
+        }
     }
 
     private void OnCarCoupleChangeMessage(Message message, bool isCoupled)
@@ -1359,7 +1362,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 case Levers.Reverser:
                 case Levers.Sander:
                 case Levers.Throttle:
-                    UpdateMUServerStateLeverChange(train.GetComponent<MultipleUnitModule>(), lever, value);
+                    UpdateMUServerStateLeverChange(serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID), lever, value);
                     break;
 
                 default:
