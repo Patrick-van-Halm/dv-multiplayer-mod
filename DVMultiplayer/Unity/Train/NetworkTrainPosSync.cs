@@ -1,7 +1,9 @@
 using DV.Logic.Job;
 using DVMultiplayer;
 using DVMultiplayer.DTO.Train;
+using DVMultiplayer.DTO.Train.Positioning;
 using DVMultiplayer.Networking;
+using DVMultiplayer.Unity.Train.Locomotives;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,8 +33,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
     private Coroutine damageEnablerCoro;
     public bool IsCarDamageEnabled { get; internal set; }
     NetworkPlayerSync localPlayer;
-    ShunterLocoSimulation shunterLocoSimulation = null;
     ParticleSystem.MainModule shunterExhaust;
+    private NetworkLocomotive locomotive;
 
     //private TrainAudio trainAudio;
     //private BogieAudioController[] bogieAudios;
@@ -64,27 +66,26 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         Main.Log($"Listening to movement changed event");
         trainCar.MovementStateChanged += TrainCar_MovementStateChanged;
+
+
         trainCar.CarDamage.CarEffectiveHealthStateUpdate += OnBodyDamageTaken;
         if (!trainCar.IsLoco)
+        {
             trainCar.CargoDamage.CargoDamaged += OnCargoDamageTaken;
-
-
-        if(trainCar.carType == TrainCarType.LocoShunter)
-        {
-            shunterLocoSimulation = GetComponent<ShunterLocoSimulation>();
-            shunterExhaust = trainCar.transform.Find("[particles]").Find("ExhaustEngineSmoke").GetComponent<ParticleSystem>().main;
-            shunterExhaust.emitterVelocityMode = ParticleSystemEmitterVelocityMode.Transform;
-        }
-
-        if(trainCar.carType == TrainCarType.LocoSteamHeavy && trainCar.IsInteriorLoaded)
-        {
-            trainCar.interior.GetComponentInChildren<CabInputSteamExtra>().whistleCtrl.enabled = false;
-        }
-
-        if (!trainCar.IsLoco)
-        {
             trainCar.CargoLoaded += OnCargoLoaded;
             trainCar.CargoUnloaded += OnCargoUnloaded;
+        }
+
+        switch (trainCar.carType)
+        {
+            case TrainCarType.LocoShunter:
+                locomotive = gameObject.AddComponent<NetworkShunterSync>();
+                break;
+
+            case TrainCarType.LocoSteamHeavy:
+            case TrainCarType.LocoSteamHeavyBlue:
+                locomotive = gameObject.AddComponent<NetworkSteamerSync>();
+                break;
         }
 
         //for(int i = 0; i < trainCar.Bogies.Length; i++)
@@ -98,9 +99,14 @@ internal class NetworkTrainPosSync : MonoBehaviour
             trainCar.TrainsetChanged += TrainCar_TrainsetChanged;
             SetAuthority(true);
         }
+
+        if (trainCar.IsLoco)
+        {
+            locomotive.UpdateAuthorityPhysics(hasLocalPlayerAuthority);
+        }
     }
 
-    private void TrainCar_TrainsetChanged(Trainset obj)
+    private void TrainCar_TrainsetChanged(Trainset _)
     {
         resetAuthority = true;
     }
@@ -299,11 +305,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             if (!hasLocalPlayerAuthority && !willLocalPlayerGetAuthority)
             {
-                if (trainCar.carType == TrainCarType.LocoSteamHeavy && trainCar.IsInteriorLoaded && trainCar.interior.GetComponentInChildren<CabInputSteamExtra>().whistleCtrl.enabled)
-                {
-                    trainCar.interior.GetComponentInChildren<CabInputSteamExtra>().whistleCtrl.enabled = false;
-                }
-
                 float increment = (velocity.magnitude * 3f);
                 if (increment <= 5f && turntable)
                     increment = 5;
@@ -361,10 +362,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 Main.Log($"Car {trainCar.CarGUID}: Changing authority [GAINED]");
                 SetAuthority(true);
                 if (!trainCar.IsInteriorLoaded)
-                {
                     trainCar.LoadInterior();
-                }
                 trainCar.keepInteriorLoaded = true;
+                if (trainCar.IsLoco)
+                    locomotive.UpdateAuthorityPhysics(true);
             }
             else if (!willLocalPlayerGetAuthority && hasLocalPlayerAuthority)
             {
@@ -373,6 +374,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 newPos = transform.position - WorldMover.currentMove;
                 newRot = transform.rotation;
                 trainCar.keepInteriorLoaded = false;
+                if (trainCar.IsLoco)
+                    locomotive.UpdateAuthorityPhysics(false);
             }
         }
         catch (Exception ex)
@@ -411,16 +414,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.Log($"Start position updater");
         StartCoroutine(UpdateLocation());
 
-        if (trainCar.carType == TrainCarType.LocoShunter)
-        {
-            shunterExhaust.emitterVelocityMode = gain ? ParticleSystemEmitterVelocityMode.Rigidbody : ParticleSystemEmitterVelocityMode.Transform;
-        }
-
-        if (trainCar.carType == TrainCarType.LocoSteamHeavy && trainCar.interior && trainCar.interior.GetComponentInChildren<CabInputSteamExtra>() && trainCar.interior.GetComponentInChildren<CabInputSteamExtra>().whistleCtrl)
-        {
-            trainCar.interior.GetComponentInChildren<CabInputSteamExtra>().whistleCtrl.enabled = gain;
-        }
-
         Main.Log($"Toggle damage for 2 seconds");
         damageEnablerCoro = StartCoroutine(ToggleDamageAfterSeconds(2));
         Main.Log($"Resync train");
@@ -430,7 +423,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private IEnumerator ToggleDamageAfterSeconds(float seconds)
     {
-        
         trainCar.CarDamage.IgnoreDamage(true);
         trainCar.stress.EnableStress(false);
         trainCar.TrainCarCollisions.enabled = false;
@@ -470,7 +462,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainCar_MovementStateChanged(bool isMoving)
     {
-        if (!hasLocalPlayerAuthority)
+        if (!hasLocalPlayerAuthority && isStationary == !isMoving)
             return;
 
         isStationary = !isMoving;
@@ -478,7 +470,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.Log($"Movement state changed is moving: {isMoving}");
         if(!isMoving && SingletonBehaviour<NetworkTrainManager>.Exists)
         {
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, true);
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, locomotive, true);
             prevPos = trainCar.transform.position;
         }
     }
@@ -555,7 +547,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             yield return new WaitForSeconds(.005f);
             yield return new WaitUntil(() => Vector3.Distance(transform.position - WorldMover.currentMove, prevPos) > Mathf.Lerp(1e-3f, .25f, velocity.magnitude * 3.6f / 80) && !trainCar.isStationary);
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar);
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, locomotive, false);
             prevPos = transform.position - WorldMover.currentMove;
 
             if (!turntable && !IsCarDamageEnabled)
@@ -581,17 +573,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         isStationary = location.IsStationary;
         newPos = location.Position;
         newRot = location.Rotation;
-        if (trainCar.IsLoco)
-        {
-            switch (trainCar.carType)
-            {
-                case TrainCarType.LocoShunter:
-                    shunterLocoSimulation.engineTemp.SetValue(location.Temperature);
-                    shunterLocoSimulation.engineRPM.SetValue(location.RPM);
-                    break;
-            }
-        }
-        
     }
 
     //private void SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(TrainLocation location)
@@ -694,15 +675,15 @@ internal class NetworkTrainPosSync : MonoBehaviour
     //        return Vector3.Distance(a.position, b);
     //}
 
-    private TrainCar GetMostFrontCar(TrainCar car)
-    {
-        if (car.frontCoupler.coupledTo != null)
-        {
-            return GetMostFrontCar(car.frontCoupler.coupledTo.train);
-        }
-        else
-        {
-            return car;
-        }
-    }
+    //private TrainCar GetMostFrontCar(TrainCar car)
+    //{
+    //    if (car.frontCoupler.coupledTo != null)
+    //    {
+    //        return GetMostFrontCar(car.frontCoupler.coupledTo.train);
+    //    }
+    //    else
+    //    {
+    //        return car;
+    //    }
+    //}
 }

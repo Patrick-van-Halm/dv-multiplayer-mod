@@ -1,6 +1,8 @@
 ﻿using DarkRift;
 using DV.Logic.Job;
 using DVMultiplayer.Darkrift;
+using DVMultiplayer.DTO.Train.Locomotives;
+using DVMultiplayer.DTO.Train.Positioning;
 using UnityEngine;
 
 namespace DVMultiplayer.DTO.Train

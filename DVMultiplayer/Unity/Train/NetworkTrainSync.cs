@@ -1,7 +1,7 @@
 ﻿using DV.CabControls;
 using DV.CabControls.Spec;
 using DVMultiplayer;
-using DVMultiplayer.DTO.Train;
+using DVMultiplayer.DTO.Train.Locomotives;
 using DVMultiplayer.Networking;
 using System;
 using System.Collections;
@@ -81,20 +81,40 @@ internal class NetworkTrainSync : MonoBehaviour
                 CabInputSteam cabInputSteamer = loco.interior.GetComponentInChildren<CabInputSteam>();
                 CabInputSteamExtra cabInputSteamerExtra = loco.interior.GetComponentInChildren<CabInputSteamExtra>();
                 Main.Log($"Wait till all scripts are loaded");
+                yield return new WaitUntil(() => cabInputSteamerExtra.ctrl);
                 Main.Log($"Listening to draft puller");
                 cabInputSteamerExtra.draftPullerCtrl.ValueChanged += OnSteamerDraftPullerChanged;
                 Main.Log($"Listening to water injector");
                 cabInputSteamerExtra.injectorCtrl.ValueChanged += OnSteamerWaterInjectorChanged;
                 Main.Log($"Listening to fire door");
                 cabInputSteamerExtra.fireDoorLeverCtrl.ValueChanged += OnSteamerFireboxDoorChanged;
-                yield return new WaitUntil(() => cabInputSteamerExtra.ctrl);
                 Main.Log($"Listening to blower valve");
                 cabInputSteamerExtra.blowerValveObj.GetComponent<ControlImplBase>().ValueChanged += OnSteamerBlowerChanged;
+                Main.Log($"Listening to steam releaser valve");
+                cabInputSteamerExtra.steamReleaserValveObj.GetComponent<ControlImplBase>().ValueChanged += OnSteamerSteamReleaserChanged;
+                Main.Log($"Listening to water dump valve");
+                cabInputSteamerExtra.waterDumpValveObj.GetComponent<ControlImplBase>().ValueChanged += OnSteamerWaterDumpChanged;
                 break;
         }
     }
 
-    internal void OnSteamerCoalChanged(float value)
+    private void OnSteamerWaterDumpChanged(ValueChangedEventArgs e)
+    {
+        if (!SingletonBehaviour<NetworkTrainManager>.Instance || SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
+            return;
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(loco, Levers.WaterDump, e.newValue);
+    }
+
+    private void OnSteamerSteamReleaserChanged(ValueChangedEventArgs e)
+    {
+        if (!SingletonBehaviour<NetworkTrainManager>.Instance || SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
+            return;
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(loco, Levers.SteamRelease, e.newValue);
+    }
+
+    internal void OnSteamerCoalShoveled(float value)
     {
         if ((SingletonBehaviour<NetworkTrainManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork) || !loco || !listenToLocalPlayerInputs)
             return;

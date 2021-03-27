@@ -17,7 +17,7 @@ namespace DVMultiplayer.Patches.Train.Steamer
                 NetworkTrainSync trainSync = car.GetComponent<NetworkTrainSync>();
                 LocoControllerSteam steamer = car.GetComponent<LocoControllerSteam>();
 
-                trainSync.OnSteamerCoalChanged(steamer.sim.coalbox.value);
+                trainSync.OnSteamerCoalShoveled(__instance.shovelChunksCapacity);
             }
         }
     }

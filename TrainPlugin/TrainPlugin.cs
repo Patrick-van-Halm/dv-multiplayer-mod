@@ -2,6 +2,9 @@
 using DarkRift.Server;
 using DVMultiplayer.Darkrift;
 using DVMultiplayer.DTO.Train;
+using DVMultiplayer.DTO.Train.Locomotives;
+using DVMultiplayer.DTO.Train.Positioning;
+using DVMultiplayer.DTO.Train.SimUpdates;
 using DVMultiplayer.Networking;
 using System;
 using System.Collections.Generic;
@@ -127,8 +130,40 @@ namespace TrainPlugin
                     case NetworkTags.TRAIN_MU_CHANGE:
                         OnCarMUChange(message, e.Client);
                         break;
+
+                    case NetworkTags.TRAIN_SIM_UPDATE:
+                        OnLocoSimUpdate(message, e.Client);
+                        break;
                 }
             }
+        }
+
+        private void OnLocoSimUpdate(Message message, IClient client)
+        {
+            using (DarkRiftReader reader = message.GetReader())
+            {
+                SimUpdate data = reader.ReadSerializable<SimUpdate>();
+                WorldTrain train = worldTrains.FirstOrDefault(t => t.Guid == data.Id);
+                if (!(train is null))
+                {
+                    switch (train.CarType)
+                    {
+                        case TrainCarType.LocoShunter:
+                            Shunter shunter = train.Locomotive as Shunter;
+                            shunter.SimData = data.SimData as ShunterSimData;
+                            break;
+
+                        case TrainCarType.LocoSteamHeavy:
+                        case TrainCarType.LocoSteamHeavyBlue:
+                            Steamer steamer = train.Locomotive as Steamer;
+                            steamer.SimData = data.SimData as SteamerSimData;
+                            break;
+                    }
+                }
+            }
+
+            Logger.Trace("[SERVER] > TRAIN_SIM_UPDATE");
+            ReliableSendToOthers(message, client);
         }
 
         private void OnCarMUChange(Message message, IClient client)
@@ -176,6 +211,7 @@ namespace TrainPlugin
                 }
             }
 
+            Logger.Trace("[SERVER] > TRAIN_MU_CHANGE");
             ReliableSendToOthers(message, client);
         }
 
@@ -882,10 +918,6 @@ namespace TrainPlugin
                             steamer.Blower = lever.Value;
                             break;
 
-                        case Levers.Coal:
-                            steamer.Coal = lever.Value;
-                            break;
-
                         case Levers.DraftPuller:
                             steamer.DraftPuller = lever.Value;
                             break;
@@ -900,6 +932,14 @@ namespace TrainPlugin
 
                         case Levers.WaterInjector:
                             steamer.WaterInjector = lever.Value;
+                            break;
+
+                        case Levers.SteamRelease:
+                            steamer.SteamRelease = lever.Value;
+                            break;
+
+                        case Levers.WaterDump:
+                            steamer.WaterDump = lever.Value;
                             break;
                     }
                     break;
