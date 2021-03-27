@@ -314,16 +314,14 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 }
                 if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > Mathf.Lerp(1e-3f, .25f, velocity.magnitude * 3.6f / 80))
                 {
-                    List<Vector3> bogiespos = new List<Vector3>();
-                    foreach(Bogie bogie in trainCar.Bogies)
+                    foreach (Bogie bogie in trainCar.Bogies)
                     {
-                        bogiespos.Add(bogie.transform.localPosition);
+                        bogie.rb.isKinematic = true;
                     }
                     trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
-                    for (int i = 0; i < trainCar.Bogies.Length; i++)
+                    foreach (Bogie bogie in trainCar.Bogies)
                     {
-                        trainCar.Bogies[i].transform.localPosition = bogiespos[i];
-                        //trainCar.Bogies[i].RefreshBogiePoints();
+                        bogie.rb.isKinematic = false;
                     }
                 }
 
