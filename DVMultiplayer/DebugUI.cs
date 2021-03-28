@@ -37,6 +37,18 @@ namespace DVMultiplayer
                 GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"None", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
             ypos += 20;
 
+            // Authority Car Status
+            if (NetworkManager.IsClient() && SingletonBehaviour <NetworkTrainManager>.Exists)
+            {
+                TrainCar authorityCar = SingletonBehaviour<NetworkTrainManager>.Instance.GetAuthorityCar();
+                GUI.Label(new Rect(Screen.width - 245, ypos, 117, 20), $"Trainset auth:");
+                if (authorityCar)
+                    GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"{authorityCar.ID}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
+                else
+                    GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"None", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
+                ypos += 20;
+            }
+
             // Connection Status
             GUI.Label(new Rect(Screen.width - 245, ypos, 117, 20), $"Connection State:");
             if (!NetworkManager.IsClient() && !NetworkManager.IsHost())

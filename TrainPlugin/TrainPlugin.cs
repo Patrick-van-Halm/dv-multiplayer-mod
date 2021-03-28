@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.44");
+        public override Version Version => new Version("1.6.45");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -220,6 +220,19 @@ namespace TrainPlugin
                 IClient cl = players.FirstOrDefault(c => c.ID == authChange.PlayerId);
                 if(cl.ID != 0)
                     SendDelayedMessage(authChange, NetworkTags.TRAIN_AUTH_CHANGE, cl, (int)sentTo.OrderByDescending(c => c.RoundTripTime.SmoothedRtt).First().RoundTripTime.SmoothedRtt / 2 * 1000);
+                sentTo.Add(cl);
+
+                foreach(IClient client in players.Except(sentTo))
+                {
+                    using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                    {
+                        writer.Write(authChange);
+                        using (Message msg = Message.Create((ushort)NetworkTags.TRAIN_AUTH_CHANGE, writer))
+                        {
+                            client.SendMessage(msg, SendMode.Reliable);
+                        }
+                    }
+                }
             }
         }
 
@@ -748,6 +761,7 @@ namespace TrainPlugin
 
         private void UpdateTrainPosition(Message message, IClient sender)
         {
+            bool isReliable = false;
             if (worldTrains != null)
             {
                 using (DarkRiftReader reader = message.GetReader())
@@ -765,11 +779,15 @@ namespace TrainPlugin
                         train.Bogies = data.Bogies;
                         train.IsStationary = data.IsStationary;
                         train.updatedAt = data.Timestamp;
+                        isReliable = train.IsStationary;
                     }
                 }
             }
             //Logger.Trace("[SERVER] > TRAIN_LOCATION_UPDATE");
-            UnreliableSendToOthers(message, sender);
+            if (!isReliable)
+                UnreliableSendToOthers(message, sender);
+            else
+                ReliableSendToOthers(message, sender);
         }
 
         private void UnreliableSendToOthers(Message message, IClient sender)

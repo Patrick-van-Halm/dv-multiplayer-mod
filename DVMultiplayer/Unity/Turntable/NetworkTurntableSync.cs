@@ -74,6 +74,10 @@ internal class NetworkTurntableSync : MonoBehaviour
                     IsAnyoneInControlArea = false;
                     SingletonBehaviour<NetworkTurntableManager>.Instance.SendReleaseAuthority(turntable);
                     playerAuthId = 0;
+                    foreach(TrainCar car in carsOnTurntable)
+                    {
+                        car.GetComponent<NetworkTrainPosSync>().resetAuthority = true;
+                    }
                 }
             }
         }

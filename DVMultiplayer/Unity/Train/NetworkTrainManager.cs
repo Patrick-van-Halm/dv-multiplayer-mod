@@ -5,6 +5,7 @@ using DV;
 using DV.CabControls;
 using DV.Logic.Job;
 using DV.MultipleUnit;
+using DV.PointSet;
 using DVMultiplayer;
 using DVMultiplayer.Darkrift;
 using DVMultiplayer.DTO.Train;
@@ -67,7 +68,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             foreach (TrainCar trainCar in localCars)
             {
-                AddNetworkingScripts(trainCar);
+                AddNetworkingScripts(trainCar, null);
             }
         }
 
@@ -91,7 +92,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         if (car.IsLoco || car.playerSpawnedCar || car.carType == TrainCarType.Tender || car.carType == TrainCarType.TenderBlue)
         {
-            AddNetworkingScripts(car);
+            AddNetworkingScripts(car, null);
 
             SendNewCarSpawned(car);
             AppUtil.Instance.PauseGame();
@@ -126,6 +127,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     DestroyImmediate(trainCar.frontCoupler.GetComponent<NetworkTrainCouplerSync>());
                 if (trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>())
                     DestroyImmediate(trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>());
+                if (trainCar.GetComponent<NetworkTrainMUSync>())
+                    DestroyImmediate(trainCar.GetComponent<NetworkTrainMUSync>());
             }
         }
 
@@ -145,7 +148,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     {
         if (trainCar)
         {
-            AddNetworkingScripts(trainCar);
+            AddNetworkingScripts(trainCar, null);
         }
 
         NetworkPlayerSync playerSync = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync();
@@ -432,7 +435,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == changedCar.TrainId);
                     if (train)
                     {
-                        AddNetworkingScripts(train);
+                        AddNetworkingScripts(train, null);
                         Main.Log($"[CLIENT] < TRAIN_SWITCH: Train found: {train}, ID: {train.ID}, GUID: {train.CarGUID}");
                         targetPlayerSync.Train = train;
                     }
@@ -511,24 +514,24 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             while (reader.Position < reader.Length)
             {
                 TrainLocation[] locations = reader.ReadSerializables<TrainLocation>();
+                if(locations.Length == 0)
+                {
+                    Main.Log("Train positions data empty");
+                }
                 foreach(TrainLocation location in locations)
                 {
                     TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == location.TrainId);
                     if (train)
                     {
                         WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID);
-                        if (serverState == null)
+
+                        if(serverState == null)
                         {
-                            serverState = new WorldTrain()
-                            {
-                                Guid = train.CarGUID,
-                            };
-                            if (train.carType == TrainCarType.LocoShunter)
-                                serverState.Shunter = new Shunter();
-                            serverCarStates.Add(serverState);
+                            Main.Log("Server state not found");
+                            continue;
                         }
 
-                        if (location.Timestamp > serverState.updatedAt)
+                        if(serverState.updatedAt <= location.Timestamp)
                         {
                             serverState.Position = location.Position;
                             serverState.Rotation = location.Rotation;
@@ -539,8 +542,14 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
                             //Main.Log($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
                             if (train.GetComponent<NetworkTrainPosSync>())
-                                SingletonBehaviour<CoroutineManager>.Instance.Run(train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location));
+                                train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location);
+                            else
+                                Main.Log("NetworkTrainPosSync not found");
                         }
+                    }
+                    else
+                    {
+                        Main.Log("Train not found");
                     }
                 }
             }
@@ -591,7 +600,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         }
                     }
 
-                    Main.Log($"[CLIENT] < TRAIN_LEVER: Packet size: {reader.Length}, TrainID: {train.ID}, Lever: {lever.Lever}, Value: {lever.Value}");
+                    //Main.Log($"[CLIENT] < TRAIN_LEVER: Packet size: {reader.Length}, TrainID: {train.ID}, Lever: {lever.Lever}, Value: {lever.Value}");
                     IsChangeByNetwork = true;
                     LocoControllerBase baseController = train.GetComponent<LocoControllerBase>();
                     switch (lever.Lever)
@@ -680,7 +689,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void UpdateMUServerStateLeverChange(WorldTrain serverState, Levers lever, float value, WorldTrain previousServerState = null)
     {
-        Main.Log($"Train Multiple unit lever changed Guid: {serverState.Guid}");
+        //Main.Log($"Train Multiple unit lever changed Guid: {serverState.Guid}");
         if (serverState != null)
             UpdateServerStateLeverChange(serverState, lever, value);
 
@@ -1145,7 +1154,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             foreach (TrainCar car in cars)
             {
-                AddNetworkingScripts(car);
+                AddNetworkingScripts(car, null);
             }
 
             WorldTrain[] newServerTrains = GenerateServerCarsData(cars);
@@ -1308,8 +1317,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         TrackName = bogie.HasDerailed ? "" : bogie.track.name,
                         Derailed = bogie.HasDerailed,
                         PositionAlongTrack = bogie.HasDerailed ? 0 : bogie.traveller.pointRelativeSpan + bogie.traveller.curPoint.span,
-                        Position = bogie.transform.position,
-                        Rotation = bogie.transform.rotation
                     });
                 }
 
@@ -1717,8 +1724,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             if (train == null)
             {
                 train = InitializeNewTrainCar(selectedTrain);
-                yield return new WaitUntil(() => train.AreBogiesFullyInitialized() && train.frontCoupler && train.rearCoupler);
+                yield return new WaitUntil(() => train.AreBogiesFullyInitialized() && train.frontCoupler && train.rearCoupler && train.CarDamage);
                 yield return RerailDesynced(train, selectedTrain.Position, selectedTrain.Forward);
+                yield return new WaitUntil(() => train.AreBogiesFullyInitialized());
+                AddNetworkingScripts(train, selectedTrain);
             }
 
             if (train != null)
@@ -1733,8 +1742,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 catch (Exception) { }
                 yield return FullResyncCar(train, selectedTrain);
             }
-
-            train.rb.isKinematic = true;
             IsChangeByNetwork = false;
         }
 
@@ -1825,13 +1832,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         false, false);
         newTrain.CarDamage.IgnoreDamage(true);
 
-        NetworkTrainPosSync posSyncer = newTrain.gameObject.AddComponent<NetworkTrainPosSync>();
-        AddNetworkingScripts(newTrain);
-
         if(newTrain.logicCar != null && !newTrain.IsLoco && serverState.CargoType != CargoType.None)
             newTrain.logicCar.LoadCargo(serverState.CargoAmount, serverState.CargoType);
-        else if(newTrain.logicCar != null)
-            posSyncer.OnTrainCarInitialized += NetworkTrainManager_OnTrainCarInitialized;
 
         SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(newTrain, serverState, true));
         localCars.Add(newTrain);
@@ -2000,7 +2002,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             Main.Log($"Initializing: {train.Guid} in area");
             serverCarStates.Add(train);
             TrainCar car = InitializeNewTrainCar(train);
+            yield return new WaitUntil(() => car.AreBogiesFullyInitialized());
             yield return RerailDesynced(car, train, true);
+            yield return new WaitUntil(() => car.AreBogiesFullyInitialized());
+            AddNetworkingScripts(car, train);
             Main.Log($"Initializing: {train.Guid} in area [DONE]");
         }
         yield return new WaitUntil(() =>
@@ -2121,7 +2126,12 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         IsChangeByNetwork = false;
     }
 
-    private void AddNetworkingScripts(TrainCar car)
+    internal TrainCar GetAuthorityCar()
+    {
+        return localCars.FirstOrDefault(t => t.GetComponent<NetworkTrainPosSync>().hasLocalPlayerAuthority);
+    }
+
+    private void AddNetworkingScripts(TrainCar car, WorldTrain selectedTrain)
     {
         if (!car.GetComponent<NetworkTrainSync>() && car.IsLoco)
             car.gameObject.AddComponent<NetworkTrainSync>();
@@ -2130,7 +2140,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             car.gameObject.AddComponent<NetworkTrainMUSync>();
 
         if (!car.GetComponent<NetworkTrainPosSync>())
-            car.gameObject.AddComponent<NetworkTrainPosSync>();
+        {
+            NetworkTrainPosSync s = car.gameObject.AddComponent<NetworkTrainPosSync>();
+            s.serverState = selectedTrain;
+        }
 
         if (!car.frontCoupler.GetComponent<NetworkTrainCouplerSync>())
             car.frontCoupler.gameObject.AddComponent<NetworkTrainCouplerSync>();
