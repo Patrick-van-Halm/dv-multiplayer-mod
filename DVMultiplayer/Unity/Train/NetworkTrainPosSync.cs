@@ -50,17 +50,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.Log($"Listening to derailment/rerail events");
         trainCar.OnDerailed += TrainDerail;
         trainCar.OnRerailed += TrainRerail;
-        Main.Log($"Listening to LogicCar loaded event");
-        trainCar.LogicCarInitialized += TrainCar_LogicCarInitialized;
-
-        trainCar.CarDamage.IgnoreDamage(true);
-        trainCar.stress.enabled = false;
-        trainCar.TrainCarCollisions.enabled = false;
-
-        Main.Log($"Set kinematic");
-        trainCar.rb.isKinematic = true;
-        IsCarDamageEnabled = false;
         localPlayer = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync();
+
+        isStationary = trainCar.isStationary;
 
         Main.Log($"Listening to movement changed event");
         trainCar.MovementStateChanged += TrainCar_MovementStateChanged;
@@ -73,7 +65,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             shunterLocoSimulation = GetComponent<ShunterLocoSimulation>();
             shunterExhaust = trainCar.transform.Find("[particles]").Find("ExhaustEngineSmoke").GetComponent<ParticleSystem>().main;
-            shunterExhaust.emitterVelocityMode = ParticleSystemEmitterVelocityMode.Transform;
         }
 
         if (!trainCar.IsLoco)
@@ -89,9 +80,16 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         if (NetworkManager.IsHost())
         {
-            authorityCoro = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
-            trainCar.TrainsetChanged += TrainCar_TrainsetChanged;
+            if (trainCar.IsLoco)
+            {
+                authorityCoro = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
+                trainCar.TrainsetChanged += TrainCar_TrainsetChanged;
+            }
             SetAuthority(true);
+        }
+        else
+        {
+            SetAuthority(false);
         }
     }
 
@@ -305,27 +303,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
                     increment = 5;
 
                 float step = increment * Time.deltaTime; // calculate distance to move
-                if(velocity.magnitude < 1)
-                {
-                    foreach(Bogie bogie in trainCar.Bogies)
-                    { 
-                        bogie.RefreshBogiePoints();
-                    }
-                }
                 if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > Mathf.Lerp(1e-3f, .25f, velocity.magnitude * 3.6f / 80))
                 {
-                    foreach (Bogie bogie in trainCar.Bogies)
-                    {
-                        bogie.rb.isKinematic = true;
-                    }
                     trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
-                    foreach (Bogie bogie in trainCar.Bogies)
-                    {
-                        bogie.rb.isKinematic = false;
-                    }
                 }
 
-                if (newRot != Quaternion.identity && Quaternion.Angle(transform.rotation, newRot) > .25)
+                if (newRot != Quaternion.identity && Quaternion.Angle(transform.rotation, newRot) > 1e-3f)
                 {
                     //Main.Log($"Rotating train");
                     if (!turntable)
@@ -342,6 +325,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             if (hasLocalPlayerAuthority)
             {
                 velocity = trainCar.rb.velocity;
+                isStationary = trainCar.isStationary;
             }
 
             if (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)
@@ -382,19 +366,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         hasLocalPlayerAuthority = gain;
         Main.Log($"Set kinematic state {!gain}");
         trainCar.rb.isKinematic = !gain;
-        Main.Log($"Set bogies");
-        foreach(Bogie bogie in trainCar.Bogies)
-        {
-            bogie.RefreshBogiePoints();
-            //if (bogie.rb != null)
-            //{
-            //    bogie.rb.isKinematic = !gain;
-            //}
-        }
-
-        Main.Log($"Set velocity and drag");
-        trainCar.rb.velocity = velocity;
-        trainCar.rb.drag = drag;
 
         Main.Log($"Start position updater");
         StartCoroutine(UpdateLocation());
@@ -455,8 +426,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
     {
         if (!hasLocalPlayerAuthority)
             return;
-
-        isStationary = !isMoving;
 
         Main.Log($"Movement state changed is moving: {isMoving}");
         if(!isMoving && SingletonBehaviour<NetworkTrainManager>.Exists)
@@ -548,7 +517,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
     }
 
-    internal IEnumerator UpdateLocation(TrainLocation location)
+    internal void UpdateLocation(TrainLocation location)
+    {
+        StartCoroutine(CoroUpdateLocation(location));
+    }
+
+    internal IEnumerator CoroUpdateLocation(TrainLocation location)
     {
         if (hasLocalPlayerAuthority)
             yield break;
