@@ -1,4 +1,4 @@
-using DarkRift;
+﻿using DarkRift;
 using DarkRift.Server;
 using DVMultiplayer.Darkrift;
 using DVMultiplayer.DTO.Train;
@@ -220,6 +220,19 @@ namespace TrainPlugin
                 IClient cl = players.FirstOrDefault(c => c.ID == authChange.PlayerId);
                 if(cl.ID != 0)
                     SendDelayedMessage(authChange, NetworkTags.TRAIN_AUTH_CHANGE, cl, (int)sentTo.OrderByDescending(c => c.RoundTripTime.SmoothedRtt).First().RoundTripTime.SmoothedRtt / 2 * 1000);
+                sentTo.Add(cl);
+
+                foreach(IClient client in players.Except(sentTo))
+                {
+                    using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                    {
+                        writer.Write(authChange);
+                        using (Message msg = Message.Create((ushort)NetworkTags.TRAIN_AUTH_CHANGE, writer))
+                        {
+                            client.SendMessage(msg, SendMode.Reliable);
+                        }
+                    }
+                }
             }
         }
 

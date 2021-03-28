@@ -127,6 +127,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     DestroyImmediate(trainCar.frontCoupler.GetComponent<NetworkTrainCouplerSync>());
                 if (trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>())
                     DestroyImmediate(trainCar.rearCoupler.GetComponent<NetworkTrainCouplerSync>());
+                if (trainCar.GetComponent<NetworkTrainMUSync>())
+                    DestroyImmediate(trainCar.GetComponent<NetworkTrainMUSync>());
             }
         }
 
@@ -529,18 +531,21 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                             continue;
                         }
 
-                        serverState.Position = location.Position;
-                        serverState.Rotation = location.Rotation;
-                        serverState.Forward = location.Forward;
-                        serverState.Bogies = location.Bogies;
-                        serverState.IsStationary = location.IsStationary;
-                        serverState.updatedAt = location.Timestamp;
+                        if(serverState.updatedAt <= location.Timestamp)
+                        {
+                            serverState.Position = location.Position;
+                            serverState.Rotation = location.Rotation;
+                            serverState.Forward = location.Forward;
+                            serverState.Bogies = location.Bogies;
+                            serverState.IsStationary = location.IsStationary;
+                            serverState.updatedAt = location.Timestamp;
 
-                        //Main.Log($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
-                        if (train.GetComponent<NetworkTrainPosSync>())
-                            train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location);
-                        else
-                            Main.Log("NetworkTrainPosSync not found");
+                            //Main.Log($"[CLIENT] < TRAIN_LOCATION_UPDATE: TrainID: {train.ID}");
+                            if (train.GetComponent<NetworkTrainPosSync>())
+                                train.GetComponent<NetworkTrainPosSync>().UpdateLocation(location);
+                            else
+                                Main.Log("NetworkTrainPosSync not found");
+                        }
                     }
                     else
                     {
@@ -1722,14 +1727,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 yield return new WaitUntil(() => train.AreBogiesFullyInitialized() && train.frontCoupler && train.rearCoupler && train.CarDamage);
                 yield return RerailDesynced(train, selectedTrain.Position, selectedTrain.Forward);
                 yield return new WaitUntil(() => train.AreBogiesFullyInitialized());
-                for (int i = 0; i < train.Bogies.Length; i++)
-                {
-                    Transform transform = CarTypes.GetCarPrefab(train.carType).GetComponentsInChildren<Bogie>()[i].transform;
-                    train.Bogies[i].startingLocalPosition = transform.localPosition;
-                    train.Bogies[i].startingLocalRotation = transform.localRotation;
-                    train.Bogies[i].ResetBogiesToStartPosition();
-                    train.Bogies[i].SetupPhysics();
-                }
                 AddNetworkingScripts(train, selectedTrain);
             }
 
@@ -2008,14 +2005,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             yield return new WaitUntil(() => car.AreBogiesFullyInitialized());
             yield return RerailDesynced(car, train, true);
             yield return new WaitUntil(() => car.AreBogiesFullyInitialized());
-            for (int i = 0; i < car.Bogies.Length; i++)
-            {
-                Transform transform = CarTypes.GetCarPrefab(car.carType).GetComponentsInChildren<Bogie>()[i].transform;
-                car.Bogies[i].startingLocalPosition = transform.localPosition;
-                car.Bogies[i].startingLocalRotation = transform.localRotation;
-                car.Bogies[i].ResetBogiesToStartPosition();
-                car.Bogies[i].SetupPhysics();
-            }
             AddNetworkingScripts(car, train);
             Main.Log($"Initializing: {train.Guid} in area [DONE]");
         }
