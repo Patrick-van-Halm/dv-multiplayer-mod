@@ -54,16 +54,12 @@ namespace DVMultiplayer.DTO.Train
         public string TrackName { get; set; }
         public bool Derailed { get; set; } = false;
         public double PositionAlongTrack { get; set; } = 0;
-        public Vector3 Position { get; set; } = Vector3.zero;
-        public Quaternion Rotation { get; set; } = Quaternion.identity;
 
         public void Deserialize(DeserializeEvent e)
         {
             TrackName = e.Reader.ReadString();
             Derailed = e.Reader.ReadBoolean();
             PositionAlongTrack = e.Reader.ReadDouble();
-            Position = e.Reader.ReadVector3();
-            Rotation = e.Reader.ReadQuaternion();
         }
 
         public void Serialize(SerializeEvent e)
@@ -71,8 +67,6 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(TrackName);
             e.Writer.Write(Derailed);
             e.Writer.Write(PositionAlongTrack);
-            e.Writer.Write(Position);
-            e.Writer.Write(Rotation);
         }
     }
 }

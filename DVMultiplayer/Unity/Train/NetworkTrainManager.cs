@@ -1,4 +1,4 @@
-﻿using DarkRift;
+using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 using DV;
@@ -1308,8 +1308,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         TrackName = bogie.HasDerailed ? "" : bogie.track.name,
                         Derailed = bogie.HasDerailed,
                         PositionAlongTrack = bogie.HasDerailed ? 0 : bogie.traveller.pointRelativeSpan + bogie.traveller.curPoint.span,
-                        Position = bogie.transform.position,
-                        Rotation = bogie.transform.rotation
                     });
                 }
 
