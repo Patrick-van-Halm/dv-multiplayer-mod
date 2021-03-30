@@ -35,6 +35,7 @@ namespace DVMultiplayer.DTO.Train
 
         // Damage
         public float CarHealth { get; set; }
+        public string CarHealthData { get; set; } = "";
 
         // Locomotive (Only set if item is locomotive)
         public float Throttle { get; set; } = 0;
@@ -70,6 +71,7 @@ namespace DVMultiplayer.DTO.Train
             Bogies = e.Reader.ReadSerializables<TrainBogie>();
 
             CarHealth = e.Reader.ReadSingle();
+            CarHealthData = e.Reader.ReadString();
 
             IsFrontCouplerCoupled = e.Reader.ReadNullableBoolean();
             IsRearCouplerCoupled = e.Reader.ReadNullableBoolean();
@@ -122,6 +124,7 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(Bogies);
 
             e.Writer.Write(CarHealth);
+            e.Writer.Write(CarHealthData);
 
             e.Writer.Write(IsFrontCouplerCoupled);
             e.Writer.Write(IsRearCouplerCoupled);

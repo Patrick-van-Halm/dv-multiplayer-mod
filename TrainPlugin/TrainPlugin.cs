@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.45");
+        public override Version Version => new Version("1.6.46");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -376,6 +376,7 @@ namespace TrainPlugin
                 {
                     case DamageType.Car:
                         train.CarHealth = damage.NewHealth;
+                        train.CarHealthData = damage.Data;
                         break;
 
                     case DamageType.Cargo:

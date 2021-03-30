@@ -2,6 +2,7 @@ using DV.Logic.Job;
 using DVMultiplayer;
 using DVMultiplayer.DTO.Train;
 using DVMultiplayer.Networking;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -83,8 +84,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
             if (trainCar.IsLoco)
             {
                 authorityCoro = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
-                trainCar.TrainsetChanged += TrainCar_TrainsetChanged;
             }
+            trainCar.TrainsetChanged += TrainCar_TrainsetChanged;
             SetAuthority(true);
         }
         else
@@ -95,9 +96,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainCar_TrainsetChanged(Trainset set)
     {
+        //Issue with trainset being detatched in the middle positioning not updating correctly.
         if (set.locoIndices.Count == 0 && set.firstCar == trainCar)
             StartCoroutine(ResetAuthorityToHostWhenStationary(set));
-        resetAuthority = true;
+        else if(set.locoIndices.Count != 0)
+            resetAuthority = true;
     }
 
     private IEnumerator ResetAuthorityToHostWhenStationary(Trainset set)
@@ -128,7 +131,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             yield return new WaitForSeconds(.1f);
 
-            if (serverState != null && SingletonBehaviour<NetworkPlayerManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Exists && trainCar && trainCar.trainset.cars[trainCar.trainset.locoIndices[0]] == trainCar)
+            if (serverState != null && SingletonBehaviour<NetworkPlayerManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Exists && trainCar)
             {
                 try
                 {
@@ -215,7 +218,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
                             if (playersInLoco.Length > 0)
                             {
                                 player = playersInLoco[0];
-                                authNeedsChange = true;
                             }
                             if (!player)
                             {
@@ -227,21 +229,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
                                     if (playersInLoco.Length > 0)
                                     {
                                         player = playersInLoco[0];
-                                        authNeedsChange = true;
                                         break;
-                                    }
-                                }
-                                if (!player)
-                                {
-                                    foreach (int locoId in trainCar.trainset.locoIndices)
-                                    {
-                                        TrainCar loco = trainCar.trainset.cars[locoId];
-                                        ushort id = loco.GetComponent<NetworkTrainPosSync>().serverState.AuthorityPlayerId;
-                                        if(id != playerManager.GetLocalPlayerSync().Id)
-                                        {
-                                            player = playerManager.GetPlayerById(id);
-                                            break;
-                                        }    
                                     }
                                 }
                                 if (!player)
@@ -390,7 +378,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Main.Log(ex.Message);
+            Main.Log($"NetworkTrainPosSync threw an exception: {ex.Message} inner exception: {ex.InnerException}");
         }
 
 
@@ -435,7 +423,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private IEnumerator ToggleDamageAfterSeconds(float seconds)
     {
-        trainCar.CarDamage.IgnoreDamage(true);
+        IgnoreDamage(true);
         trainCar.stress.EnableStress(false);
         trainCar.TrainCarCollisions.enabled = false;
         if (!hasLocalPlayerAuthority)
@@ -448,10 +436,20 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             trainCar.stress.EnableStress(true);
             trainCar.TrainCarCollisions.enabled = true;
-            trainCar.CarDamage.IgnoreDamage(false);
+            IgnoreDamage(false);
         }
 
         damageEnablerCoro = null;
+    }
+
+    private void IgnoreDamage(bool set)
+    {
+        switch (trainCar.carType)
+        {
+            case TrainCarType.LocoShunter:
+                trainCar.GetComponent<DamageControllerShunter>().IgnoreDamage(set);
+                break;
+        }
     }
 
     private IEnumerator ToggleKinematic(float seconds)
@@ -480,6 +478,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.Log($"Movement state changed is moving: {isMoving}");
         if(!isMoving && SingletonBehaviour<NetworkTrainManager>.Exists)
         {
+            trainCar.stress.EnableStress(false);
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, true);
             prevPos = trainCar.transform.position;
         }
@@ -519,36 +518,57 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void OnCargoDamageTaken(float _)
     {
-        if (!hasLocalPlayerAuthority && !SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork && trainCar.CargoDamage.currentHealth != serverState.CargoHealth)
-            trainCar.CargoDamage.LoadCargoDamageState(serverState.CargoHealth);
+        if (serverState is null)
+            return;
 
-        if (!IsCarDamageEnabled && hasLocalPlayerAuthority && trainCar.CargoDamage.currentHealth != serverState.CargoHealth)
-        {
-            Main.Log($"Cargo took damage but should be ignored");
+        if ((!hasLocalPlayerAuthority || !IsCarDamageEnabled && hasLocalPlayerAuthority) && Math.Round(trainCar.CarDamage.currentHealth, 2) != Math.Round(serverState.CarHealth, 2))
             trainCar.CargoDamage.LoadCargoDamageState(serverState.CargoHealth);
-        }
 
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || !IsCarDamageEnabled)
             return;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(trainCar.CarGUID, DamageType.Cargo, trainCar.CargoDamage.currentHealth);
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(trainCar.CarGUID, DamageType.Cargo, trainCar.CargoDamage.currentHealth, "");
     }
 
     private void OnBodyDamageTaken(float _)
     {
-        if (!hasLocalPlayerAuthority && !SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork && trainCar.CarDamage.currentHealth != serverState.CarHealth)
-            trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
+        if (serverState is null)
+            return;
 
-        if (!IsCarDamageEnabled && hasLocalPlayerAuthority && trainCar.CarDamage.currentHealth != serverState.CarHealth)
+        if ((!hasLocalPlayerAuthority || !IsCarDamageEnabled && hasLocalPlayerAuthority) && Math.Round(trainCar.CarDamage.currentHealth, 2) != Math.Round(serverState.CarHealth, 2))
         {
-            Main.Log($"Train took damage but should be ignored");
-            trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
+            if (trainCar.IsLoco)
+                LoadLocoDamage(serverState.CarHealthData);
+            else
+                trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
         }
 
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || !IsCarDamageEnabled)
             return;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(trainCar.CarGUID, DamageType.Car, trainCar.CarDamage.currentHealth);
+
+        string data = "";
+        if (trainCar.IsLoco)
+        {
+            switch (trainCar.carType)
+            {
+                case TrainCarType.LocoShunter:
+                    data = trainCar.GetComponent<DamageControllerShunter>().GetDamageSaveData().ToString(Newtonsoft.Json.Formatting.None);
+                    break;
+            }
+        }
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(trainCar.CarGUID, DamageType.Car, trainCar.CarDamage.currentHealth, data);
+    }
+
+    internal void LoadLocoDamage(string carHealthData)
+    {
+        switch(trainCar.carType)
+        {
+            case TrainCarType.LocoShunter:
+                trainCar.GetComponent<DamageControllerShunter>().LoadDamagesState(JObject.Parse(carHealthData));
+                break;
+        }
     }
 
     private IEnumerator UpdateLocation()
@@ -557,6 +577,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             yield return new WaitForSeconds(.005f);
             yield return new WaitUntil(() => Vector3.Distance(transform.position - WorldMover.currentMove, prevPos) > Mathf.Lerp(1e-3f, .25f, velocity.magnitude * 3.6f / 80) && !trainCar.isStationary);
+            if(!trainCar.stress.enabled)
+                trainCar.stress.EnableStress(true);
             //foreach (Bogie b in trainCar.Bogies)
             //{
             //    if (b.rb.IsSleeping())

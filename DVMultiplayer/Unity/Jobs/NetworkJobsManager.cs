@@ -43,7 +43,14 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
             foreach (StationController station in StationController.allStations)
             {
                 if (station.GetComponent<NetworkJobsSync>())
+                {
+                    foreach (JobChainController chainController in station.GetComponent<NetworkJobsSync>().currentChains)
+                    {
+                        chainController.JobChainCompleted -= OnJobChainCompleted;
+                        chainController.JobOfChainExpired -= OnJobInChainExpired;
+                    }
                     DestroyImmediate(station.GetComponent<NetworkJobsSync>());
+                }
             }
         }
         else

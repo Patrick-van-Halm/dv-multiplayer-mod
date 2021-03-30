@@ -161,7 +161,15 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         if (trainCar && trainCar.IsLoco)
         {
             StartCoroutine(ListenToTrainInputEvents(trainCar));
+            StartCoroutine(ResyncCarWithInteriorLoaded(trainCar));
         }
+    }
+
+    private IEnumerator ResyncCarWithInteriorLoaded(TrainCar car)
+    {
+        yield return new WaitUntil(() => car.IsInteriorLoaded);
+        yield return new WaitForSeconds(.1f);
+        ResyncCar(car);
     }
 
     private void NetworkTrainManager_OnTrainCarInitialized(TrainCar train)
@@ -278,18 +286,21 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 {
                     IsChangeByNetwork = true;
                     WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == damage.Guid);
-                    UpdateServerStateDamage(serverState, damage.DamageType, damage.NewHealth);
-                    SyncLocomotiveWithServerState(train, serverState);
+                    UpdateServerStateDamage(serverState, damage.DamageType, damage.NewHealth, damage.Data);
                     switch (damage.DamageType)
                     {
                         case DamageType.Car:
-                            train.CarDamage.LoadCarDamageState(damage.NewHealth);
+                            if (train.IsLoco)
+                                train.GetComponent<NetworkTrainPosSync>().LoadLocoDamage(damage.Data);
+                            else
+                                train.CarDamage.LoadCarDamageState(damage.NewHealth);
                             break;
 
                         case DamageType.Cargo:
                             train.CargoDamage.LoadCargoDamageState(damage.NewHealth);
                             break;
                     }
+                    SyncLocomotiveWithServerState(train, serverState);
                     IsChangeByNetwork = false;
                 }
             }
@@ -436,6 +447,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     if (train)
                     {
                         AddNetworkingScripts(train, null);
+                        ResyncCar(train);
                         Main.Log($"[CLIENT] < TRAIN_SWITCH: Train found: {train}, ID: {train.ID}, GUID: {train.CarGUID}");
                         targetPlayerSync.Train = train;
                     }
@@ -1104,13 +1116,13 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
     }
 
-    internal void SendCarDamaged(string carGUID, DamageType type, float amount)
+    internal void SendCarDamaged(string carGUID, DamageType type, float amount, string data)
     {
         if (!IsSynced)
             return;
 
         WorldTrain serverState = serverCarStates.FirstOrDefault(t => t.Guid == carGUID);
-        UpdateServerStateDamage(serverState, type, amount);
+        UpdateServerStateDamage(serverState, type, amount, data);
 
         using (DarkRiftWriter writer = DarkRiftWriter.Create())
         {
@@ -1118,7 +1130,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             {
                 Guid = carGUID,
                 DamageType = type,
-                NewHealth = amount
+                NewHealth = amount,
+                Data = data
             });
             Main.Log($"[CLIENT] > TRAIN_DAMAGE");
             using (Message message = Message.Create((ushort)NetworkTags.TRAIN_DAMAGE, writer))
@@ -1382,7 +1395,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         {
             UpdateServerStateLeverChange(serverCarStates.FirstOrDefault(t => t.Guid == train.CarGUID), lever, value);
         }
-        Main.Log($"[CLIENT] > TRAIN_LEVER: TrainID: {train.ID}, Lever: {lever}, value: {value}");
+        //Main.Log($"[CLIENT] > TRAIN_LEVER: TrainID: {train.ID}, Lever: {lever}, value: {value}");
         if (!train.IsLoco)
             return;
 
@@ -1800,12 +1813,14 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     {
                         ShunterDashboardControls shunterDashboard = train.interior.GetComponentInChildren<ShunterDashboardControls>();
                         Main.Log($"Shunter dashboard found {shunterDashboard != null}");
-                        Main.Log($"Sync engine state");
+                        Main.Log($"Sync engine state isOn: {shunter.IsEngineOn}");
                         if (!shunter.IsEngineOn)
                         {
-                            Main.Log($"Sync engine fuses");
+                            Main.Log($"Sync engine fuse 1");
                             shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse1On ? 1 : 0);
+                            Main.Log($"Sync engine fuse 2");
                             shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse2On ? 1 : 0);
+                            Main.Log($"Sync engine main fuse");
                             shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().SetValue(shunter.IsMainFuseOn ? 1 : 0);
                         }
                     }
@@ -1837,7 +1852,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(newTrain, serverState, true));
         localCars.Add(newTrain);
-        newTrain.CarDamage.IgnoreDamage(false);
 
         return newTrain;
     }
@@ -1884,11 +1898,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void SyncDamageWithServerState(TrainCar trainCar, WorldTrain serverState)
     {
-        trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
-        if (!trainCar.IsLoco)
-        {
-            trainCar.CargoDamage.LoadCargoDamageState(serverState.CargoHealth);
-        }
+        if (trainCar.IsLoco && trainCar.GetComponent<NetworkTrainPosSync>())
+            trainCar.GetComponent<NetworkTrainPosSync>().LoadLocoDamage(serverState.CarHealthData);
+        else
+            trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
     }
 
     internal WorldTrain[] GenerateServerCarsData(IEnumerable<TrainCar> cars)
@@ -1913,6 +1926,17 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 });
             }
 
+            string carHealthData = "";
+            if (car.IsLoco)
+            {
+                switch (car.carType)
+                {
+                    case TrainCarType.LocoShunter:
+                        carHealthData = car.GetComponent<DamageControllerShunter>().GetDamageSaveData().ToString(Newtonsoft.Json.Formatting.None);
+                        break;
+                }
+            }
+
             WorldTrain train = new WorldTrain()
             {
                 Guid = car.CarGUID,
@@ -1932,7 +1956,8 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 IsPlayerSpawned = car.playerSpawnedCar,
                 IsRemoved = false,
                 IsStationary = true,
-                CarHealth = car.CarDamage.currentHealth
+                CarHealth = car.CarDamage.currentHealth,
+                CarHealthData = carHealthData
             };
 
             if (car.IsLoco && car.carType != TrainCarType.HandCar)
@@ -2093,12 +2118,13 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
     }
 
-    private void UpdateServerStateDamage(WorldTrain serverState, DamageType type, float value)
+    private void UpdateServerStateDamage(WorldTrain serverState, DamageType type, float value, string data)
     {
         switch (type)
         {
             case DamageType.Car:
                 serverState.CargoHealth = value;
+                serverState.CarHealthData = data;
                 break;
 
             case DamageType.Cargo:
@@ -2128,7 +2154,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     internal TrainCar GetAuthorityCar()
     {
-        return localCars.FirstOrDefault(t => t.GetComponent<NetworkTrainPosSync>().hasLocalPlayerAuthority);
+        if (localCars != null && localCars.Count > 0)
+            return localCars.FirstOrDefault(t => t.GetComponent<NetworkTrainPosSync>() && t.GetComponent<NetworkTrainPosSync>().hasLocalPlayerAuthority);
+        else
+            return null;
     }
 
     private void AddNetworkingScripts(TrainCar car, WorldTrain selectedTrain)
