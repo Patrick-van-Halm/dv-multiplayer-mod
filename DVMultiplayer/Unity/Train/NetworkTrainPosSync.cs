@@ -566,6 +566,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
             case TrainCarType.LocoShunter:
                 trainCar.GetComponent<DamageControllerShunter>().LoadDamagesState(JObject.Parse(carHealthData));
                 break;
+
+            default:
+                trainCar.GetComponent<DamageController>().LoadDamagesState(JObject.Parse(carHealthData));
+                break;
         }
     }
 
