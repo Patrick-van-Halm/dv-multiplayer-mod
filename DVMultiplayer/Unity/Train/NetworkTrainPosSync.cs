@@ -129,7 +129,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             yield return new WaitForSeconds(.1f);
 
-            if (serverState != null && SingletonBehaviour<NetworkPlayerManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Exists && trainCar)
+            if (serverState != null && SingletonBehaviour<NetworkPlayerManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Exists && trainCar && trainCar.logicCar != null)
             {
                 try
                 {
