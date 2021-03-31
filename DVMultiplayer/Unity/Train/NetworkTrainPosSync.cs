@@ -99,8 +99,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         //Issue with trainset being detatched in the middle positioning not updating correctly.
         if (set.locoIndices.Count == 0 && set.firstCar == trainCar)
             StartCoroutine(ResetAuthorityToHostWhenStationary(set));
-        else if(set.locoIndices.Count != 0)
-            resetAuthority = true;
     }
 
     private IEnumerator ResetAuthorityToHostWhenStationary(Trainset set)
