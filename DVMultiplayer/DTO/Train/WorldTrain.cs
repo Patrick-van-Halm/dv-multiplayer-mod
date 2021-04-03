@@ -26,12 +26,12 @@ namespace DVMultiplayer.DTO.Train
         public TrainBogie[] Bogies { get; set; }
 
         // Couplers
-        public bool? IsFrontCouplerCoupled { get; set; } = null;
-        public bool? IsRearCouplerCoupled { get; set; } = null;
-        public bool? IsFrontCouplerCockOpen { get; set; } = null;
-        public bool? IsRearCouplerCockOpen { get; set; } = null;
-        public bool? IsFrontCouplerHoseConnected { get; set; } = null;
-        public bool? IsRearCouplerHoseConnected { get; set; } = null;
+        public bool IsFrontCouplerCoupled { get; set; } = false;
+        public bool IsRearCouplerCoupled { get; set; } = false;
+        public bool IsFrontCouplerCockOpen { get; set; } = false;
+        public bool IsRearCouplerCockOpen { get; set; } = false;
+        public bool IsFrontCouplerHoseConnected { get; set; } = false;
+        public bool IsRearCouplerHoseConnected { get; set; } = false;
 
         // Damage
         public float CarHealth { get; set; }
@@ -73,12 +73,12 @@ namespace DVMultiplayer.DTO.Train
             CarHealth = e.Reader.ReadSingle();
             CarHealthData = e.Reader.ReadString();
 
-            IsFrontCouplerCoupled = e.Reader.ReadNullableBoolean();
-            IsRearCouplerCoupled = e.Reader.ReadNullableBoolean();
-            IsFrontCouplerCockOpen = e.Reader.ReadNullableBoolean();
-            IsRearCouplerCockOpen = e.Reader.ReadNullableBoolean();
-            IsFrontCouplerHoseConnected = e.Reader.ReadNullableBoolean();
-            IsRearCouplerHoseConnected = e.Reader.ReadNullableBoolean();
+            IsFrontCouplerCoupled = e.Reader.ReadBoolean();
+            IsRearCouplerCoupled = e.Reader.ReadBoolean();
+            IsFrontCouplerCockOpen = e.Reader.ReadBoolean();
+            IsRearCouplerCockOpen = e.Reader.ReadBoolean();
+            IsFrontCouplerHoseConnected = e.Reader.ReadBoolean();
+            IsRearCouplerHoseConnected = e.Reader.ReadBoolean();
 
             IsPlayerSpawned = e.Reader.ReadBoolean();
             AuthorityPlayerId = e.Reader.ReadUInt16();

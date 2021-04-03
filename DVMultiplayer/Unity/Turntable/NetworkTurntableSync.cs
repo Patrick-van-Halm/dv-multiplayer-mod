@@ -85,7 +85,7 @@ internal class NetworkTurntableSync : MonoBehaviour
 
     private void Update()
     {
-        if (!SingletonBehaviour<NetworkTurntableManager>.Instance)
+        if (!SingletonBehaviour<NetworkTurntableManager>.Exists || !SingletonBehaviour<NetworkPlayerManager>.Exists || !turntable)
             return;
 
         List<TrainCar> currentCarsOnTurntable = new List<TrainCar>();

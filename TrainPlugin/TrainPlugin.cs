@@ -12,9 +12,9 @@ namespace TrainPlugin
 {
     public class TrainPlugin : Plugin
     {
-        public override bool ThreadSafe => false;
+        public override bool ThreadSafe => true;
 
-        public override Version Version => new Version("1.6.46");
+        public override Version Version => new Version("1.6.47");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -222,14 +222,17 @@ namespace TrainPlugin
                     SendDelayedMessage(authChange, NetworkTags.TRAIN_AUTH_CHANGE, cl, (int)sentTo.OrderByDescending(c => c.RoundTripTime.SmoothedRtt).First().RoundTripTime.SmoothedRtt / 2 * 1000);
                 sentTo.Add(cl);
 
-                foreach(IClient client in players.Except(sentTo))
+                foreach(IClient client in players)
                 {
-                    using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                    if(!sentTo.Any(c => c.ID == client.ID))
                     {
-                        writer.Write(authChange);
-                        using (Message msg = Message.Create((ushort)NetworkTags.TRAIN_AUTH_CHANGE, writer))
+                        using (DarkRiftWriter writer = DarkRiftWriter.Create())
                         {
-                            client.SendMessage(msg, SendMode.Reliable);
+                            writer.Write(authChange);
+                            using (Message msg = Message.Create((ushort)NetworkTags.TRAIN_AUTH_CHANGE, writer))
+                            {
+                                client.SendMessage(msg, SendMode.Reliable);
+                            }
                         }
                     }
                 }

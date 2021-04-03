@@ -10,9 +10,9 @@ namespace TurntablePlugin
 {
     public class TurntablePlugin : Plugin
     {
-        public override bool ThreadSafe => false;
+        public override bool ThreadSafe => true;
 
-        public override Version Version => new Version("1.0.10");
+        public override Version Version => new Version("1.0.11");
 
         private readonly List<Turntable> turntableStates = new List<Turntable>();
 

@@ -1612,44 +1612,37 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
     private void ResyncCoupling(TrainCar train, WorldTrain serverState)
     {
-        if (serverState.IsFrontCouplerCoupled.HasValue && serverState.IsFrontCouplerCoupled.Value && !train.frontCoupler.coupledTo)
+        // Front coupler check
+        if (serverState.IsFrontCouplerCoupled && !train.frontCoupler.coupledTo && serverState.IsFrontCouplerHoseConnected && serverState.IsFrontCouplerCockOpen)
+            train.frontCoupler.TryCouple(false);
+        else if(serverState.IsFrontCouplerCoupled && !train.frontCoupler.coupledTo && !serverState.IsFrontCouplerHoseConnected || !serverState.IsFrontCouplerCockOpen)
+            train.frontCoupler.TryCouple(false, true);
+        
+        if(serverState.IsFrontCouplerHoseConnected || serverState.IsFrontCouplerCockOpen)
         {
-            if (serverState.IsFrontCouplerCockOpen.HasValue && serverState.IsFrontCouplerHoseConnected.HasValue)
-            {
-                if (serverState.IsFrontCouplerCockOpen.Value && serverState.IsFrontCouplerHoseConnected.Value)
-                    train.frontCoupler.TryCouple(false);
-                else
-                    train.frontCoupler.TryCouple(false, true);
-            }
-        }
-        else
-        {
-            if (serverState.IsFrontCouplerCockOpen.HasValue && serverState.IsFrontCouplerCockOpen.Value && !train.frontCoupler.IsCockOpen)
+            if (serverState.IsFrontCouplerCockOpen && !train.frontCoupler.IsCockOpen)
                 train.frontCoupler.IsCockOpen = true;
 
-            if (serverState.IsFrontCouplerHoseConnected.HasValue && serverState.IsFrontCouplerHoseConnected.Value && !train.frontCoupler.GetAirHoseConnectedTo() && train.frontCoupler.GetFirstCouplerInRange())
-                train.frontCoupler.ConnectAirHose(train.frontCoupler.GetFirstCouplerInRange(), false);
+            if (serverState.IsFrontCouplerHoseConnected && !train.frontCoupler.GetAirHoseConnectedTo() && train.frontCoupler.GetFirstCouplerInRange(3))
+                train.frontCoupler.ConnectAirHose(train.frontCoupler.GetFirstCouplerInRange(3), false);
         }
 
-        if (serverState.IsRearCouplerCoupled.HasValue && serverState.IsRearCouplerCoupled.Value && !train.rearCoupler.coupledTo)
+        // Rear coupler check
+        if (serverState.IsRearCouplerCoupled && !train.rearCoupler.coupledTo && serverState.IsRearCouplerCockOpen && serverState.IsRearCouplerHoseConnected)
+            train.rearCoupler.TryCouple(false);
+        else if(serverState.IsRearCouplerCoupled && !train.rearCoupler.coupledTo && !serverState.IsRearCouplerCockOpen || !serverState.IsRearCouplerHoseConnected)
+            train.rearCoupler.TryCouple(false, true);
+        
+        if(serverState.IsRearCouplerCockOpen || serverState.IsRearCouplerHoseConnected)
         {
-            if (serverState.IsRearCouplerCockOpen.HasValue && serverState.IsRearCouplerHoseConnected.HasValue)
-            {
-                if (serverState.IsRearCouplerCockOpen.Value && serverState.IsRearCouplerHoseConnected.Value)
-                    train.rearCoupler.TryCouple(false);
-                else
-                    train.rearCoupler.TryCouple(false, true);
-            }
-        }
-        else
-        {
-            if (serverState.IsRearCouplerCockOpen.HasValue && serverState.IsRearCouplerCockOpen.Value && !train.rearCoupler.IsCockOpen)
+            if (serverState.IsRearCouplerCockOpen && !train.rearCoupler.IsCockOpen)
                 train.rearCoupler.IsCockOpen = true;
 
-            if (serverState.IsRearCouplerHoseConnected.HasValue && serverState.IsRearCouplerHoseConnected.Value && !train.rearCoupler.GetAirHoseConnectedTo() && train.rearCoupler.GetFirstCouplerInRange())
-                train.rearCoupler.ConnectAirHose(train.rearCoupler.GetFirstCouplerInRange(), false);
+            if (serverState.IsRearCouplerHoseConnected && !train.rearCoupler.GetAirHoseConnectedTo() && train.rearCoupler.GetFirstCouplerInRange(3))
+                train.rearCoupler.ConnectAirHose(train.rearCoupler.GetFirstCouplerInRange(3), false);
         }
 
+        // MU check
         if(serverState.CarType == TrainCarType.LocoShunter)
         {
             if(serverState.MultipleUnit.IsFrontMUConnectedTo != "")
@@ -1758,7 +1751,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             IsChangeByNetwork = false;
         }
 
-        foreach (WorldTrain selectedTrain in serverCarStates.Where(t => (t.IsFrontCouplerCoupled.HasValue && t.IsFrontCouplerCoupled.Value) || (t.IsRearCouplerCoupled.HasValue && t.IsRearCouplerCoupled.Value)))
+        foreach (WorldTrain selectedTrain in serverCarStates.Where(t => t.IsFrontCouplerCoupled || t.IsRearCouplerCoupled))
         {
             IsChangeByNetwork = true;
             Main.Log($"Synching train: {selectedTrain.Guid}.");
@@ -1897,9 +1890,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     }
 
     private void SyncDamageWithServerState(TrainCar trainCar, WorldTrain serverState)
-    {
+    {   
         if (trainCar.IsLoco && trainCar.GetComponent<NetworkTrainPosSync>())
-            trainCar.GetComponent<NetworkTrainPosSync>().LoadLocoDamage(serverState.CarHealthData);
+            if(serverState.CarHealthData != "")
+                trainCar.GetComponent<NetworkTrainPosSync>().LoadLocoDamage(serverState.CarHealthData);
         else
             trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
     }
