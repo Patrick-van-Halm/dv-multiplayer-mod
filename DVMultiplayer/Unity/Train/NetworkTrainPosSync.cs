@@ -130,7 +130,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             yield return new WaitForSeconds(.1f);
 
-            if (serverState != null && SingletonBehaviour<NetworkPlayerManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Exists && trainCar && trainCar.logicCar != null)
+            if (serverState != null && SingletonBehaviour<NetworkPlayerManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Exists && trainCar && trainCar.logicCar != null && trainCar.trainset.cars[trainCar.trainset.locoIndices[0]] == trainCar)
             {
                 try
                 {
@@ -151,13 +151,15 @@ internal class NetworkTrainPosSync : MonoBehaviour
                                 TrainCar authorianCar = currentAuthoritarian.GetComponent<NetworkPlayerSync>().Train;
                                 bool areConditionsMet = false;
                                 // Check the conditions when to give away authority
-                                if (authorianCar && (!authorianCar.IsLoco || !authorianCar.trainset.cars.Contains(trainCar)) || (!authorianCar))
+                                if (!authorianCar)
                                     areConditionsMet = true;
-
+                                else if (trainCar != authorianCar)
+                                    areConditionsMet = true;
+                                
                                 // If conditions are met and speed is less then 1 km/h check if it needs to give away authority
                                 if (areConditionsMet && velocity.magnitude * 3.6f < 1)
                                 {
-                                    player = GetPlayerAuthorityReplacement(!authorianCar.trainset.cars.Contains(trainCar));
+                                    player = GetPlayerAuthorityReplacement(authorianCar && !authorianCar.trainset.cars.Contains(trainCar));
                                     if (player)
                                         authNeedsChange = true;
                                 }
@@ -315,7 +317,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         try
         {
-            if (!hasLocalPlayerAuthority && !willLocalPlayerGetAuthority)
+            if (!hasLocalPlayerAuthority && !willLocalPlayerGetAuthority && transform.position != newPos + WorldMover.currentMove)
             {
                 float increment = (velocity.magnitude * 3f);
                 if (increment <= 5f && turntable)
@@ -331,35 +333,29 @@ internal class NetworkTrainPosSync : MonoBehaviour
                     increment = 1;
 
                 float step = increment * Time.deltaTime; // calculate distance to move
-                if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > Mathf.Lerp(1e-3f, .25f, velocity.magnitude * 3.6f / 80))
+                foreach (Bogie b in trainCar.Bogies)
                 {
-                    foreach (Bogie b in trainCar.Bogies)
+                    if(b.rb)
+                        b.rb.isKinematic = true;
+                }
+                trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
+                foreach (Bogie b in trainCar.Bogies)
+                {
+                    if (b.rb)
                     {
-                        if(b.rb)
-                            b.rb.isKinematic = true;
-                    }
-                    trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
-                    foreach (Bogie b in trainCar.Bogies)
-                    {
-                        if (b.rb)
-                        {
-                            b.ResetBogiesToStartPosition();
-                            b.rb.isKinematic = false;
-                        }
+                        b.ResetBogiesToStartPosition();
+                        b.rb.isKinematic = false;
                     }
                 }
 
-                if (newRot != Quaternion.identity && Quaternion.Angle(transform.rotation, newRot) > 1e-3f)
+                //Main.Log($"Rotating train");
+                if (!turntable)
                 {
-                    //Main.Log($"Rotating train");
-                    if (!turntable)
-                    {
-                        trainCar.rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, newRot, step));
-                    }
-                    else
-                    {
-                        trainCar.rb.MoveRotation(newRot);
-                    }
+                    trainCar.rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, newRot, step));
+                }
+                else
+                {
+                    trainCar.rb.MoveRotation(newRot);
                 }
             }
         }
