@@ -47,6 +47,13 @@ namespace DVMultiplayer
                 GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"{hasAuthority}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
                 ypos += 20;
             }
+            else if (NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Exists && !PlayerManager.Car)
+            {
+                var authCar = SingletonBehaviour<NetworkTrainManager>.Instance.GetAuthorityCar().ID;
+                GUI.Label(new Rect(Screen.width - 245, ypos, 150, 20), $"Has Authority Over:");
+                GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"{authCar}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
+                ypos += 20;
+            }
 
             // Connection Status
             GUI.Label(new Rect(Screen.width - 245, ypos, 117, 20), $"Connection State:");
