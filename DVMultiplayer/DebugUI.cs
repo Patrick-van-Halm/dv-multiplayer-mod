@@ -70,7 +70,7 @@ namespace DVMultiplayer
                         username = playerSync.Username;
                     else
                         username = playerSync.Id.ToString();
-                    GUI.Label(new Rect(Screen.width - 245, ypos, 117, 20), $"Player [{username}] train:");
+                    GUI.Label(new Rect(Screen.width - 245, ypos, 200, 20), $"Player [{username}] train:");
                     if (playerSync.Train)
                         GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"{playerSync.Train.ID}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
                     else
@@ -79,7 +79,7 @@ namespace DVMultiplayer
 
                     if (playerSync.Train && playerSync.Train.IsLoco)
                     {
-                        var serverState = SingletonBehaviour<NetworkTrainManager>.Instance.GetServerStateById(playerSync.Train.ID);
+                        var serverState = SingletonBehaviour<NetworkTrainManager>.Instance.GetServerStateById(playerSync.Train.CarGUID);
                         bool hasAuthority = serverState.AuthorityPlayerId == playerSync.Id;
                         GUI.Label(new Rect(Screen.width - 245, ypos, 187, 20), $"Has Authority:");
                         GUI.Label(new Rect(Screen.width - 53, ypos - 1, 47, 20), $"{hasAuthority}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
