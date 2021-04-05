@@ -49,9 +49,12 @@ namespace DVMultiplayer
             }
             else if (NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Exists && !PlayerManager.Car)
             {
-                var authCar = SingletonBehaviour<NetworkTrainManager>.Instance.GetAuthorityCar().ID;
+                var authCar = SingletonBehaviour<NetworkTrainManager>.Instance.GetAuthorityCar();
                 GUI.Label(new Rect(Screen.width - 245, ypos, 150, 20), $"Has Authority Over:");
-                GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"{authCar}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
+                if(authCar)
+                    GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"{authCar.ID}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
+                else
+                    GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"None", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
                 ypos += 20;
             }
 
