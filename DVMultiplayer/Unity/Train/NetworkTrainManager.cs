@@ -1745,30 +1745,25 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             {
                 try
                 {
-                    if (train.frontCoupler.IsCoupled())
+                    if (train.frontCoupler.coupledTo)
                         train.frontCoupler.Uncouple(false);
-                    if (train.rearCoupler.IsCoupled())
+                    if (train.rearCoupler.coupledTo)
                         train.rearCoupler.Uncouple(false);
+                    
                 }
                 catch (Exception) { }
+                yield return new WaitUntil(() => !train.frontCoupler.coupledTo && !train.rearCoupler.coupledTo);
                 yield return FullResyncCar(train, selectedTrain);
             }
             IsChangeByNetwork = false;
         }
 
-        foreach (WorldTrain selectedTrain in serverCarStates.Where(t => t.IsFrontCouplerCoupled || t.IsRearCouplerCoupled))
+        foreach (WorldTrain selectedTrain in serverCarStates)
         {
             IsChangeByNetwork = true;
-            Main.Log($"Synching train: {selectedTrain.Guid}.");
-
+            Main.Log($"Synching train coupling: {selectedTrain.Guid}.");
             TrainCar train = localCars.FirstOrDefault(t => t.CarGUID == selectedTrain.Guid);
-
-            if (train)
-                try
-                {
-                    ResyncCoupling(train, selectedTrain);
-                }
-                catch (Exception) { }
+            ResyncCoupling(train, selectedTrain);
             IsChangeByNetwork = false;
         }
         IsSynced = true;
@@ -1811,16 +1806,12 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     {
                         ShunterDashboardControls shunterDashboard = train.interior.GetComponentInChildren<ShunterDashboardControls>();
                         Main.Log($"Shunter dashboard found {shunterDashboard != null}");
-                        Main.Log($"Sync engine state isOn: {shunter.IsEngineOn}");
-                        if (!shunter.IsEngineOn)
-                        {
-                            Main.Log($"Sync engine fuse 1");
-                            shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse1On ? 1 : 0);
-                            Main.Log($"Sync engine fuse 2");
-                            shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse2On ? 1 : 0);
-                            Main.Log($"Sync engine main fuse");
-                            shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().SetValue(shunter.IsMainFuseOn ? 1 : 0);
-                        }
+                        Main.Log($"Sync engine fuse 1");
+                        shunterDashboard.fuseBoxPowerController.sideFusesObj[0].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse1On ? 1 : 0);
+                        Main.Log($"Sync engine fuse 2");
+                        shunterDashboard.fuseBoxPowerController.sideFusesObj[1].GetComponent<ToggleSwitchBase>().SetValue(shunter.IsSideFuse2On ? 1 : 0);
+                        Main.Log($"Sync engine main fuse");
+                        shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().SetValue(shunter.IsMainFuseOn ? 1 : 0);
                     }
                     Main.Log($"Sync engine on");
                     controllerShunter.SetEngineRunning(shunter.IsEngineOn);

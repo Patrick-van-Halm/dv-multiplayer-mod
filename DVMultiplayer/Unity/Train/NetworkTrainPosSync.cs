@@ -128,93 +128,90 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     internal void CheckAuthorityChange()
     {
-        if (!trainCar || trainCar.logicCar == null)
+        if (!trainCar || trainCar.logicCar == null || !trainCar.IsLoco)
             return;
 
-        if (trainCar.IsLoco)
+        try
         {
-            try
+            // If not on turntable or no one is in control shed of turntable
+            if (turntable == null || turntable != null && !turntable.IsAnyoneInControlArea)
             {
-                // If not on turntable or no one is in control shed of turntable
-                if (turntable == null || turntable != null && !turntable.IsAnyoneInControlArea)
+                bool authNeedsChange = false;
+                GameObject newOwner = null;
+                GameObject currentOwner;
+                if (!hasLocalPlayerAuthority)
+                    currentOwner = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayerById(serverState.AuthorityPlayerId);
+                else
+                    currentOwner = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
+
+                // Should force authority change
+                if (!resetAuthority)
                 {
-                    bool authNeedsChange = false;
-                    GameObject newOwner = null;
-                    GameObject currentOwner;
-                    if (!hasLocalPlayerAuthority)
-                        currentOwner = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayerById(serverState.AuthorityPlayerId);
-                    else
-                        currentOwner = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
-
-                    // Should force authority change
-                    if (!resetAuthority)
+                    // Check if current owner is disconnected
+                    if (currentOwner)
                     {
-                        // Check if current owner is disconnected
-                        if (currentOwner)
-                        {
-                            // Get new owner that is valid
-                            newOwner = GetNewOwnerIfConditionsAreMet(currentOwner);
-                            authNeedsChange = newOwner is object;
-                        }
-                        else
-                        {
-                            // Give host authority if current client is disconnected
-                            newOwner = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
-                            authNeedsChange = true;
-                        }
+                        // Get new owner that is valid
+                        newOwner = GetNewOwnerIfConditionsAreMet(currentOwner);
+                        authNeedsChange = newOwner is object;
                     }
                     else
                     {
-                        // Force authority change
+                        // Give host authority if current client is disconnected
+                        newOwner = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
                         authNeedsChange = true;
-                        // Use host as fallback if no one is in control
-                        newOwner = GetPlayerAuthorityReplacement(true);
-                    }
-
-                    // If authority needs to be changed
-                    if (authNeedsChange)
-                    {
-                        NetworkPlayerSync newOwnerPlayerData = newOwner.GetComponent<NetworkPlayerSync>();
-                        bool shouldSendAuthChange = resetAuthority ? true : newOwnerPlayerData.Id != serverState.AuthorityPlayerId;
-
-                        // Check if the current authority is already given to the new owner
-                        if (newOwnerPlayerData.Id == serverState.AuthorityPlayerId && !shouldSendAuthChange)
-                        {
-                            // Check if all cars in the trainset have the correct authority
-                            shouldSendAuthChange = CheckTrainsetMismatchesAuthority(newOwnerPlayerData.Id);
-                        }
-
-                        // Check if authority still needs to be sent
-                        if (shouldSendAuthChange)
-                        {
-                            // Send authority change
-                            SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, newOwnerPlayerData.Id);
-                            resetAuthority = false;
-                        }
-                    }
-                    else
-                    {
-                        // Set the new owner to current owner
-                        if (newOwner == null)
-                            newOwner = currentOwner;
-                        NetworkPlayerSync newOwnerPlayerData = newOwner.GetComponent<NetworkPlayerSync>();
-
-                        // Send authority change if trainset mismatched
-                        if (CheckTrainsetMismatchesAuthority(newOwnerPlayerData.Id))
-                            SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, newOwnerPlayerData.Id);
                     }
                 }
                 else
                 {
-                    // Send authority change if on turntable based of turntable controller
-                    if (serverState.AuthorityPlayerId != turntable.playerAuthId)
-                        SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, turntable.playerAuthId);
+                    // Force authority change
+                    authNeedsChange = true;
+                    // Use host as fallback if no one is in control
+                    newOwner = GetPlayerAuthorityReplacement(true);
+                }
+
+                // If authority needs to be changed
+                if (authNeedsChange)
+                {
+                    NetworkPlayerSync newOwnerPlayerData = newOwner.GetComponent<NetworkPlayerSync>();
+                    bool shouldSendAuthChange = resetAuthority ? true : newOwnerPlayerData.Id != serverState.AuthorityPlayerId;
+
+                    // Check if the current authority is already given to the new owner
+                    if (newOwnerPlayerData.Id == serverState.AuthorityPlayerId && !shouldSendAuthChange)
+                    {
+                        // Check if all cars in the trainset have the correct authority
+                        shouldSendAuthChange = CheckTrainsetMismatchesAuthority(newOwnerPlayerData.Id);
+                    }
+
+                    // Check if authority still needs to be sent
+                    if (shouldSendAuthChange)
+                    {
+                        // Send authority change
+                        SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, newOwnerPlayerData.Id);
+                        resetAuthority = false;
+                    }
+                }
+                else
+                {
+                    // Set the new owner to current owner
+                    if (newOwner == null)
+                        newOwner = currentOwner;
+                    NetworkPlayerSync newOwnerPlayerData = newOwner.GetComponent<NetworkPlayerSync>();
+
+                    // Send authority change if trainset mismatched
+                    if (CheckTrainsetMismatchesAuthority(newOwnerPlayerData.Id))
+                        SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, newOwnerPlayerData.Id);
                 }
             }
-            catch (Exception ex)
+            else
             {
-                Main.Log($"Exception thrown in authority check. {ex.Message}");
+                // Send authority change if on turntable based of turntable controller
+                if (serverState.AuthorityPlayerId != turntable.playerAuthId)
+                    SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, turntable.playerAuthId);
             }
+        }
+        catch (Exception ex)
+        {
+            Main.Log($"Exception thrown in authority check. {ex.Message}");
         }
     }
 
@@ -238,8 +235,14 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private GameObject GetNewOwnerIfConditionsAreMet(GameObject currentOwner)
     {
-        if (velocity.magnitude * 3.6f >= 1 || tempFrontTrainsetWithAuthority != null || tempRearTrainsetWithAuthority != null)
+        if (tempFrontTrainsetWithAuthority != null || tempRearTrainsetWithAuthority != null)
             return null;
+
+        if(velocity.magnitude * 3.6f >= .2f)
+        {
+            StartCoroutine(WaitTilTrainIsStationaryThenRecheck());
+            return null;
+        }
 
         // Is like Playermanager.Car but then for all clients
         TrainCar currentOwnerCurrentCar = currentOwner.GetComponent<NetworkPlayerSync>().Train;
@@ -256,6 +259,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
             return GetPlayerAuthorityReplacement(useFallback);
 
         return null;
+    }
+
+    private IEnumerator WaitTilTrainIsStationaryThenRecheck()
+    {
+        yield return new WaitUntil(() => velocity.magnitude * 3.6f < 1);
+        CheckAuthorityChange();
     }
 
     private void GainAndReleaseAuthorityOfTrainsInRangeOfCurrent()
@@ -307,6 +316,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
             if (rearTrain.tempRearTrainsetWithAuthority == trainCar.trainset)
                 rearTrain.tempRearTrainsetWithAuthority = null;
+
+            frontTrain.CheckAuthorityChange();
+            rearTrain.CheckAuthorityChange();
+            CheckAuthorityChange();
         }
 
         if (collidedCouplerFront && collidedCouplerFront.GetComponent<Coupler>() && collidedCouplerFront.GetComponent<Coupler>().train != trainCar)
@@ -346,6 +359,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
             if (rearTrain.tempRearTrainsetWithAuthority == trainCar.trainset)
                 rearTrain.tempRearTrainsetWithAuthority = null;
+
+            frontTrain.CheckAuthorityChange();
+            rearTrain.CheckAuthorityChange();
+            CheckAuthorityChange();
         }
     }
 
@@ -500,7 +517,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             isStationary = trainCar.isStationary;
         }
 
-        if (hasLocalPlayerAuthority && (Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > Mathf.Lerp(1e-4f, .25f, velocity.magnitude * 3.6f / 50) || Quaternion.Angle(transform.rotation, newRot) > 1e-2f))
+        if (hasLocalPlayerAuthority && (Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > Mathf.Lerp(1e-4f, 1e-2f, velocity.magnitude * 3.6f / 50) || Quaternion.Angle(transform.rotation, newRot) > 1e-2f))
         {
             if (!trainCar.stress.enabled)
                 trainCar.stress.EnableStress(true);
@@ -666,7 +683,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainCar_MovementStateChanged(bool isMoving)
     {
-        if (!hasLocalPlayerAuthority)
+        if (!hasLocalPlayerAuthority || velocity.magnitude * 3.6f >= 1f && !isMoving)
             return;
 
         if(!isMoving)
@@ -734,7 +751,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (serverState is null)
             return;
 
-        if (!SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork && (!hasLocalPlayerAuthority || !IsCarDamageEnabled && hasLocalPlayerAuthority) && Math.Round(trainCar.CarDamage.currentHealth, 2) != Math.Round(serverState.CarHealth, 2))
+        if (!SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork && !SingletonBehaviour<NetworkDebtManager>.Instance.IsChangeByNetwork && (!hasLocalPlayerAuthority || !IsCarDamageEnabled && hasLocalPlayerAuthority) && Math.Round(trainCar.CarDamage.currentHealth, 2) != Math.Round(serverState.CarHealth, 2))
         {
             if (trainCar.IsLoco)
                 LoadLocoDamage(serverState.CarHealthData);
@@ -742,7 +759,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
         }
 
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || !IsCarDamageEnabled)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkDebtManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || !IsCarDamageEnabled)
             return;
 
 

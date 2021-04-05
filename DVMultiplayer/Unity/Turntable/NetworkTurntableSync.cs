@@ -127,7 +127,7 @@ internal class NetworkTurntableSync : MonoBehaviour
             if(currentCarsOnTurntable.Count == 0 || !currentCarsOnTurntable.Contains(car))
             {
                 carsOnTurntable.Remove(car);
-                if(car.logicCar != null)
+                if(car.logicCar != null && car.GetComponent<NetworkTrainPosSync>())
                 {
                     car.GetComponent<NetworkTrainPosSync>().turntable = null;
                     Main.Log($"Train: {car.CarGUID} left turntable");
@@ -139,7 +139,7 @@ internal class NetworkTurntableSync : MonoBehaviour
         {
             if (currentCarsOnTurntable.Count == 0 || !carsOnTurntable.Contains(car))
             {
-                if (car.logicCar != null)
+                if (car.logicCar != null && car.GetComponent<NetworkTrainPosSync>())
                 {
                     car.GetComponent<NetworkTrainPosSync>().turntable = this;
                     Main.Log($"Train: {car.CarGUID} entered turntable");
