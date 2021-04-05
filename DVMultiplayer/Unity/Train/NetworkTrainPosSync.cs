@@ -89,9 +89,19 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainCar_TrainsetChanged(Trainset set)
     {
+        if (isBeingDestroyed || set == null || set.firstCar == null || trainCar.logicCar == null || !trainCar)
+            return;
         //Issue with trainset being detatched in the middle positioning not updating correctly.
-        if (!isBeingDestroyed && set != null && set.firstCar != null && trainCar.logicCar != null && trainCar && set.locoIndices.Count == 0 && set.firstCar == trainCar)
+        if (set.locoIndices.Count == 0 && set.firstCar == trainCar)
             StartCoroutine(ResetAuthorityToHostWhenStationary(set));
+        else
+            CheckAuthorityChange();
+
+        if (!Trainset.allSets.Contains(tempFrontTrainsetWithAuthority))
+            tempFrontTrainsetWithAuthority = null;
+
+        if (!Trainset.allSets.Contains(tempRearTrainsetWithAuthority))
+            tempRearTrainsetWithAuthority = null;
     }
 
     private IEnumerator ResetAuthorityToHostWhenStationary(Trainset set)
@@ -116,7 +126,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         SingletonBehaviour<NetworkTrainManager>.Instance.CargoStateChanged(trainCar, type, true);
     }
 
-    private void CheckAuthorityChange()
+    internal void CheckAuthorityChange()
     {
         if (!trainCar || trainCar.logicCar == null)
             return;
@@ -228,7 +238,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private GameObject GetNewOwnerIfConditionsAreMet(GameObject currentOwner)
     {
-        if (velocity.magnitude * 3.6f >= 1)
+        if (velocity.magnitude * 3.6f >= 1 || tempFrontTrainsetWithAuthority != null || tempRearTrainsetWithAuthority != null)
             return null;
 
         // Is like Playermanager.Car but then for all clients
@@ -242,9 +252,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             return GetPlayerAuthorityReplacement(useFallback);
 
         // Check if player is in a different trainset that is not within couple range
-        if (!currentOwnerCurrentCar.trainset.cars.Contains(trainCar) && 
-            tempFrontTrainsetWithAuthority != currentOwnerCurrentCar.trainset && 
-            tempRearTrainsetWithAuthority != currentOwnerCurrentCar.trainset)
+        if (!currentOwnerCurrentCar.trainset.cars.Contains(trainCar))
             return GetPlayerAuthorityReplacement(useFallback);
 
         return null;
@@ -255,8 +263,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (!trainCar.rearCoupler || !trainCar.frontCoupler || velocity.magnitude * 3.6f <= .5f)
             return;
 
-        GameObject collidedCouplerRear = trainCar.rearCoupler.GetFirstCouplerInRange(5)?.gameObject;
-        GameObject collidedCouplerFront = trainCar.frontCoupler.GetFirstCouplerInRange(5)?.gameObject;
+        GameObject collidedCouplerRear = trainCar.rearCoupler.GetFirstCouplerInRange(3)?.gameObject;
+        GameObject collidedCouplerFront = trainCar.frontCoupler.GetFirstCouplerInRange(3)?.gameObject;
 
         if (collidedCouplerRear && collidedCouplerRear.GetComponent<Coupler>() && collidedCouplerRear.GetComponent<Coupler>().train != trainCar)
         {
@@ -282,6 +290,25 @@ internal class NetworkTrainPosSync : MonoBehaviour
             }
         }
 
+        if (!collidedCouplerRear && tempRearTrainsetWithAuthority != null)
+        {
+            var frontTrain = tempRearTrainsetWithAuthority.firstCar.GetComponent<NetworkTrainPosSync>();
+            var rearTrain = tempRearTrainsetWithAuthority.lastCar.GetComponent<NetworkTrainPosSync>();
+
+            tempRearTrainsetWithAuthority = null;
+            if (frontTrain.tempFrontTrainsetWithAuthority == trainCar.trainset)
+                frontTrain.tempFrontTrainsetWithAuthority = null;
+
+            if (frontTrain.tempRearTrainsetWithAuthority == trainCar.trainset)
+                frontTrain.tempRearTrainsetWithAuthority = null;
+
+            if (rearTrain.tempFrontTrainsetWithAuthority == trainCar.trainset)
+                rearTrain.tempFrontTrainsetWithAuthority = null;
+
+            if (rearTrain.tempRearTrainsetWithAuthority == trainCar.trainset)
+                rearTrain.tempRearTrainsetWithAuthority = null;
+        }
+
         if (collidedCouplerFront && collidedCouplerFront.GetComponent<Coupler>() && collidedCouplerFront.GetComponent<Coupler>().train != trainCar)
         {
             var coupler = collidedCouplerFront.GetComponent<Coupler>();
@@ -291,19 +318,34 @@ internal class NetworkTrainPosSync : MonoBehaviour
             {
                 if (tempFrontTrainsetWithAuthority != otherTrain.trainset)
                 {
-                    ushort gainer = otherTrainServerState.AuthorityPlayerId;
-                    if (tempFrontTrainsetWithAuthority == null)
-                        gainer = serverState.AuthorityPlayerId;
-
                     var trainSync = otherTrain.GetComponent<NetworkTrainPosSync>();
                     if (coupler.isFrontCoupler)
                         trainSync.tempFrontTrainsetWithAuthority = trainCar.trainset;
                     else
                         trainSync.tempRearTrainsetWithAuthority = trainCar.trainset;
-                    SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(otherTrain.trainset, gainer);
+                    SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(otherTrain.trainset, serverState.AuthorityPlayerId);
                     tempFrontTrainsetWithAuthority = otherTrain.trainset;
                 }
             }
+        }
+
+        if (!collidedCouplerFront && tempFrontTrainsetWithAuthority != null)
+        {
+            var frontTrain = tempFrontTrainsetWithAuthority.firstCar.GetComponent<NetworkTrainPosSync>();
+            var rearTrain = tempFrontTrainsetWithAuthority.lastCar.GetComponent<NetworkTrainPosSync>();
+
+            tempFrontTrainsetWithAuthority = null;
+            if (frontTrain.tempFrontTrainsetWithAuthority == trainCar.trainset)
+                frontTrain.tempFrontTrainsetWithAuthority = null;
+
+            if (frontTrain.tempRearTrainsetWithAuthority == trainCar.trainset)
+                frontTrain.tempRearTrainsetWithAuthority = null;
+
+            if (rearTrain.tempFrontTrainsetWithAuthority == trainCar.trainset)
+                rearTrain.tempFrontTrainsetWithAuthority = null;
+
+            if (rearTrain.tempRearTrainsetWithAuthority == trainCar.trainset)
+                rearTrain.tempRearTrainsetWithAuthority = null;
         }
     }
 
@@ -445,12 +487,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
                         trainCar.rb.MoveRotation(newRot);
                     }
                 }
-
-                if (NetworkManager.IsHost() && trainCar.trainset.firstCar == trainCar || trainCar.trainset.lastCar == trainCar)
-                {
-                    // This is to simulate impact
-                    GainAndReleaseAuthorityOfTrainsInRangeOfCurrent();
-                }
             }
         }
         catch (Exception ex)
@@ -492,7 +528,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         if (NetworkManager.IsHost())
         {
-            CheckAuthorityChange();
+            if (trainCar.trainset.firstCar == trainCar || trainCar.trainset.lastCar == trainCar)
+            {
+                // This is to simulate impact
+                GainAndReleaseAuthorityOfTrainsInRangeOfCurrent();
+            }
+            //CheckAuthorityChange();
         }
 
         //if(trainAudio == null)
