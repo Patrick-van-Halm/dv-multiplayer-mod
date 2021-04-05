@@ -592,13 +592,16 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (!hasLocalPlayerAuthority)
             return;
 
-        Main.Log($"Movement state changed is moving: {isMoving}");
-        if(!isMoving && SingletonBehaviour<NetworkTrainManager>.Exists)
+        if(!isMoving)
         {
             trainCar.stress.EnableStress(false);
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, true);
-            newPos = trainCar.transform.position - WorldMover.currentMove;
-            newRot = transform.rotation;
+            if (SingletonBehaviour<NetworkTrainManager>.Exists && trainCar.IsLoco)
+            {
+                Main.Log($"Movement state changed is moving: {isMoving}");
+                SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, true);
+                newPos = trainCar.transform.position - WorldMover.currentMove;
+                newRot = transform.rotation;
+            }
         }
     }
 
