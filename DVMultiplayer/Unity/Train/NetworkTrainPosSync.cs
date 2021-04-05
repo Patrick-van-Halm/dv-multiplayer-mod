@@ -13,8 +13,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
 {
     private TrainCar trainCar;
     internal WorldTrain serverState;
-    public bool isOutOfSync = false;
-    private Vector3 prevPos;
     private bool isStationary;
 
     private Vector3 newPos = Vector3.zero;
@@ -303,21 +301,27 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 if (increment == 0)
                     increment = 1;
 
-                if (Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > 5)
+                if (Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > 5 || isDerailed)
                 {
-                    foreach (Bogie b in trainCar.Bogies)
+                    if (!isDerailed)
                     {
-                        if (b.rb)
-                            b.rb.isKinematic = true;
+                        foreach (Bogie b in trainCar.Bogies)
+                        {
+                            if (b.rb)
+                                b.rb.isKinematic = true;
+                        }
                     }
                     trainCar.rb.MovePosition(newPos + WorldMover.currentMove);
                     trainCar.rb.MoveRotation(newRot);
-                    foreach (Bogie b in trainCar.Bogies)
+                    if (!isDerailed)
                     {
-                        if (b.rb)
+                        foreach (Bogie b in trainCar.Bogies)
                         {
-                            b.ResetBogiesToStartPosition();
-                            b.rb.isKinematic = false;
+                            if (b.rb)
+                            {
+                                b.ResetBogiesToStartPosition();
+                                b.rb.isKinematic = false;
+                            }
                         }
                     }
                 }
@@ -356,12 +360,13 @@ internal class NetworkTrainPosSync : MonoBehaviour
             Main.Log($"NetworkTrainPosSync threw an exception while updating position: {ex.Message} inner exception: {ex.InnerException}");
         }
 
-        if (hasLocalPlayerAuthority && velocity.magnitude * 3.6f > 1f && Vector3.Distance(transform.position - WorldMover.currentMove, prevPos) > Mathf.Lerp(1e-3f, .25f, velocity.magnitude * 3.6f / 80))
+        if (hasLocalPlayerAuthority && (Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > Mathf.Lerp(1e-3f, .25f, velocity.magnitude * 3.6f / 80) || Quaternion.Angle(transform.rotation, newRot) > 1e-1f))
         {
             if (!trainCar.stress.enabled)
                 trainCar.stress.EnableStress(true);
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar);
-            prevPos = transform.position - WorldMover.currentMove;
+            newPos = transform.position - WorldMover.currentMove;
+            newRot = transform.rotation;
 
             if (!turntable && !IsCarDamageEnabled)
             {
@@ -529,7 +534,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             trainCar.stress.EnableStress(false);
             SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, true);
-            prevPos = trainCar.transform.position;
+            newPos = trainCar.transform.position - WorldMover.currentMove;
+            newRot = transform.rotation;
         }
     }
 
@@ -548,7 +554,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         else
         {
-            prevPos = transform.position - WorldMover.currentMove;
+            newPos = transform.position - WorldMover.currentMove;
+            newRot = transform.rotation;
         }
 
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
