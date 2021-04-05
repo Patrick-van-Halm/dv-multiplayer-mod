@@ -153,7 +153,10 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         NetworkPlayerSync playerSync = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync();
         if (playerSync.Train && playerSync.Train.IsLoco)
+        {
             playerSync.Train.GetComponent<NetworkTrainSync>().listenToLocalPlayerInputs = false;
+            if (NetworkManager.IsHost()) playerSync.Train.GetComponent<NetworkTrainPosSync>().CheckAuthorityChange();
+        }
 
         playerSync.Train = trainCar;
         SendPlayerCarChange(trainCar);
@@ -439,6 +442,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 if (changedCar.TrainId == "")
                 {
                     Main.Log($"[CLIENT] < TRAIN_SWITCH: Player left train");
+                    if (NetworkManager.IsHost()) targetPlayerSync.Train.GetComponent<NetworkTrainPosSync>().CheckAuthorityChange();
                     targetPlayerSync.Train = null;
                 }
                 else
@@ -449,7 +453,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         AddNetworkingScripts(train, null);
                         ResyncCar(train);
                         Main.Log($"[CLIENT] < TRAIN_SWITCH: Train found: {train}, ID: {train.ID}, GUID: {train.CarGUID}");
+                        if (NetworkManager.IsHost()) targetPlayerSync.Train.GetComponent<NetworkTrainPosSync>().CheckAuthorityChange();
                         targetPlayerSync.Train = train;
+                        if (NetworkManager.IsHost()) targetPlayerSync.Train.GetComponent<NetworkTrainPosSync>().CheckAuthorityChange();
                     }
                     else
                     {
