@@ -451,8 +451,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.Log($"Set kinematic state {!gain}");
         trainCar.rb.isKinematic = !gain;
 
-        Main.Log($"Start position updater");
-
         if (trainCar.carType == TrainCarType.LocoShunter)
         {
             shunterExhaust.emitterVelocityMode = gain ? ParticleSystemEmitterVelocityMode.Rigidbody : ParticleSystemEmitterVelocityMode.Transform;
