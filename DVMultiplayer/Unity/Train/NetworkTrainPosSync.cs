@@ -29,6 +29,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
     ShunterLocoSimulation shunterLocoSimulation = null;
     ParticleSystem.MainModule shunterExhaust;
     private bool isBeingDestroyed;
+    internal Trainset tempFrontTrainsetWithAuthority;
+    internal Trainset tempRearTrainsetWithAuthority;
 
     //private TrainAudio trainAudio;
     //private BogieAudioController[] bogieAudios;
@@ -118,12 +120,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
     {
         if (!trainCar || trainCar.logicCar == null)
             return;
-
-        if (trainCar.trainset.firstCar == trainCar || trainCar.trainset.lastCar == trainCar)
-        {
-            // This is to simulate impact
-            CheckTrainsInRangeOfCurrent();
-        }
 
         if (trainCar.IsLoco)
         {
@@ -232,47 +228,81 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private GameObject GetNewOwnerIfConditionsAreMet(GameObject currentOwner)
     {
+        if (velocity.magnitude * 3.6f >= 1)
+            return null;
+
         // Is like Playermanager.Car but then for all clients
         TrainCar currentOwnerCurrentCar = currentOwner.GetComponent<NetworkPlayerSync>().Train;
 
-        // Check the conditions when to give away authority
-        bool areConditionsMet = false;
-        if (!currentOwnerCurrentCar)
-            areConditionsMet = true;
-        else if (trainCar != currentOwnerCurrentCar && !currentOwnerCurrentCar.trainset.cars.Contains(trainCar))
-            areConditionsMet = true;
+        // Set fallback option
+        bool useFallback = currentOwnerCurrentCar && !currentOwnerCurrentCar.trainset.cars.Contains(trainCar);
 
-        // If conditions are met and speed is less then 1 km/h check if it needs to give away authority
-        if (areConditionsMet && velocity.magnitude * 3.6f < 1)
-        {
-            // Gets the new owner with NetworkPlayerSync script attached
-            return GetPlayerAuthorityReplacement(currentOwnerCurrentCar && !currentOwnerCurrentCar.trainset.cars.Contains(trainCar));
-        }
+        // Check if player is on the ground
+        if (!currentOwnerCurrentCar)
+            return GetPlayerAuthorityReplacement(useFallback);
+
+        // Check if player is in a different trainset that is not within couple range
+        if (!currentOwnerCurrentCar.trainset.cars.Contains(trainCar) && 
+            tempFrontTrainsetWithAuthority != currentOwnerCurrentCar.trainset && 
+            tempRearTrainsetWithAuthority != currentOwnerCurrentCar.trainset)
+            return GetPlayerAuthorityReplacement(useFallback);
 
         return null;
     }
 
-    private void CheckTrainsInRangeOfCurrent()
+    private void GainAndReleaseAuthorityOfTrainsInRangeOfCurrent()
     {
-        Collider[] colliders = Physics.OverlapBox(trainCar.rearCoupler.transform.position, Vector3.one);
-        GameObject collidedCouplerRear = colliders.FirstOrDefault(c => c.name == "[coupler rear]").gameObject;
-        GameObject collidedCouplerFront = colliders.FirstOrDefault(c => c.name == "[coupler front]").gameObject;
+        if (!trainCar.rearCoupler || !trainCar.frontCoupler || velocity.magnitude * 3.6f <= .5f)
+            return;
+
+        GameObject collidedCouplerRear = trainCar.rearCoupler.GetFirstCouplerInRange(5)?.gameObject;
+        GameObject collidedCouplerFront = trainCar.frontCoupler.GetFirstCouplerInRange(5)?.gameObject;
+
         if (collidedCouplerRear && collidedCouplerRear.GetComponent<Coupler>() && collidedCouplerRear.GetComponent<Coupler>().train != trainCar)
         {
-            var otherTrain = collidedCouplerRear.GetComponent<Coupler>().train;
+            var coupler = collidedCouplerRear.GetComponent<Coupler>();
+            var otherTrain = coupler.train;
             var otherTrainServerState = SingletonBehaviour<NetworkTrainManager>.Instance.GetServerStateById(otherTrain.CarGUID);
-            if (serverState.AuthorityPlayerId != otherTrainServerState.AuthorityPlayerId)
+            if (otherTrainServerState != null && serverState.AuthorityPlayerId != otherTrainServerState.AuthorityPlayerId)
             {
-                Main.Log($"Coupler of train {trainCar.ID} is within range of train: {otherTrain.ID}");
+                if (tempRearTrainsetWithAuthority != otherTrain.trainset)
+                {
+                    ushort gainer = otherTrainServerState.AuthorityPlayerId;
+                    if (tempRearTrainsetWithAuthority == null)
+                        gainer = serverState.AuthorityPlayerId;
+
+                    var trainSync = otherTrain.GetComponent<NetworkTrainPosSync>();
+                    if (coupler.isFrontCoupler)
+                        trainSync.tempFrontTrainsetWithAuthority = trainCar.trainset;
+                    else
+                        trainSync.tempRearTrainsetWithAuthority = trainCar.trainset;
+                    SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(otherTrain.trainset, gainer);
+                    tempRearTrainsetWithAuthority = otherTrain.trainset;
+                }
             }
         }
+
         if (collidedCouplerFront && collidedCouplerFront.GetComponent<Coupler>() && collidedCouplerFront.GetComponent<Coupler>().train != trainCar)
         {
-            var otherTrain = collidedCouplerFront.GetComponent<Coupler>().train;
+            var coupler = collidedCouplerFront.GetComponent<Coupler>();
+            var otherTrain = coupler.train;
             var otherTrainServerState = SingletonBehaviour<NetworkTrainManager>.Instance.GetServerStateById(otherTrain.CarGUID);
-            if (serverState.AuthorityPlayerId != otherTrainServerState.AuthorityPlayerId)
+            if (otherTrainServerState != null && serverState.AuthorityPlayerId != otherTrainServerState.AuthorityPlayerId)
             {
-                Main.Log($"Coupler of train {trainCar.ID} is within range of train: {otherTrain.ID}");
+                if (tempFrontTrainsetWithAuthority != otherTrain.trainset)
+                {
+                    ushort gainer = otherTrainServerState.AuthorityPlayerId;
+                    if (tempFrontTrainsetWithAuthority == null)
+                        gainer = serverState.AuthorityPlayerId;
+
+                    var trainSync = otherTrain.GetComponent<NetworkTrainPosSync>();
+                    if (coupler.isFrontCoupler)
+                        trainSync.tempFrontTrainsetWithAuthority = trainCar.trainset;
+                    else
+                        trainSync.tempRearTrainsetWithAuthority = trainCar.trainset;
+                    SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(otherTrain.trainset, gainer);
+                    tempFrontTrainsetWithAuthority = otherTrain.trainset;
+                }
             }
         }
     }
@@ -346,11 +376,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (!SingletonBehaviour<NetworkPlayerManager>.Exists || !SingletonBehaviour<NetworkTrainManager>.Exists || SingletonBehaviour<NetworkTrainManager>.Instance.IsDisconnecting || serverState == null)
             return;
 
-        if (NetworkManager.IsHost())
-        {
-            CheckAuthorityChange();
-        }
-
         try
         {
             if (!hasLocalPlayerAuthority && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 1e-4f && newPos != Vector3.zero)
@@ -420,11 +445,23 @@ internal class NetworkTrainPosSync : MonoBehaviour
                         trainCar.rb.MoveRotation(newRot);
                     }
                 }
+
+                if (NetworkManager.IsHost() && trainCar.trainset.firstCar == trainCar || trainCar.trainset.lastCar == trainCar)
+                {
+                    // This is to simulate impact
+                    GainAndReleaseAuthorityOfTrainsInRangeOfCurrent();
+                }
             }
         }
         catch (Exception ex)
         {
             Main.Log($"NetworkTrainPosSync threw an exception while updating position: {ex.Message} inner exception: {ex.InnerException}");
+        }
+
+        if (hasLocalPlayerAuthority)
+        {
+            velocity = trainCar.rb.velocity;
+            isStationary = trainCar.isStationary;
         }
 
         if (hasLocalPlayerAuthority && (Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > Mathf.Lerp(1e-4f, .25f, velocity.magnitude * 3.6f / 50) || Quaternion.Angle(transform.rotation, newRot) > 1e-2f))
@@ -453,6 +490,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
             return;
         }
 
+        if (NetworkManager.IsHost())
+        {
+            CheckAuthorityChange();
+        }
+
         //if(trainAudio == null)
         //{
         //    trainAudio = trainCar.GetComponentInChildren<TrainAudio>();
@@ -470,12 +512,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         //        bogieAudio.SetLOD(AudioLOD.NONE);
         //    }
         //}
-
-        if (hasLocalPlayerAuthority)
-        {
-            velocity = trainCar.rb.velocity;
-            isStationary = trainCar.isStationary;
-        }
 
         try
         {
@@ -707,14 +743,13 @@ internal class NetworkTrainPosSync : MonoBehaviour
         if (hasLocalPlayerAuthority)
             yield break;
 
-        velocity = location.Velocity;
-
         if (trainCar.derailed && !isDerailed)
         {
             yield return SingletonBehaviour<NetworkTrainManager>.Instance.RerailDesynced(trainCar, serverState, true);
         }
 
-        isStationary = location.IsStationary;
+        velocity = location.Velocity;
+        isStationary = velocity.magnitude > 0;
         newPos = location.Position;
         newRot = location.Rotation;
         if (trainCar.IsLoco)
