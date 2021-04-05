@@ -12,7 +12,7 @@ namespace TrainPlugin
 {
     public class TrainPlugin : Plugin
     {
-        public override bool ThreadSafe => true;
+        public override bool ThreadSafe => false;
 
         public override Version Version => new Version("1.6.47");
 
