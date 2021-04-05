@@ -453,7 +453,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         AddNetworkingScripts(train, null);
                         ResyncCar(train);
                         Main.Log($"[CLIENT] < TRAIN_SWITCH: Train found: {train}, ID: {train.ID}, GUID: {train.CarGUID}");
-                        if (NetworkManager.IsHost()) targetPlayerSync.Train.GetComponent<NetworkTrainPosSync>().CheckAuthorityChange();
+                        if (NetworkManager.IsHost() && targetPlayerSync.Train) targetPlayerSync.Train.GetComponent<NetworkTrainPosSync>().CheckAuthorityChange();
                         targetPlayerSync.Train = train;
                         if (NetworkManager.IsHost()) targetPlayerSync.Train.GetComponent<NetworkTrainPosSync>().CheckAuthorityChange();
                     }
