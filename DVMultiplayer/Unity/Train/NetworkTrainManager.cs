@@ -1342,7 +1342,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     Bogies = bogies.ToArray(),
                     IsStationary = car.isStationary,
                     Velocity = car.rb.velocity,
-                    Drag = car.rb.drag,
                     Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                 };
 
