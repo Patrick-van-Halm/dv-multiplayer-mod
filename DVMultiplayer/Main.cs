@@ -24,7 +24,8 @@ namespace DVMultiplayer
             "DVSuperGauges",
             "ZSounds",
             "SkinManagerMod",
-            "CargoSwapMod"
+            "CargoSwapMod",
+            "DVDiscordPresenceMod"
         };
 
         private static Harmony harmony;
