@@ -26,12 +26,12 @@ namespace DVMultiplayer.DTO.Train
         public TrainBogie[] Bogies { get; set; }
 
         // Couplers
-        public bool IsFrontCouplerCoupled { get; set; } = false;
-        public bool IsRearCouplerCoupled { get; set; } = false;
+        public string FrontCouplerCoupledTo { get; set; } = "";
+        public string RearCouplerCoupledTo { get; set; } = "";
         public bool IsFrontCouplerCockOpen { get; set; } = false;
         public bool IsRearCouplerCockOpen { get; set; } = false;
-        public bool IsFrontCouplerHoseConnected { get; set; } = false;
-        public bool IsRearCouplerHoseConnected { get; set; } = false;
+        public string FrontCouplerHoseConnectedTo { get; set; } = "";
+        public string RearCouplerHoseConnectedTo { get; set; } = "";
 
         // Damage
         public float CarHealth { get; set; }
@@ -73,12 +73,12 @@ namespace DVMultiplayer.DTO.Train
             CarHealth = e.Reader.ReadSingle();
             CarHealthData = e.Reader.ReadString();
 
-            IsFrontCouplerCoupled = e.Reader.ReadBoolean();
-            IsRearCouplerCoupled = e.Reader.ReadBoolean();
+            FrontCouplerCoupledTo = e.Reader.ReadString();
+            RearCouplerCoupledTo = e.Reader.ReadString();
             IsFrontCouplerCockOpen = e.Reader.ReadBoolean();
             IsRearCouplerCockOpen = e.Reader.ReadBoolean();
-            IsFrontCouplerHoseConnected = e.Reader.ReadBoolean();
-            IsRearCouplerHoseConnected = e.Reader.ReadBoolean();
+            FrontCouplerHoseConnectedTo = e.Reader.ReadString();
+            RearCouplerHoseConnectedTo = e.Reader.ReadString();
 
             IsPlayerSpawned = e.Reader.ReadBoolean();
             AuthorityPlayerId = e.Reader.ReadUInt16();
@@ -126,12 +126,12 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(CarHealth);
             e.Writer.Write(CarHealthData);
 
-            e.Writer.Write(IsFrontCouplerCoupled);
-            e.Writer.Write(IsRearCouplerCoupled);
+            e.Writer.Write(FrontCouplerCoupledTo);
+            e.Writer.Write(RearCouplerCoupledTo);
             e.Writer.Write(IsFrontCouplerCockOpen);
             e.Writer.Write(IsRearCouplerCockOpen);
-            e.Writer.Write(IsFrontCouplerHoseConnected);
-            e.Writer.Write(IsRearCouplerHoseConnected);
+            e.Writer.Write(FrontCouplerHoseConnectedTo);
+            e.Writer.Write(RearCouplerHoseConnectedTo);
 
             e.Writer.Write(IsPlayerSpawned);
             e.Writer.Write(AuthorityPlayerId);

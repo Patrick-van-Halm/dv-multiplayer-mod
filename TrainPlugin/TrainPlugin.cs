@@ -14,7 +14,7 @@ namespace TrainPlugin
     {
         public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.6.47");
+        public override Version Version => new Version("1.6.48");
 
         private readonly List<WorldTrain> worldTrains;
         private readonly List<IClient> playerHasInitializedTrain;
@@ -454,9 +454,9 @@ namespace TrainPlugin
                     }
 
                     if (cockStateChanged.IsCouplerFront)
-                        train.IsFrontCouplerHoseConnected = cockStateChanged.IsOpen;
+                        train.IsFrontCouplerCockOpen = cockStateChanged.IsOpen;
                     else
-                        train.IsRearCouplerHoseConnected = cockStateChanged.IsOpen;
+                        train.IsRearCouplerCockOpen = cockStateChanged.IsOpen;
                 }
             }
 
@@ -482,9 +482,9 @@ namespace TrainPlugin
                     }
 
                     if (hoseStateChanged.IsC1Front)
-                        train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
+                        train.FrontCouplerHoseConnectedTo = hoseStateChanged.TrainIdC2;
                     else
-                        train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
+                        train.RearCouplerHoseConnectedTo = hoseStateChanged.TrainIdC2;
 
                     if (hoseStateChanged.IsConnected)
                     {
@@ -499,9 +499,9 @@ namespace TrainPlugin
                         }
 
                         if (hoseStateChanged.IsC2Front)
-                            train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
+                            train.FrontCouplerHoseConnectedTo = hoseStateChanged.TrainIdC1;
                         else
-                            train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
+                            train.RearCouplerHoseConnectedTo = hoseStateChanged.TrainIdC1;
                     }
                 }
             }
@@ -530,16 +530,16 @@ namespace TrainPlugin
                     if (isCoupled)
                     {
                         if (coupledChanged.IsC1Front)
-                            train.IsFrontCouplerCoupled = true;
+                            train.FrontCouplerCoupledTo = coupledChanged.TrainIdC2;
                         else
-                            train.IsRearCouplerCoupled = true;
+                            train.RearCouplerCoupledTo = coupledChanged.TrainIdC2;
                     }
                     else
                     {
                         if (coupledChanged.IsC1Front)
-                            train.IsFrontCouplerCoupled = false;
+                            train.FrontCouplerCoupledTo = "";
                         else
-                            train.IsRearCouplerCoupled = false;
+                            train.RearCouplerCoupledTo = "";
                     }
 
                     train = worldTrains.FirstOrDefault(t => t.Guid == coupledChanged.TrainIdC2);
@@ -555,16 +555,16 @@ namespace TrainPlugin
                     if (isCoupled)
                     {
                         if (coupledChanged.IsC2Front)
-                            train.IsFrontCouplerCoupled = true;
+                            train.FrontCouplerCoupledTo = coupledChanged.TrainIdC1;
                         else
-                            train.IsRearCouplerCoupled = true;
+                            train.RearCouplerCoupledTo = coupledChanged.TrainIdC1;
                     }
                     else
                     {
                         if (coupledChanged.IsC2Front)
-                            train.IsFrontCouplerCoupled = false;
+                            train.FrontCouplerCoupledTo = "";
                         else
-                            train.IsRearCouplerCoupled = false;
+                            train.RearCouplerCoupledTo = "";
                     }
                 }
             }

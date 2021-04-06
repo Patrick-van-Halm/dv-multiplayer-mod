@@ -432,78 +432,14 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!SingletonBehaviour<NetworkPlayerManager>.Exists || !SingletonBehaviour<NetworkTrainManager>.Exists || SingletonBehaviour<NetworkTrainManager>.Instance.IsDisconnecting || serverState == null)
+        if (!SingletonBehaviour<NetworkTrainManager>.Exists || SingletonBehaviour<NetworkTrainManager>.Instance.IsDisconnecting)
             return;
 
         try
         {
             if (!hasLocalPlayerAuthority && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 1e-4f && newPos != Vector3.zero)
             {
-                float increment = (velocity.magnitude * 3f);
-                if (increment <= 5f && turntable)
-                    increment = 5;
-
-                if (increment <= 5f && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 1 && isDerailed)
-                    increment = 5;
-
-                if (increment <= 5f && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 10)
-                    increment = 5;
-
-                if (increment == 0)
-                    increment = 1;
-
-                if (Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > 5 || isDerailed)
-                {
-                    if (!isDerailed)
-                    {
-                        foreach (Bogie b in trainCar.Bogies)
-                        {
-                            if (b.rb)
-                                b.rb.isKinematic = true;
-                        }
-                    }
-                    trainCar.rb.MovePosition(newPos + WorldMover.currentMove);
-                    trainCar.rb.MoveRotation(newRot);
-                    if (!isDerailed)
-                    {
-                        foreach (Bogie b in trainCar.Bogies)
-                        {
-                            if (b.rb)
-                            {
-                                b.ResetBogiesToStartPosition();
-                                b.rb.isKinematic = false;
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    float step = increment * Time.deltaTime; // calculate distance to move
-                    foreach (Bogie b in trainCar.Bogies)
-                    {
-                        if (b.rb)
-                            b.rb.isKinematic = true;
-                    }
-                    trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
-                    foreach (Bogie b in trainCar.Bogies)
-                    {
-                        if (b.rb)
-                        {
-                            b.ResetBogiesToStartPosition();
-                            b.rb.isKinematic = false;
-                        }
-                    }
-
-                    //Main.Log($"Rotating train");
-                    if (!turntable)
-                    {
-                        trainCar.rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, newRot, step));
-                    }
-                    else
-                    {
-                        trainCar.rb.MoveRotation(newRot);
-                    }
-                }
+                UpdateNonAuthorityPositioning();
             }
         }
         catch (Exception ex)
@@ -528,6 +464,75 @@ internal class NetworkTrainPosSync : MonoBehaviour
             if (!turntable && !IsCarDamageEnabled)
             {
                 trainCar.CarDamage.IgnoreDamage(false);
+            }
+        }
+    }
+
+    private void UpdateNonAuthorityPositioning()
+    {
+        float increment = (velocity.magnitude * 3f);
+        if (increment <= 5f && turntable)
+            increment = 5;
+
+        if (increment <= 5f && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 1 && isDerailed)
+            increment = 5;
+
+        if (increment <= 5f && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 10)
+            increment = 5;
+
+        if (increment == 0)
+            increment = 1;
+
+        if (Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > 5 || isDerailed)
+        {
+            if (!isDerailed)
+            {
+                foreach (Bogie b in trainCar.Bogies)
+                {
+                    if (b.rb)
+                        b.rb.isKinematic = true;
+                }
+            }
+            trainCar.rb.MovePosition(newPos + WorldMover.currentMove);
+            trainCar.rb.MoveRotation(newRot);
+            if (!isDerailed)
+            {
+                foreach (Bogie b in trainCar.Bogies)
+                {
+                    if (b.rb)
+                    {
+                        b.ResetBogiesToStartPosition();
+                        b.rb.isKinematic = false;
+                    }
+                }
+            }
+        }
+        else
+        {
+            float step = increment * Time.deltaTime; // calculate distance to move
+            foreach (Bogie b in trainCar.Bogies)
+            {
+                if (b.rb)
+                    b.rb.isKinematic = true;
+            }
+            trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
+            foreach (Bogie b in trainCar.Bogies)
+            {
+                if (b.rb)
+                {
+                    b.ResetBogiesToStartPosition();
+                    b.rb.isKinematic = false;
+                }
+            }
+
+            //Main.Log($"Rotating train");
+            if (!turntable)
+            {
+                trainCar.rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, newRot, step));
+            }
+            else
+            {
+                trainCar.rb.MoveRotation(newRot);
             }
         }
     }
@@ -800,11 +805,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
     {
         if (hasLocalPlayerAuthority)
             yield break;
-
-        if (trainCar.derailed && !isDerailed)
-        {
-            yield return SingletonBehaviour<NetworkTrainManager>.Instance.RerailDesynced(trainCar, serverState, true);
-        }
 
         velocity = location.Velocity;
         isStationary = velocity.magnitude > 0;

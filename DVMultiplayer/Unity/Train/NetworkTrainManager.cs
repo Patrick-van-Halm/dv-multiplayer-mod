@@ -769,16 +769,16 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         if (isCoupled)
                         {
                             if (coupled.IsC1Front)
-                                train.IsFrontCouplerCoupled = true;
+                                train.FrontCouplerCoupledTo = coupled.TrainIdC2;
                             else
-                                train.IsRearCouplerCoupled = true;
+                                train.RearCouplerCoupledTo = coupled.TrainIdC2;
                         }
                         else
                         {
                             if (coupled.IsC1Front)
-                                train.IsFrontCouplerCoupled = false;
+                                train.FrontCouplerCoupledTo = "";
                             else
-                                train.IsRearCouplerCoupled = false;
+                                train.RearCouplerCoupledTo = "";
                         }
                     }
                     train = serverCarStates.FirstOrDefault(t => t.Guid == trainCoupler2.CarGUID);
@@ -797,16 +797,16 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         if (isCoupled)
                         {
                             if (coupled.IsC2Front)
-                                train.IsFrontCouplerCoupled = true;
+                                train.FrontCouplerCoupledTo = coupled.TrainIdC1;
                             else
-                                train.IsRearCouplerCoupled = true;
+                                train.RearCouplerCoupledTo = coupled.TrainIdC1;
                         }
                         else
                         {
                             if (coupled.IsC2Front)
-                                train.IsFrontCouplerCoupled = false;
+                                train.FrontCouplerCoupledTo = "";
                             else
-                                train.IsRearCouplerCoupled = false;
+                                train.RearCouplerCoupledTo = "";
                         }
                     }
 
@@ -866,9 +866,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                     }
 
                     if (cockChange.IsCouplerFront)
-                        train.IsFrontCouplerHoseConnected = cockChange.IsOpen;
+                        train.IsFrontCouplerCockOpen = cockChange.IsOpen;
                     else
-                        train.IsRearCouplerHoseConnected = cockChange.IsOpen;
+                        train.IsRearCouplerCockOpen = cockChange.IsOpen;
                     IsChangeByNetwork = true;
                     Main.Log($"[CLIENT] < TRAIN_COUPLE_COCK: Packet size: {reader.Length}, TrainID: {trainCoupler.ID} (isFront: {cockChange.IsCouplerFront}), isOpen: {cockChange.IsOpen}");
                     Coupler coupler = cockChange.IsCouplerFront ? trainCoupler.frontCoupler : trainCoupler.rearCoupler;
@@ -912,9 +912,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         serverCarStates.Add(train);
                     }
                     if (hoseChange.IsC1Front)
-                        train.IsFrontCouplerHoseConnected = hoseChange.IsConnected;
+                        train.FrontCouplerHoseConnectedTo = hoseChange.TrainIdC2;
                     else
-                        train.IsRearCouplerHoseConnected = hoseChange.IsConnected;
+                        train.RearCouplerHoseConnectedTo = hoseChange.TrainIdC2;
                     train = serverCarStates.FirstOrDefault(t => t.Guid == trainCoupler2.CarGUID);
                     if (train == null)
                     {
@@ -927,9 +927,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         serverCarStates.Add(train);
                     }
                     if (hoseChange.IsC2Front)
-                        train.IsFrontCouplerHoseConnected = hoseChange.IsConnected;
+                        train.FrontCouplerHoseConnectedTo = hoseChange.TrainIdC1;
                     else
-                        train.IsRearCouplerHoseConnected = hoseChange.IsConnected;
+                        train.RearCouplerHoseConnectedTo = hoseChange.TrainIdC1;
                     Main.Log($"[CLIENT] < TRAIN_COUPLE_HOSE: Packet size: {reader.Length}, TrainID_C1: {trainCoupler1.ID} (isFront: {hoseChange.IsC1Front}), TrainID_C2: {trainCoupler2.ID} (isFront: {hoseChange.IsC2Front}), HoseConnected: {hoseChange.IsConnected}");
                     Coupler C1 = hoseChange.IsC1Front ? trainCoupler1.frontCoupler : trainCoupler1.rearCoupler;
                     Coupler C2 = hoseChange.IsC2Front ? trainCoupler2.frontCoupler : trainCoupler2.rearCoupler;
@@ -955,9 +955,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         serverCarStates.Add(train);
                     }
                     if (hoseChange.IsC1Front)
-                        train.IsFrontCouplerHoseConnected = hoseChange.IsConnected;
+                        train.FrontCouplerHoseConnectedTo = "";
                     else
-                        train.IsRearCouplerHoseConnected = hoseChange.IsConnected;
+                        train.RearCouplerHoseConnectedTo = "";
 
                     Main.Log($"[CLIENT] < TRAIN_COUPLE_HOSE: TrainID: {trainCoupler1.ID} (isFront: {hoseChange.IsC1Front}), HoseConnected: {hoseChange.IsConnected}");
                     Coupler C1 = hoseChange.IsC1Front ? trainCoupler1.frontCoupler : trainCoupler1.rearCoupler;
@@ -1618,37 +1618,121 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
     private void ResyncCoupling(TrainCar train, WorldTrain serverState)
     {
         // Front coupler check
-        if (serverState.IsFrontCouplerCoupled && !train.frontCoupler.coupledTo && serverState.IsFrontCouplerHoseConnected && serverState.IsFrontCouplerCockOpen)
-            train.frontCoupler.TryCouple(false);
-        else if(serverState.IsFrontCouplerCoupled && !train.frontCoupler.coupledTo && !serverState.IsFrontCouplerHoseConnected || !serverState.IsFrontCouplerCockOpen)
-            train.frontCoupler.TryCouple(false, true);
+        if (serverState.FrontCouplerCoupledTo != "" && !train.frontCoupler.coupledTo && serverState.FrontCouplerHoseConnectedTo == serverState.FrontCouplerCoupledTo && serverState.IsFrontCouplerCockOpen)
+        {
+            var otherTrainServerState = serverCarStates.FirstOrDefault(t => t.Guid == serverState.FrontCouplerCoupledTo);
+            var otherTrain = localCars.FirstOrDefault(t => t.CarGUID == serverState.FrontCouplerCoupledTo);
+            Coupler coupler = null;
+            if (otherTrain && otherTrainServerState != null && otherTrainServerState.FrontCouplerCoupledTo == serverState.Guid)
+                coupler = otherTrain.frontCoupler;
+
+            if (otherTrain && otherTrainServerState != null && otherTrainServerState.RearCouplerCoupledTo == serverState.Guid)
+                coupler = otherTrain.rearCoupler;
+
+            if (coupler)
+                train.frontCoupler.CoupleTo(coupler, false, false);
+            else
+                Main.Log($"Coupler not found of train {serverState.FrontCouplerCoupledTo}. Found serverState = {otherTrainServerState != null}. Found train = {otherTrain != null}");
+        }
+        else if(serverState.FrontCouplerCoupledTo != "" && !train.frontCoupler.coupledTo && (serverState.FrontCouplerHoseConnectedTo != serverState.FrontCouplerCoupledTo || !serverState.IsFrontCouplerCockOpen))
+        {
+            var otherTrainServerState = serverCarStates.FirstOrDefault(t => t.Guid == serverState.FrontCouplerCoupledTo);
+            var otherTrain = localCars.FirstOrDefault(t => t.CarGUID == serverState.FrontCouplerCoupledTo);
+            Coupler coupler = null;
+            if (otherTrain && otherTrainServerState != null && otherTrainServerState.FrontCouplerCoupledTo == serverState.Guid)
+                coupler = otherTrain.frontCoupler;
+
+            if (otherTrain && otherTrainServerState != null && otherTrainServerState.RearCouplerCoupledTo == serverState.Guid)
+                coupler = otherTrain.rearCoupler;
+
+            if (coupler)
+                train.frontCoupler.CoupleTo(coupler, false, true);
+            else
+                Main.Log($"Coupler not found of train {serverState.FrontCouplerCoupledTo}. Found serverState = {otherTrainServerState != null}. Found train = {otherTrain != null}");
+        }
         
-        if(serverState.IsFrontCouplerHoseConnected || serverState.IsFrontCouplerCockOpen)
+        if(serverState.FrontCouplerHoseConnectedTo != "" || serverState.IsFrontCouplerCockOpen)
         {
             if (serverState.IsFrontCouplerCockOpen && !train.frontCoupler.IsCockOpen)
                 train.frontCoupler.IsCockOpen = true;
 
-            if (serverState.IsFrontCouplerHoseConnected && !train.frontCoupler.GetAirHoseConnectedTo() && train.frontCoupler.GetFirstCouplerInRange(3))
-                train.frontCoupler.ConnectAirHose(train.frontCoupler.GetFirstCouplerInRange(3), false);
+            if (serverState.FrontCouplerHoseConnectedTo != "" && !train.frontCoupler.GetAirHoseConnectedTo())
+            {
+                var otherTrainServerState = serverCarStates.FirstOrDefault(t => t.Guid == serverState.FrontCouplerHoseConnectedTo);
+                var otherTrain = localCars.FirstOrDefault(t => t.CarGUID == serverState.FrontCouplerHoseConnectedTo);
+                Coupler coupler = null;
+                if (otherTrain && otherTrainServerState != null && otherTrainServerState.FrontCouplerHoseConnectedTo == serverState.Guid)
+                    coupler = otherTrain.frontCoupler;
+
+                if (otherTrain && otherTrainServerState != null && otherTrainServerState.RearCouplerHoseConnectedTo == serverState.Guid)
+                    coupler = otherTrain.rearCoupler;
+
+                if (coupler)
+                    train.frontCoupler.ConnectAirHose(coupler, false);
+                else
+                    Main.Log($"Coupler not found of train {serverState.FrontCouplerHoseConnectedTo}. Found serverState = {otherTrainServerState != null}. Found train = {otherTrain != null}");
+            }
         }
 
         // Rear coupler check
-        if (serverState.IsRearCouplerCoupled && !train.rearCoupler.coupledTo && serverState.IsRearCouplerCockOpen && serverState.IsRearCouplerHoseConnected)
-            train.rearCoupler.TryCouple(false);
-        else if(serverState.IsRearCouplerCoupled && !train.rearCoupler.coupledTo && !serverState.IsRearCouplerCockOpen || !serverState.IsRearCouplerHoseConnected)
-            train.rearCoupler.TryCouple(false, true);
-        
-        if(serverState.IsRearCouplerCockOpen || serverState.IsRearCouplerHoseConnected)
+        if (serverState.RearCouplerCoupledTo != "" && !train.rearCoupler.coupledTo && serverState.RearCouplerHoseConnectedTo == serverState.RearCouplerCoupledTo && serverState.IsRearCouplerCockOpen)
+        {
+            var otherTrainServerState = serverCarStates.FirstOrDefault(t => t.Guid == serverState.RearCouplerCoupledTo);
+            var otherTrain = localCars.FirstOrDefault(t => t.CarGUID == serverState.RearCouplerCoupledTo);
+            Coupler coupler = null;
+            if (otherTrain && otherTrainServerState != null && otherTrainServerState.FrontCouplerCoupledTo == serverState.Guid)
+                coupler = otherTrain.frontCoupler;
+
+            if (otherTrain && otherTrainServerState != null && otherTrainServerState.RearCouplerCoupledTo == serverState.Guid)
+                coupler = otherTrain.rearCoupler;
+
+            if (coupler)
+                train.rearCoupler.CoupleTo(coupler, false, false);
+            else
+                Main.Log($"Coupler not found of train {serverState.RearCouplerCoupledTo}. Found serverState = {otherTrainServerState != null}. Found train = {otherTrain != null}");
+        }
+        else if (serverState.RearCouplerCoupledTo != "" && !train.rearCoupler.coupledTo && (serverState.RearCouplerHoseConnectedTo != serverState.RearCouplerCoupledTo || !serverState.IsRearCouplerCockOpen))
+        {
+            var otherTrainServerState = serverCarStates.FirstOrDefault(t => t.Guid == serverState.RearCouplerCoupledTo);
+            var otherTrain = localCars.FirstOrDefault(t => t.CarGUID == serverState.RearCouplerCoupledTo);
+            Coupler coupler = null;
+            if (otherTrain && otherTrainServerState != null && otherTrainServerState.FrontCouplerCoupledTo == serverState.Guid)
+                coupler = otherTrain.frontCoupler;
+
+            if (otherTrain && otherTrainServerState != null && otherTrainServerState.RearCouplerCoupledTo == serverState.Guid)
+                coupler = otherTrain.rearCoupler;
+
+            if (coupler)
+                train.rearCoupler.CoupleTo(coupler, false, true);
+            else
+                Main.Log($"Coupler not found of train {serverState.RearCouplerCoupledTo}. Found serverState = {otherTrainServerState != null}. Found train = {otherTrain != null}");
+        }
+
+        if (serverState.RearCouplerHoseConnectedTo != "" || serverState.IsRearCouplerCockOpen)
         {
             if (serverState.IsRearCouplerCockOpen && !train.rearCoupler.IsCockOpen)
                 train.rearCoupler.IsCockOpen = true;
 
-            if (serverState.IsRearCouplerHoseConnected && !train.rearCoupler.GetAirHoseConnectedTo() && train.rearCoupler.GetFirstCouplerInRange(3))
-                train.rearCoupler.ConnectAirHose(train.rearCoupler.GetFirstCouplerInRange(3), false);
+            if (serverState.RearCouplerHoseConnectedTo != "" && !train.rearCoupler.GetAirHoseConnectedTo())
+            {
+                var otherTrainServerState = serverCarStates.FirstOrDefault(t => t.Guid == serverState.RearCouplerHoseConnectedTo);
+                var otherTrain = localCars.FirstOrDefault(t => t.CarGUID == serverState.RearCouplerHoseConnectedTo);
+                Coupler coupler = null;
+                if (otherTrain && otherTrainServerState != null && otherTrainServerState.FrontCouplerHoseConnectedTo == serverState.Guid)
+                    coupler = otherTrain.frontCoupler;
+
+                if (otherTrain && otherTrainServerState != null && otherTrainServerState.RearCouplerHoseConnectedTo == serverState.Guid)
+                    coupler = otherTrain.rearCoupler;
+
+                if (coupler)
+                    train.rearCoupler.ConnectAirHose(coupler, false);
+                else
+                    Main.Log($"Coupler not found of train {serverState.RearCouplerHoseConnectedTo}. Found serverState = {otherTrainServerState != null}. Found train = {otherTrain != null}");
+            }
         }
 
         // MU check
-        if(serverState.CarType == TrainCarType.LocoShunter)
+        if (serverState.CarType == TrainCarType.LocoShunter)
         {
             if(serverState.MultipleUnit.IsFrontMUConnectedTo != "")
             {
@@ -1714,11 +1798,21 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
 
         Main.Log($"Train repositioning sync: Pos: {serverState.Position.ToString("G3")}");
-        if (serverState.Position != Vector3.zero && !isDerailed && train.derailed)
+        if (serverState.Position != Vector3.zero && train.derailed && serverState.AuthorityPlayerId == SingletonBehaviour<UnityClient>.Instance.ID)
             yield return RerailDesynced(train, serverState.Position, serverState.Forward);
-
-        SyncDamageWithServerState(train, serverState);
-        SyncLocomotiveWithServerState(train, serverState);
+        else if(serverState.AuthorityPlayerId != SingletonBehaviour<UnityClient>.Instance.ID)
+        {
+            train.rb.isKinematic = true;
+            train.rb.MovePosition(serverState.Position + WorldMover.currentMove);
+            train.rb.MoveRotation(serverState.Rotation);
+            foreach (Bogie bogie in train.Bogies)
+                bogie.ResetBogiesToStartPosition();
+        }
+        else
+        {
+            SyncDamageWithServerState(train, serverState);
+            SyncLocomotiveWithServerState(train, serverState);
+        }
 
         Main.Log($"Train should be synced");
     }
@@ -1735,9 +1829,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             if (train == null)
             {
                 train = InitializeNewTrainCar(selectedTrain);
-                yield return new WaitUntil(() => train.AreBogiesFullyInitialized() && train.frontCoupler && train.rearCoupler && train.CarDamage);
-                yield return RerailDesynced(train, selectedTrain.Position, selectedTrain.Forward);
-                yield return new WaitUntil(() => train.AreBogiesFullyInitialized());
                 AddNetworkingScripts(train, selectedTrain);
             }
 
@@ -1802,7 +1893,9 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 Main.Log($"Train Loco Server data found {shunter != null}");
                 if (shunter != null)
                 {
-                    if (train.IsInteriorLoaded)
+                    Main.Log($"Sync engine on");
+                    controllerShunter.SetEngineRunning(shunter.IsEngineOn);
+                    if (train.IsInteriorLoaded && !shunter.IsEngineOn)
                     {
                         ShunterDashboardControls shunterDashboard = train.interior.GetComponentInChildren<ShunterDashboardControls>();
                         Main.Log($"Shunter dashboard found {shunterDashboard != null}");
@@ -1813,8 +1906,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                         Main.Log($"Sync engine main fuse");
                         shunterDashboard.fuseBoxPowerController.mainFuseObj.GetComponent<ToggleSwitchBase>().SetValue(shunter.IsMainFuseOn ? 1 : 0);
                     }
-                    Main.Log($"Sync engine on");
-                    controllerShunter.SetEngineRunning(shunter.IsEngineOn);
                 }
                 else
                 {
@@ -1830,16 +1921,23 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         TrainCar newTrain;
         TrainBogie bogie1 = serverState.Bogies[0];
         TrainBogie bogie2 = serverState.Bogies[serverState.Bogies.Length - 1];
+        RailTrack track = RailTrack.GetClosest(serverState.Position + WorldMover.currentMove).track;
         newTrain = CarSpawner.SpawnLoadedCar(carPrefab, serverState.Id, serverState.Guid, serverState.IsPlayerSpawned, serverState.Position + WorldMover.currentMove, serverState.Rotation,
-        bogie1.Derailed, RailTrackRegistry.GetTrackWithName(bogie1.TrackName), bogie1.PositionAlongTrack,
-        bogie2.Derailed, RailTrackRegistry.GetTrackWithName(bogie2.TrackName), bogie2.PositionAlongTrack,
+        bogie1.Derailed, track, bogie1.PositionAlongTrack,
+        bogie2.Derailed, track, bogie2.PositionAlongTrack,
         false, false);
+        foreach (Bogie bogie in newTrain.Bogies)
+            bogie.ResetBogiesToStartPosition();
         newTrain.CarDamage.IgnoreDamage(true);
+        newTrain.stress.EnableStress(false);
+        newTrain.rb.isKinematic = true;
+        newTrain.rb.MovePosition(serverState.Position + WorldMover.currentMove);
+        newTrain.rb.MoveRotation(serverState.Rotation);
+        foreach (Bogie bogie in newTrain.Bogies)
+            bogie.ResetBogiesToStartPosition();
 
         if(newTrain.logicCar != null && !newTrain.IsLoco && serverState.CargoType != CargoType.None)
             newTrain.logicCar.LoadCargo(serverState.CargoAmount, serverState.CargoType);
-
-        SingletonBehaviour<CoroutineManager>.Instance.Run(RerailDesynced(newTrain, serverState, true));
         localCars.Add(newTrain);
 
         return newTrain;
@@ -1874,8 +1972,16 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
 
         if (track)
         {
-            trainCar.Rerail(track, CalculateWorldPosition(pos + WorldMover.currentMove, fwd, trainCar.Bounds.center.z), fwd);
-            yield return new WaitUntil(() => !trainCar.derailed);
+            if (!trainCar.derailed)
+            {
+                yield return trainCar.MoveToTrackWithCarUncoupleCoro(track, CalculateWorldPosition(pos + WorldMover.currentMove, fwd, trainCar.Bounds.center.z), fwd);
+            }
+            else
+            {
+                yield return trainCar.RerailCoro(track, CalculateWorldPosition(pos + WorldMover.currentMove, fwd, trainCar.Bounds.center.z), fwd);
+                yield return new WaitUntil(() => !trainCar.derailed);
+            }
+
             if (serverState != null)
             {
                 SyncDamageWithServerState(trainCar, serverState);
@@ -1937,12 +2043,12 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
                 Rotation = car.transform.rotation,
                 Forward = car.transform.forward,
                 Bogies = bogies.ToArray(),
-                IsFrontCouplerCoupled = car.frontCoupler.coupledTo,
+                FrontCouplerCoupledTo = car.frontCoupler.coupledTo ? car.frontCoupler.coupledTo.train.CarGUID : "",
                 IsFrontCouplerCockOpen = car.frontCoupler.IsCockOpen,
-                IsFrontCouplerHoseConnected = car.frontCoupler.GetAirHoseConnectedTo() != null,
-                IsRearCouplerCoupled = car.rearCoupler.coupledTo,
+                FrontCouplerHoseConnectedTo = car.frontCoupler.GetAirHoseConnectedTo() ? car.frontCoupler.GetAirHoseConnectedTo().train.CarGUID : "",
+                RearCouplerCoupledTo = car.rearCoupler.coupledTo ? car.rearCoupler.coupledTo.train.CarGUID : "",
                 IsRearCouplerCockOpen = car.rearCoupler.IsCockOpen,
-                IsRearCouplerHoseConnected = car.rearCoupler.GetAirHoseConnectedTo() != null,
+                RearCouplerHoseConnectedTo = car.rearCoupler.GetAirHoseConnectedTo() ? car.rearCoupler.GetAirHoseConnectedTo().train.CarGUID : "",
                 IsPlayerSpawned = car.playerSpawnedCar,
                 IsRemoved = false,
                 IsStationary = true,
@@ -2017,8 +2123,6 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
             Main.Log($"Initializing: {train.Guid} in area");
             serverCarStates.Add(train);
             TrainCar car = InitializeNewTrainCar(train);
-            yield return new WaitUntil(() => car.AreBogiesFullyInitialized());
-            yield return RerailDesynced(car, train, true);
             yield return new WaitUntil(() => car.AreBogiesFullyInitialized());
             AddNetworkingScripts(car, train);
             Main.Log($"Initializing: {train.Guid} in area [DONE]");
