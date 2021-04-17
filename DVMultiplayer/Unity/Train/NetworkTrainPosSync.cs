@@ -405,8 +405,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
             }
 
             // If no player is found yet and fallback is true return the host
-            if (useFallback)
-                return SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
+            if (useFallback) return SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
         }
         // Return null if no players are found and fallback was false
         return null;
@@ -438,9 +437,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         try
         {
             if (!hasLocalPlayerAuthority && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 1e-4f && newPos != Vector3.zero)
-            {
                 UpdateNonAuthorityPositioning();
-            }
         }
         catch (Exception ex)
         {
@@ -451,9 +448,12 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             velocity = trainCar.rb.velocity;
             isStationary = trainCar.isStationary;
+
+            if(velocity.magnitude * 3.6f <= .2f && trainCar.stress.enabled)
+                trainCar.stress.EnableStress(false);
         }
 
-        if (hasLocalPlayerAuthority && (Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > Mathf.Lerp(1e-4f, 1e-2f, velocity.magnitude * 3.6f / 50) || Quaternion.Angle(transform.rotation, newRot) > 1e-2f))
+        if (hasLocalPlayerAuthority && ((velocity.magnitude * 3.6f > .2f && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > Mathf.Lerp(1e-4f, 1e-2f, velocity.magnitude * 3.6f / 50)) || Quaternion.Angle(transform.rotation, newRot) > 1e-2f))
         {
             if (!trainCar.stress.enabled)
                 trainCar.stress.EnableStress(true);
@@ -510,21 +510,8 @@ internal class NetworkTrainPosSync : MonoBehaviour
         else
         {
             float step = increment * Time.deltaTime; // calculate distance to move
-            foreach (Bogie b in trainCar.Bogies)
-            {
-                if (b.rb)
-                    b.rb.isKinematic = true;
-            }
             trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
-            foreach (Bogie b in trainCar.Bogies)
-            {
-                if (b.rb)
-                {
-                    b.ResetBogiesToStartPosition();
-                    b.rb.isKinematic = false;
-                }
-            }
-
+            
             //Main.Log($"Rotating train");
             if (!turntable)
             {
@@ -688,10 +675,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainCar_MovementStateChanged(bool isMoving)
     {
-        if (!hasLocalPlayerAuthority || velocity.magnitude * 3.6f >= 1f && !isMoving)
+        if (velocity.magnitude * 3.6f >= 1f && !isMoving)
             return;
 
-        if(!isMoving)
+        if (!isMoving && hasLocalPlayerAuthority)
         {
             trainCar.stress.EnableStress(false);
             if (SingletonBehaviour<NetworkTrainManager>.Exists && trainCar.IsLoco)
@@ -701,6 +688,20 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 newPos = trainCar.transform.position - WorldMover.currentMove;
                 newRot = transform.rotation;
             }
+        }
+
+        if (!isMoving)
+        {
+            foreach (Bogie b in trainCar.Bogies)
+            {
+                if (b.rb)
+                {
+                    b.rb.isKinematic = true;
+                    b.ResetBogiesToStartPosition();
+                    b.rb.isKinematic = false;
+                }
+            }
+            trainCar.ForceOptimizationState(true);
         }
     }
 

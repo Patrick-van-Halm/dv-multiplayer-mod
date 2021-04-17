@@ -19,7 +19,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
     private List<Job> jobs;
     public bool IsChangedByNetwork { get; set; }
     public bool IsSynced { get; internal set; }
-    public JobChainController newlyGeneratedJobChain;
+    public List<JobChainController> newlyGeneratedJobChains = new List<JobChainController>();
     public StationController newlyGeneratedJobChainStation;
 
     protected override void Awake()

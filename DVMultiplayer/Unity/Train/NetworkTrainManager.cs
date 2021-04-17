@@ -159,6 +159,7 @@ internal class NetworkTrainManager : SingletonBehaviour<NetworkTrainManager>
         }
 
         playerSync.Train = trainCar;
+        if (NetworkManager.IsHost() && trainCar) playerSync.Train.GetComponent<NetworkTrainPosSync>().CheckAuthorityChange();
         SendPlayerCarChange(trainCar);
 
         if (trainCar && trainCar.IsLoco)

@@ -72,7 +72,7 @@ internal class NetworkTurntableSync : MonoBehaviour
                     {
                         foreach (TrainCar car in carsOnTurntable)
                         {
-                            car.GetComponent<NetworkTrainPosSync>();
+                            if (NetworkManager.IsHost()) car.GetComponent<NetworkTrainPosSync>().CheckAuthorityChange();
                         }
                     }
                 }

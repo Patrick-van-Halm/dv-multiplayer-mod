@@ -25,7 +25,10 @@ namespace DVMultiplayer
             "ZSounds",
             "SkinManagerMod",
             "CargoSwapMod",
-            "DVDiscordPresenceMod"
+            "DVDiscordPresenceMod",
+            "LocoLightsMod",
+            "DVFPSLimiter",
+            "DVOptimizer"
         };
 
         private static Harmony harmony;
