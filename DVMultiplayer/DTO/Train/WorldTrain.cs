@@ -26,15 +26,16 @@ namespace DVMultiplayer.DTO.Train
         public TrainBogie[] Bogies { get; set; }
 
         // Couplers
-        public bool? IsFrontCouplerCoupled { get; set; } = null;
-        public bool? IsRearCouplerCoupled { get; set; } = null;
-        public bool? IsFrontCouplerCockOpen { get; set; } = null;
-        public bool? IsRearCouplerCockOpen { get; set; } = null;
-        public bool? IsFrontCouplerHoseConnected { get; set; } = null;
-        public bool? IsRearCouplerHoseConnected { get; set; } = null;
+        public string FrontCouplerCoupledTo { get; set; } = "";
+        public string RearCouplerCoupledTo { get; set; } = "";
+        public bool IsFrontCouplerCockOpen { get; set; } = false;
+        public bool IsRearCouplerCockOpen { get; set; } = false;
+        public string FrontCouplerHoseConnectedTo { get; set; } = "";
+        public string RearCouplerHoseConnectedTo { get; set; } = "";
 
         // Damage
         public float CarHealth { get; set; }
+        public string CarHealthData { get; set; } = "";
 
         // Locomotive (Only set if item is locomotive)
         public float Throttle { get; set; } = 0;
@@ -70,13 +71,14 @@ namespace DVMultiplayer.DTO.Train
             Bogies = e.Reader.ReadSerializables<TrainBogie>();
 
             CarHealth = e.Reader.ReadSingle();
+            CarHealthData = e.Reader.ReadString();
 
-            IsFrontCouplerCoupled = e.Reader.ReadNullableBoolean();
-            IsRearCouplerCoupled = e.Reader.ReadNullableBoolean();
-            IsFrontCouplerCockOpen = e.Reader.ReadNullableBoolean();
-            IsRearCouplerCockOpen = e.Reader.ReadNullableBoolean();
-            IsFrontCouplerHoseConnected = e.Reader.ReadNullableBoolean();
-            IsRearCouplerHoseConnected = e.Reader.ReadNullableBoolean();
+            FrontCouplerCoupledTo = e.Reader.ReadString();
+            RearCouplerCoupledTo = e.Reader.ReadString();
+            IsFrontCouplerCockOpen = e.Reader.ReadBoolean();
+            IsRearCouplerCockOpen = e.Reader.ReadBoolean();
+            FrontCouplerHoseConnectedTo = e.Reader.ReadString();
+            RearCouplerHoseConnectedTo = e.Reader.ReadString();
 
             IsPlayerSpawned = e.Reader.ReadBoolean();
             AuthorityPlayerId = e.Reader.ReadUInt16();
@@ -122,13 +124,14 @@ namespace DVMultiplayer.DTO.Train
             e.Writer.Write(Bogies);
 
             e.Writer.Write(CarHealth);
+            e.Writer.Write(CarHealthData);
 
-            e.Writer.Write(IsFrontCouplerCoupled);
-            e.Writer.Write(IsRearCouplerCoupled);
+            e.Writer.Write(FrontCouplerCoupledTo);
+            e.Writer.Write(RearCouplerCoupledTo);
             e.Writer.Write(IsFrontCouplerCockOpen);
             e.Writer.Write(IsRearCouplerCockOpen);
-            e.Writer.Write(IsFrontCouplerHoseConnected);
-            e.Writer.Write(IsRearCouplerHoseConnected);
+            e.Writer.Write(FrontCouplerHoseConnectedTo);
+            e.Writer.Write(RearCouplerHoseConnectedTo);
 
             e.Writer.Write(IsPlayerSpawned);
             e.Writer.Write(AuthorityPlayerId);

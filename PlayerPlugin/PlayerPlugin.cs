@@ -24,9 +24,9 @@ namespace PlayerPlugin
             return players.Keys;
         }
 
-        public override bool ThreadSafe => false;
+        public override bool ThreadSafe => true;
 
-        public override Version Version => new Version("2.6.19");
+        public override Version Version => new Version("2.6.20");
 
         public PlayerPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
