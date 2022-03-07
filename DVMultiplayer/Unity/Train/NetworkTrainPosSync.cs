@@ -27,7 +27,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
     public bool IsCarDamageEnabled { get; internal set; }
     NetworkPlayerSync localPlayer;
     ShunterLocoSimulation shunterLocoSimulation = null;
+    DieselLocoSimulation dieselLocoSimulation = null;
     ParticleSystem.MainModule shunterExhaust;
+    ParticleSystem.MainModule dieselExhaust;
     private bool isBeingDestroyed;
     internal Trainset tempFrontTrainsetWithAuthority;
     internal Trainset tempRearTrainsetWithAuthority;
@@ -55,20 +57,23 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.Log($"Listening to movement changed event");
         trainCar.MovementStateChanged += TrainCar_MovementStateChanged;
         trainCar.CarDamage.CarEffectiveHealthStateUpdate += OnBodyDamageTaken;
-        if (!trainCar.IsLoco)
-            trainCar.CargoDamage.CargoDamaged += OnCargoDamageTaken;
 
-
-        if(trainCar.carType == TrainCarType.LocoShunter)
+        if (trainCar.carType == TrainCarType.LocoShunter)
         {
             shunterLocoSimulation = GetComponent<ShunterLocoSimulation>();
             shunterExhaust = trainCar.transform.Find("[particles]").Find("ExhaustEngineSmoke").GetComponent<ParticleSystem>().main;
+        }
+        else if (trainCar.carType == TrainCarType.LocoDiesel)
+        {
+            dieselLocoSimulation = GetComponent<DieselLocoSimulation>();
+            dieselExhaust = trainCar.transform.Find("[particles]").Find("ExhaustEngineSmoke").GetComponent<ParticleSystem>().main;
         }
 
         if (!trainCar.IsLoco)
         {
             trainCar.CargoLoaded += OnCargoLoaded;
             trainCar.CargoUnloaded += OnCargoUnloaded;
+            trainCar.CargoDamage.CargoDamaged += OnCargoDamageTaken;
         }
 
         //for(int i = 0; i < trainCar.Bogies.Length; i++)
@@ -608,6 +613,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             shunterExhaust.emitterVelocityMode = gain ? ParticleSystemEmitterVelocityMode.Rigidbody : ParticleSystemEmitterVelocityMode.Transform;
         }
+        else if (trainCar.carType == TrainCarType.LocoDiesel)
+        {
+            dieselExhaust.emitterVelocityMode = gain ? ParticleSystemEmitterVelocityMode.Rigidbody : ParticleSystemEmitterVelocityMode.Transform;
+        }
 
         //if (gain)
         //{
@@ -651,6 +660,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             case TrainCarType.LocoShunter:
                 trainCar.GetComponent<DamageControllerShunter>().IgnoreDamage(set);
+                break;
+            case TrainCarType.LocoDiesel:
+                trainCar.GetComponent<DamageControllerDiesel>().IgnoreDamage(set);
                 break;
         }
     }
@@ -777,6 +789,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 case TrainCarType.LocoShunter:
                     data = trainCar.GetComponent<DamageControllerShunter>().GetDamageSaveData().ToString(Newtonsoft.Json.Formatting.None);
                     break;
+                case TrainCarType.LocoDiesel:
+                    data = trainCar.GetComponent<DamageControllerDiesel>().GetDamageSaveData().ToString(Newtonsoft.Json.Formatting.None);
+                    break;
             }
         }
 
@@ -789,6 +804,9 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             case TrainCarType.LocoShunter:
                 trainCar.GetComponent<DamageControllerShunter>().LoadDamagesState(JObject.Parse(carHealthData));
+                break;
+            case TrainCarType.LocoDiesel:
+                trainCar.GetComponent<DamageControllerDiesel>().LoadDamagesState(JObject.Parse(carHealthData));
                 break;
 
             default:
@@ -818,6 +836,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
                 case TrainCarType.LocoShunter:
                     shunterLocoSimulation.engineTemp.SetValue(location.Temperature);
                     shunterLocoSimulation.engineRPM.SetValue(location.RPM);
+                    break;
+                case TrainCarType.LocoDiesel:
+                    dieselLocoSimulation.engineTemp.SetValue(location.Temperature);
+                    dieselLocoSimulation.engineRPM.SetValue(location.RPM);
                     break;
             }
         }

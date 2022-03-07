@@ -150,6 +150,12 @@ namespace TrainPlugin
                             else
                                 train.MultipleUnit.IsRearMUConnectedTo = value;
                             break;
+                        case TrainCarType.LocoDiesel:
+                            if (data.Train1IsFront)
+                                train.MultipleUnit.IsFrontMUConnectedTo = value;
+                            else
+                                train.MultipleUnit.IsRearMUConnectedTo = value;
+                            break;
                     }
                 }
 
@@ -169,6 +175,12 @@ namespace TrainPlugin
                                 else
                                     train.MultipleUnit.IsRearMUConnectedTo = value;
                                 break;
+                            case TrainCarType.LocoDiesel:
+                                if (data.Train2IsFront)
+                                    train.MultipleUnit.IsFrontMUConnectedTo = value;
+                                else
+                                    train.MultipleUnit.IsRearMUConnectedTo = value;
+                            break;
                         }
                     }
                 }
@@ -697,6 +709,14 @@ namespace TrainPlugin
                             train.Shunter.IsSideFuse1On = false;
                             train.Shunter.IsSideFuse2On = false;
                         }
+                        else if (train.Diesel != null)
+                        {
+                            train.Diesel.IsEngineOn = false;
+                            train.Diesel.IsMainFuseOn = false;
+                            train.Diesel.IsSideFuse1On = false;
+                            train.Diesel.IsSideFuse2On = false;
+                            train.Diesel.IsSideFuse3On = false;
+                        }
                     }
                 }
             }
@@ -740,7 +760,7 @@ namespace TrainPlugin
                         Logger.Trace($"Train not found adding new one");
                     }
 
-                    if (train.CarType == TrainCarType.LocoShunter)
+                    if (train.CarType == TrainCarType.LocoShunter || train.CarType == TrainCarType.LocoDiesel)
                         switch (lever.Lever)
                         {
                             case Levers.Brake:
@@ -878,6 +898,46 @@ namespace TrainPlugin
                                 shunter.IsEngineOn = true;
                             else if (lever.Value == 0)
                                 shunter.IsEngineOn = false;
+                            break;
+                    }
+                    break;
+
+                case TrainCarType.LocoDiesel:
+                    if (train.Diesel == null)
+                        train.Diesel = new Diesel();
+
+                    Diesel diesel = train.Diesel;
+                    switch (lever.Lever)
+                    {
+                        case Levers.MainFuse:
+                            diesel.IsMainFuseOn = lever.Value == 1;
+                            if (lever.Value == 0)
+                                diesel.IsEngineOn = false;
+                            break;
+
+                        case Levers.SideFuse_1:
+                            diesel.IsSideFuse1On = lever.Value == 1;
+                            if (lever.Value == 0)
+                                diesel.IsEngineOn = false;
+                            break;
+
+                        case Levers.SideFuse_2:
+                            diesel.IsSideFuse2On = lever.Value == 1;
+                            if (lever.Value == 0)
+                                diesel.IsEngineOn = false;
+                            break;
+
+                        case Levers.SideFuse_3:
+                            diesel.IsSideFuse3On = lever.Value == 1;
+                            if (lever.Value == 0)
+                                diesel.IsEngineOn = false;
+                            break;
+
+                        case Levers.FusePowerStarter:
+                            if (diesel.IsSideFuse1On && diesel.IsSideFuse2On && diesel.IsSideFuse3On && diesel.IsMainFuseOn && lever.Value == 1)
+                                diesel.IsEngineOn = true;
+                            else if (lever.Value == 0)
+                                diesel.IsEngineOn = false;
                             break;
                     }
                     break;
