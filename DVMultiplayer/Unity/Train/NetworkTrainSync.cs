@@ -70,6 +70,33 @@ internal class NetworkTrainSync : MonoBehaviour
                 }
                 fuseBox.mainFuseObj.GetComponent<ToggleSwitchBase>().ValueChanged += OnTrainMainFuseChanged;
                 shunterDashboard.hornObj.GetComponent<ControlImplBase>().ValueChanged += ShunterHornUsed;
+                SingletonBehaviour<CoroutineManager>.Instance.Run(ShunterRotaryAmplitudeCheckerStartListen(fuseBox));
+                break;
+
+            case TrainCarType.LocoDiesel:
+                DieselDashboardControls dieselDashboard = loco.interior.GetComponentInChildren<DieselDashboardControls>();
+                FuseBoxPowerControllerDiesel dieselFuseBox = dieselDashboard.fuseBoxPowerControllerDiesel;
+                for (int i = 0; i < dieselFuseBox.sideFusesObj.Length; i++)
+                {
+                    ToggleSwitchBase sideFuse = dieselFuseBox.sideFusesObj[i].GetComponent<ToggleSwitchBase>();
+                    switch (i)
+                    {
+                        case 0:
+                            sideFuse.ValueChanged += OnTrainSideFuse_1Changed;
+                            break;
+
+                        case 1:
+                            sideFuse.ValueChanged += OnTrainSideFuse_2Changed;
+                            break;
+
+                        case 2:
+                            sideFuse.ValueChanged += OnTrainSideFuse_3Changed;
+                            break;
+                    }
+                }
+                dieselFuseBox.mainFuseObj.GetComponent<ToggleSwitchBase>().ValueChanged += OnTrainMainFuseChanged;
+                dieselDashboard.hornObj.GetComponent<ControlImplBase>().ValueChanged += DieselHornUsed;
+                SingletonBehaviour<CoroutineManager>.Instance.Run(DieselRotaryAmplitudeCheckerStartListen(dieselFuseBox));
                 yield return new WaitUntil(() => cabInputShunter.ctrl);
                 fuseBox.powerRotaryObj.GetComponent<RotaryAmplitudeChecker>().RotaryStateChanged += OnTrainFusePowerStarterStateChanged;
                 break;
@@ -213,6 +240,30 @@ internal class NetworkTrainSync : MonoBehaviour
                 fuseBox.mainFuseObj.GetComponent<ToggleSwitchBase>().ValueChanged -= OnTrainMainFuseChanged;
                 fuseBox.powerRotaryObj.GetComponent<RotaryAmplitudeChecker>().RotaryStateChanged -= OnTrainFusePowerStarterStateChanged;
                 break;
+
+            case TrainCarType.LocoDiesel:
+                FuseBoxPowerControllerDiesel dieselFuseBox = loco.interior.GetComponentInChildren<DieselDashboardControls>().fuseBoxPowerControllerDiesel;
+                for (int i = 0; i < dieselFuseBox.sideFusesObj.Length; i++)
+                {
+                    ToggleSwitchBase sideFuse = dieselFuseBox.sideFusesObj[i].GetComponent<ToggleSwitchBase>();
+                    switch (i)
+                    {
+                        case 0:
+                            sideFuse.ValueChanged -= OnTrainSideFuse_1Changed;
+                            break;
+
+                        case 1:
+                            sideFuse.ValueChanged -= OnTrainSideFuse_2Changed;
+                            break;
+
+                        case 2:
+                            sideFuse.ValueChanged -= OnTrainSideFuse_2Changed;
+                            break;
+                    }
+                }
+                dieselFuseBox.mainFuseObj.GetComponent<ToggleSwitchBase>().ValueChanged -= OnTrainMainFuseChanged;
+                dieselFuseBox.powerRotaryObj.GetComponent<RotaryAmplitudeChecker>().RotaryStateChanged -= OnTrainFusePowerStarterStateChanged;
+                break;
         }
     }
 
@@ -222,7 +273,30 @@ internal class NetworkTrainSync : MonoBehaviour
         loco = GetComponent<TrainCar>();
     }
 
+    private IEnumerator ShunterRotaryAmplitudeCheckerStartListen(FuseBoxPowerController fuseBox)
+    {
+        yield return new WaitUntil(() => fuseBox.powerRotaryObj.GetComponent<RotaryAmplitudeChecker>() != null);
+        fuseBox.powerRotaryObj.GetComponent<RotaryAmplitudeChecker>().RotaryStateChanged += OnTrainFusePowerStarterStateChanged;
+    }
+    private IEnumerator DieselRotaryAmplitudeCheckerStartListen(FuseBoxPowerControllerDiesel fuseBox)
+    {
+        yield return new WaitUntil(() => fuseBox.powerRotaryObj.GetComponent<RotaryAmplitudeChecker>() != null);
+        fuseBox.powerRotaryObj.GetComponent<RotaryAmplitudeChecker>().RotaryStateChanged += OnTrainFusePowerStarterStateChanged;
+    }
+
     private void ShunterHornUsed(ValueChangedEventArgs e)
+    {
+        if (!SingletonBehaviour<NetworkTrainManager>.Instance || SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
+            return;
+
+        float val = e.newValue;
+        if (val < .7f && val > .3f)
+            val = 0;
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(loco, Levers.Horn, val);
+    }
+
+    private void DieselHornUsed(ValueChangedEventArgs e)
     {
         if (!SingletonBehaviour<NetworkTrainManager>.Instance || SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
             return;
@@ -245,6 +319,14 @@ internal class NetworkTrainSync : MonoBehaviour
         else if (state == 1)
             val = 1;
         SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(loco, Levers.FusePowerStarter, val);
+    }
+
+    private void OnTrainSideFuse_3Changed(ValueChangedEventArgs e)
+    {
+        if (!SingletonBehaviour<NetworkTrainManager>.Instance || SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !loco || !listenToLocalPlayerInputs)
+            return;
+
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendNewLocoLeverValue(loco, Levers.SideFuse_3, e.newValue);
     }
 
     private void OnTrainSideFuse_2Changed(ValueChangedEventArgs e)

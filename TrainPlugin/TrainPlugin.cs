@@ -186,6 +186,12 @@ namespace TrainPlugin
                             else
                                 shunter.MultipleUnit.IsRearMUConnectedTo = value;
                             break;
+                        case TrainCarType.LocoDiesel:
+                            if (data.Train1IsFront)
+                                train.MultipleUnit.IsFrontMUConnectedTo = value;
+                            else
+                                train.MultipleUnit.IsRearMUConnectedTo = value;
+                            break;
                     }
                 }
 
@@ -206,6 +212,12 @@ namespace TrainPlugin
                                 else
                                     shunter.MultipleUnit.IsRearMUConnectedTo = value;
                                 break;
+                            case TrainCarType.LocoDiesel:
+                                if (data.Train2IsFront)
+                                    train.MultipleUnit.IsFrontMUConnectedTo = value;
+                                else
+                                    train.MultipleUnit.IsRearMUConnectedTo = value;
+                            break;
                         }
                     }
                 }
@@ -258,6 +270,22 @@ namespace TrainPlugin
                 IClient cl = players.FirstOrDefault(c => c.ID == authChange.PlayerId);
                 if(cl.ID != 0)
                     SendDelayedMessage(authChange, NetworkTags.TRAIN_AUTH_CHANGE, cl, (int)sentTo.OrderByDescending(c => c.RoundTripTime.SmoothedRtt).First().RoundTripTime.SmoothedRtt / 2 * 1000);
+                sentTo.Add(cl);
+
+                foreach(IClient client in players)
+                {
+                    if(!sentTo.Any(c => c.ID == client.ID))
+                    {
+                        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                        {
+                            writer.Write(authChange);
+                            using (Message msg = Message.Create((ushort)NetworkTags.TRAIN_AUTH_CHANGE, writer))
+                            {
+                                client.SendMessage(msg, SendMode.Reliable);
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -401,6 +429,7 @@ namespace TrainPlugin
                 {
                     case DamageType.Car:
                         train.CarHealth = damage.NewHealth;
+                        train.CarHealthData = damage.Data;
                         break;
 
                     case DamageType.Cargo:
@@ -475,9 +504,9 @@ namespace TrainPlugin
                     }
 
                     if (cockStateChanged.IsCouplerFront)
-                        train.IsFrontCouplerHoseConnected = cockStateChanged.IsOpen;
+                        train.IsFrontCouplerCockOpen = cockStateChanged.IsOpen;
                     else
-                        train.IsRearCouplerHoseConnected = cockStateChanged.IsOpen;
+                        train.IsRearCouplerCockOpen = cockStateChanged.IsOpen;
                 }
             }
 
@@ -503,9 +532,9 @@ namespace TrainPlugin
                     }
 
                     if (hoseStateChanged.IsC1Front)
-                        train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
+                        train.FrontCouplerHoseConnectedTo = hoseStateChanged.TrainIdC2;
                     else
-                        train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
+                        train.RearCouplerHoseConnectedTo = hoseStateChanged.TrainIdC2;
 
                     if (hoseStateChanged.IsConnected)
                     {
@@ -520,9 +549,9 @@ namespace TrainPlugin
                         }
 
                         if (hoseStateChanged.IsC2Front)
-                            train.IsFrontCouplerHoseConnected = hoseStateChanged.IsConnected;
+                            train.FrontCouplerHoseConnectedTo = hoseStateChanged.TrainIdC1;
                         else
-                            train.IsRearCouplerHoseConnected = hoseStateChanged.IsConnected;
+                            train.RearCouplerHoseConnectedTo = hoseStateChanged.TrainIdC1;
                     }
                 }
             }
@@ -551,16 +580,16 @@ namespace TrainPlugin
                     if (isCoupled)
                     {
                         if (coupledChanged.IsC1Front)
-                            train.IsFrontCouplerCoupled = true;
+                            train.FrontCouplerCoupledTo = coupledChanged.TrainIdC2;
                         else
-                            train.IsRearCouplerCoupled = true;
+                            train.RearCouplerCoupledTo = coupledChanged.TrainIdC2;
                     }
                     else
                     {
                         if (coupledChanged.IsC1Front)
-                            train.IsFrontCouplerCoupled = false;
+                            train.FrontCouplerCoupledTo = "";
                         else
-                            train.IsRearCouplerCoupled = false;
+                            train.RearCouplerCoupledTo = "";
                     }
 
                     train = worldTrains.FirstOrDefault(t => t.Guid == coupledChanged.TrainIdC2);
@@ -576,16 +605,16 @@ namespace TrainPlugin
                     if (isCoupled)
                     {
                         if (coupledChanged.IsC2Front)
-                            train.IsFrontCouplerCoupled = true;
+                            train.FrontCouplerCoupledTo = coupledChanged.TrainIdC1;
                         else
-                            train.IsRearCouplerCoupled = true;
+                            train.RearCouplerCoupledTo = coupledChanged.TrainIdC1;
                     }
                     else
                     {
                         if (coupledChanged.IsC2Front)
-                            train.IsFrontCouplerCoupled = false;
+                            train.FrontCouplerCoupledTo = "";
                         else
-                            train.IsRearCouplerCoupled = false;
+                            train.RearCouplerCoupledTo = "";
                     }
                 }
             }
@@ -722,6 +751,14 @@ namespace TrainPlugin
                                 shunter.IsSideFuse2On = false;
                             }
                         }
+                        else if (train.Diesel != null)
+                        {
+                            train.Diesel.IsEngineOn = false;
+                            train.Diesel.IsMainFuseOn = false;
+                            train.Diesel.IsSideFuse1On = false;
+                            train.Diesel.IsSideFuse2On = false;
+                            train.Diesel.IsSideFuse3On = false;
+                        }
                     }
                 }
             }
@@ -765,7 +802,7 @@ namespace TrainPlugin
                         Logger.Trace($"Train not found adding new one");
                     }
 
-                    if (train.CarType == TrainCarType.LocoShunter)
+                    if (train.CarType == TrainCarType.LocoShunter || train.CarType == TrainCarType.LocoDiesel)
                         switch (lever.Lever)
                         {
                             case Levers.Brake:
@@ -790,6 +827,7 @@ namespace TrainPlugin
 
         private void UpdateTrainPosition(Message message, IClient sender)
         {
+            bool isReliable = false;
             if (worldTrains != null)
             {
                 using (DarkRiftReader reader = message.GetReader())
@@ -806,12 +844,16 @@ namespace TrainPlugin
                         train.Forward = data.Forward;
                         train.Bogies = data.Bogies;
                         train.IsStationary = data.IsStationary;
-                        train.UpdatedAt = data.Timestamp;
+                        train.updatedAt = data.Timestamp;
+                        isReliable = train.IsStationary;
                     }
                 }
             }
             //Logger.Trace("[SERVER] > TRAIN_LOCATION_UPDATE");
-            UnreliableSendToOthers(message, sender);
+            if (!isReliable)
+                UnreliableSendToOthers(message, sender);
+            else
+                ReliableSendToOthers(message, sender);
         }
 
         private void UnreliableSendToOthers(Message message, IClient sender)
@@ -902,6 +944,46 @@ namespace TrainPlugin
                                 shunter.IsEngineOn = true;
                             else if (lever.Value == 0)
                                 shunter.IsEngineOn = false;
+                            break;
+                    }
+                    break;
+
+                case TrainCarType.LocoDiesel:
+                    if (train.Diesel == null)
+                        train.Diesel = new Diesel();
+
+                    Diesel diesel = train.Diesel;
+                    switch (lever.Lever)
+                    {
+                        case Levers.MainFuse:
+                            diesel.IsMainFuseOn = lever.Value == 1;
+                            if (lever.Value == 0)
+                                diesel.IsEngineOn = false;
+                            break;
+
+                        case Levers.SideFuse_1:
+                            diesel.IsSideFuse1On = lever.Value == 1;
+                            if (lever.Value == 0)
+                                diesel.IsEngineOn = false;
+                            break;
+
+                        case Levers.SideFuse_2:
+                            diesel.IsSideFuse2On = lever.Value == 1;
+                            if (lever.Value == 0)
+                                diesel.IsEngineOn = false;
+                            break;
+
+                        case Levers.SideFuse_3:
+                            diesel.IsSideFuse3On = lever.Value == 1;
+                            if (lever.Value == 0)
+                                diesel.IsEngineOn = false;
+                            break;
+
+                        case Levers.FusePowerStarter:
+                            if (diesel.IsSideFuse1On && diesel.IsSideFuse2On && diesel.IsSideFuse3On && diesel.IsMainFuseOn && lever.Value == 1)
+                                diesel.IsEngineOn = true;
+                            else if (lever.Value == 0)
+                                diesel.IsEngineOn = false;
                             break;
                     }
                     break;

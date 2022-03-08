@@ -68,12 +68,25 @@ internal class NetworkTurntableSync : MonoBehaviour
                     IsAnyoneInControlArea = true;
                     playerAuthId = newAuthorityPlayer.GetComponent<NetworkPlayerSync>().Id;
                     SingletonBehaviour<NetworkTurntableManager>.Instance.SendRequestAuthority(turntable, playerAuthId);
+                    if (NetworkManager.IsHost())
+                    {
+                        foreach (TrainCar car in carsOnTurntable)
+                        {
+                            if (NetworkManager.IsHost()) car.GetComponent<NetworkTrainPosSync>().CheckAuthorityChange();
+                        }
+                    }
                 }
                 else if(!newAuthorityPlayer && IsAnyoneInControlArea)
                 {
                     IsAnyoneInControlArea = false;
                     SingletonBehaviour<NetworkTurntableManager>.Instance.SendReleaseAuthority(turntable);
                     playerAuthId = 0;
+                    foreach(TrainCar car in carsOnTurntable)
+                    {
+                        var trainSync = car.GetComponent<NetworkTrainPosSync>();
+                        trainSync.resetAuthority = true;
+                        if (NetworkManager.IsHost()) trainSync.CheckAuthorityChange();
+                    }
                 }
             }
         }
@@ -81,7 +94,7 @@ internal class NetworkTurntableSync : MonoBehaviour
 
     private void Update()
     {
-        if (!SingletonBehaviour<NetworkTurntableManager>.Instance)
+        if (!SingletonBehaviour<NetworkTurntableManager>.Exists || !SingletonBehaviour<NetworkPlayerManager>.Exists || !turntable)
             return;
 
         List<TrainCar> currentCarsOnTurntable = new List<TrainCar>();
@@ -114,7 +127,7 @@ internal class NetworkTurntableSync : MonoBehaviour
             if(currentCarsOnTurntable.Count == 0 || !currentCarsOnTurntable.Contains(car))
             {
                 carsOnTurntable.Remove(car);
-                if(car.logicCar != null)
+                if(car.logicCar != null && car.GetComponent<NetworkTrainPosSync>())
                 {
                     car.GetComponent<NetworkTrainPosSync>().turntable = null;
                     Main.Log($"Train: {car.CarGUID} left turntable");
@@ -126,11 +139,12 @@ internal class NetworkTurntableSync : MonoBehaviour
         {
             if (currentCarsOnTurntable.Count == 0 || !carsOnTurntable.Contains(car))
             {
-                if (car.logicCar != null)
+                if (car.logicCar != null && car.GetComponent<NetworkTrainPosSync>())
                 {
                     car.GetComponent<NetworkTrainPosSync>().turntable = this;
                     Main.Log($"Train: {car.CarGUID} entered turntable");
                     carsOnTurntable.Add(car);
+                    if (NetworkManager.IsHost()) car.GetComponent<NetworkTrainPosSync>().CheckAuthorityChange();
                     //car.CarDamage.IgnoreDamage(true);
                 }
             }

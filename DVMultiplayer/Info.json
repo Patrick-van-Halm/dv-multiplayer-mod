@@ -2,7 +2,7 @@
   "Id": "DVMultiplayer",
   "DisplayName": "Derail Valley Multiplayer",
   "Author": "Patrick van Halm",
-  "Version": "dev-1.4.0-steamer",
+  "Version": "1.3.4",
   "LoadAfter": ["PassengerJobs"],
   "AssemblyName": "DVMultiplayer.dll",
   "EntryMethod": "DVMultiplayer.Main.Load",

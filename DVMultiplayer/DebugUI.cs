@@ -1,4 +1,5 @@
-﻿using DVMultiplayer.Networking;
+﻿using DarkRift.Client.Unity;
+using DVMultiplayer.Networking;
 using DVMultiplayer.Utils;
 using UnityEngine;
 
@@ -37,6 +38,26 @@ namespace DVMultiplayer
                 GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"None", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
             ypos += 20;
 
+            // Authority Car Status
+            if (NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Exists && PlayerManager.Car)
+            {
+                var serverState = SingletonBehaviour<NetworkTrainManager>.Instance.GetServerStateById(PlayerManager.Car.CarGUID);
+                bool hasAuthority = serverState.AuthorityPlayerId == SingletonBehaviour<UnityClient>.Instance.ID;
+                GUI.Label(new Rect(Screen.width - 245, ypos, 117, 20), $"Has Authority:");
+                GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"{hasAuthority}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
+                ypos += 20;
+            }
+            else if (NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Exists && !PlayerManager.Car)
+            {
+                var authCar = SingletonBehaviour<NetworkTrainManager>.Instance.GetAuthorityCar();
+                GUI.Label(new Rect(Screen.width - 245, ypos, 150, 20), $"Has Authority Over:");
+                if(authCar)
+                    GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"{authCar.ID}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
+                else
+                    GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"None", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
+                ypos += 20;
+            }
+
             // Connection Status
             GUI.Label(new Rect(Screen.width - 245, ypos, 117, 20), $"Connection State:");
             if (!NetworkManager.IsClient() && !NetworkManager.IsHost())
@@ -54,7 +75,12 @@ namespace DVMultiplayer
             {
                 foreach (NetworkPlayerSync playerSync in SingletonBehaviour<NetworkPlayerManager>.Instance.GetAllNonLocalPlayerSync())
                 {
-                    GUI.Label(new Rect(Screen.width - 245, ypos, 117, 20), $"Player [{playerSync.Id}] train:");
+                    string username = "";
+                    if (playerSync.Username.Length < 20)
+                        username = playerSync.Username;
+                    else
+                        username = playerSync.Id.ToString();
+                    GUI.Label(new Rect(Screen.width - 245, ypos, 200, 20), $"Player [{username}] train:");
                     if (playerSync.Train)
                         GUI.Label(new Rect(Screen.width - 123, ypos - 1, 117, 20), $"{playerSync.Train.ID}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
                     else
@@ -63,24 +89,13 @@ namespace DVMultiplayer
 
                     if (playerSync.Train && playerSync.Train.IsLoco)
                     {
-                        GUI.Label(new Rect(Screen.width - 245, ypos, 187, 20), $"InteriorLoaded:");
-                        GUI.Label(new Rect(Screen.width - 53, ypos - 1, 47, 20), $"{playerSync.Train.IsInteriorLoaded}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
-                        ypos += 15;
-                        LocoControllerBase controller = playerSync.Train.GetComponent<LocoControllerBase>();
-                        GUI.Label(new Rect(Screen.width - 245, ypos, 187, 20), $"LocoControllerBase InputActive:");
-                        GUI.Label(new Rect(Screen.width - 53, ypos - 1, 47, 20), $"{controller.inputActive}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
-                        ypos += 15;
-                        GUI.Label(new Rect(Screen.width - 245, ypos, 187, 20), $"Train ThrottleValue:");
-                        GUI.Label(new Rect(Screen.width - 53, ypos - 1, 47, 20), $"{controller.throttle.ToString("G3")}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
+                        var serverState = SingletonBehaviour<NetworkTrainManager>.Instance.GetServerStateById(playerSync.Train.CarGUID);
+                        bool hasAuthority = serverState.AuthorityPlayerId == playerSync.Id;
+                        GUI.Label(new Rect(Screen.width - 245, ypos, 187, 20), $"Has Authority:");
+                        GUI.Label(new Rect(Screen.width - 53, ypos - 1, 47, 20), $"{hasAuthority}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
                         ypos += 15;
                         GUI.Label(new Rect(Screen.width - 245, ypos, 187, 20), $"Train Velocity:");
-                        GUI.Label(new Rect(Screen.width - 53, ypos - 1, 47, 20), $"{controller.train.rb.velocity.ToString("G3")}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
-                        ypos += 15;
-                        GUI.Label(new Rect(Screen.width - 245, ypos, 187, 20), $"Train ForwardSpeed:");
-                        GUI.Label(new Rect(Screen.width - 53, ypos - 1, 47, 20), $"{controller.GetForwardSpeed()}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
-                        ypos += 15;
-                        GUI.Label(new Rect(Screen.width - 245, ypos, 187, 20), $"Train engineRPM:");
-                        GUI.Label(new Rect(Screen.width - 53, ypos - 1, 47, 20), $"{controller.GetComponent<ShunterLocoSimulation>().engineRPM.value}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
+                        GUI.Label(new Rect(Screen.width - 53, ypos - 1, 47, 20), $"{playerSync.Train.rb.velocity.ToString("G3")}", UUI.GenerateStyle(allignment: TextAnchor.MiddleRight));
                         ypos += 15;
                     }
                 }
