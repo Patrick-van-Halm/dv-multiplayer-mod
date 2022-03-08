@@ -249,7 +249,7 @@ namespace DarkRift.Client.Unity
         private void Update()
         {
             //Execute all the queued dispatcher tasks
-            Dispatcher.ExecuteDispatcherTasks   ();
+            Dispatcher.ExecuteDispatcherTasks();
         }
 
         protected override void OnDestroy()

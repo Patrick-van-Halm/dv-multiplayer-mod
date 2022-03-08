@@ -1,5 +1,4 @@
-﻿using System.Text.RegularExpressions;
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -46,11 +45,7 @@ internal class InputScreen : MonoBehaviour
         TextEditor editor = new TextEditor();
         if (editor.Paste())
         {
-            editor.text = editor.text.Trim();
-            if (isDigitOnly)
-                Input += Regex.Replace(editor.text, "[^0-9]*$", "");
-            else
-                Input += editor.text.Replace(" ", "");
+            Input += editor.text;
         }
     }
 
@@ -83,9 +78,7 @@ internal class InputScreen : MonoBehaviour
                     {
                         confirmButton.onClick?.Invoke();
                     }
-                    else if (char.IsDigit(c) && isDigitOnly)
-                        input += c;
-                    else if ((char.IsLetterOrDigit(c) || c == '.' || c == '-' || c != ' ') && !isDigitOnly)
+                    else if ((char.IsLetterOrDigit(c) || c == '.' || c == '-') && !isDigitOnly || char.IsDigit(c) && isDigitOnly)
                     {
                         Input += c;
                     }

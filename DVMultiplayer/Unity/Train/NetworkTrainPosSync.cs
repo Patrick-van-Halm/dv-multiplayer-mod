@@ -4,7 +4,6 @@ using DVMultiplayer.DTO.Train;
 using DVMultiplayer.DTO.Train.Positioning;
 using DVMultiplayer.Networking;
 using DVMultiplayer.Unity.Train.Locomotives;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,8 +14,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
 {
     private TrainCar trainCar;
     internal WorldTrain serverState;
+    public bool isOutOfSync = false;
+    private Vector3 prevPos;
     private bool isStationary;
 
+    //private bool hostStationary;
     private Vector3 newPos = Vector3.zero;
     private Quaternion newRot = Quaternion.identity;
     //internal bool isLocationApplied;
@@ -26,15 +28,13 @@ internal class NetworkTrainPosSync : MonoBehaviour
     public bool hasLocalPlayerAuthority = false;
     internal bool resetAuthority = false;
     internal NetworkTurntableSync turntable = null;
+    internal Coroutine authorityCoro = null;
+    private float drag;
+    private Coroutine damageEnablerCoro;
     public bool IsCarDamageEnabled { get; internal set; }
     NetworkPlayerSync localPlayer;
-    ShunterLocoSimulation shunterLocoSimulation = null;
-    DieselLocoSimulation dieselLocoSimulation = null;
     ParticleSystem.MainModule shunterExhaust;
-    ParticleSystem.MainModule dieselExhaust;
-    private bool isBeingDestroyed;
-    internal Trainset tempFrontTrainsetWithAuthority;
-    internal Trainset tempRearTrainsetWithAuthority;
+    private NetworkLocomotive locomotive;
 
     //private TrainAudio trainAudio;
     //private BogieAudioController[] bogieAudios;
@@ -52,32 +52,40 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.Log($"Listening to derailment/rerail events");
         trainCar.OnDerailed += TrainDerail;
         trainCar.OnRerailed += TrainRerail;
-        localPlayer = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync();
+        Main.Log($"Listening to LogicCar loaded event");
+        trainCar.LogicCarInitialized += TrainCar_LogicCarInitialized;
 
-        isStationary = trainCar.isStationary;
+        trainCar.CarDamage.IgnoreDamage(true);
+        trainCar.stress.enabled = false;
+        trainCar.TrainCarCollisions.enabled = false;
+
+        Main.Log($"Set kinematic");
+        trainCar.rb.isKinematic = true;
+        IsCarDamageEnabled = false;
+        localPlayer = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayerSync();
 
         Main.Log($"Listening to movement changed event");
         trainCar.MovementStateChanged += TrainCar_MovementStateChanged;
 
 
         trainCar.CarDamage.CarEffectiveHealthStateUpdate += OnBodyDamageTaken;
-
-        if (trainCar.carType == TrainCarType.LocoShunter)
-        {
-            shunterLocoSimulation = GetComponent<ShunterLocoSimulation>();
-            shunterExhaust = trainCar.transform.Find("[particles]").Find("ExhaustEngineSmoke").GetComponent<ParticleSystem>().main;
-        }
-        else if (trainCar.carType == TrainCarType.LocoDiesel)
-        {
-            dieselLocoSimulation = GetComponent<DieselLocoSimulation>();
-            dieselExhaust = trainCar.transform.Find("[particles]").Find("ExhaustEngineSmoke").GetComponent<ParticleSystem>().main;
-        }
-
         if (!trainCar.IsLoco)
         {
+            trainCar.CargoDamage.CargoDamaged += OnCargoDamageTaken;
             trainCar.CargoLoaded += OnCargoLoaded;
             trainCar.CargoUnloaded += OnCargoUnloaded;
-            trainCar.CargoDamage.CargoDamaged += OnCargoDamageTaken;
+        }
+
+        switch (trainCar.carType)
+        {
+            case TrainCarType.LocoShunter:
+                locomotive = gameObject.AddComponent<NetworkShunterSync>();
+                break;
+
+            case TrainCarType.LocoSteamHeavy:
+            case TrainCarType.LocoSteamHeavyBlue:
+                locomotive = gameObject.AddComponent<NetworkSteamerSync>();
+                break;
         }
 
         //for(int i = 0; i < trainCar.Bogies.Length; i++)
@@ -87,36 +95,20 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
         if (NetworkManager.IsHost())
         {
+            authorityCoro = SingletonBehaviour<CoroutineManager>.Instance.Run(CheckAuthorityChange());
             trainCar.TrainsetChanged += TrainCar_TrainsetChanged;
             SetAuthority(true);
         }
-        else
+
+        if (trainCar.IsLoco)
         {
-            SetAuthority(false);
+            locomotive.UpdateAuthorityPhysics(hasLocalPlayerAuthority);
         }
     }
 
-    private void TrainCar_TrainsetChanged(Trainset set)
+    private void TrainCar_TrainsetChanged(Trainset _)
     {
-        if (isBeingDestroyed || set == null || set.firstCar == null || trainCar.logicCar == null || !trainCar)
-            return;
-        //Issue with trainset being detatched in the middle positioning not updating correctly.
-        if (set.locoIndices.Count == 0 && set.firstCar == trainCar)
-            StartCoroutine(ResetAuthorityToHostWhenStationary(set));
-        else
-            CheckAuthorityChange();
-
-        if (!Trainset.allSets.Contains(tempFrontTrainsetWithAuthority))
-            tempFrontTrainsetWithAuthority = null;
-
-        if (!Trainset.allSets.Contains(tempRearTrainsetWithAuthority))
-            tempRearTrainsetWithAuthority = null;
-    }
-
-    private IEnumerator ResetAuthorityToHostWhenStationary(Trainset set)
-    {
-        yield return new WaitUntil(() => velocity.magnitude * 3.6f < 1);
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(set, localPlayer.Id);
+        resetAuthority = true;
     }
 
     private void OnCargoUnloaded()
@@ -135,295 +127,136 @@ internal class NetworkTrainPosSync : MonoBehaviour
         SingletonBehaviour<NetworkTrainManager>.Instance.CargoStateChanged(trainCar, type, true);
     }
 
-    internal void CheckAuthorityChange()
+    private IEnumerator CheckAuthorityChange()
     {
-        if (!trainCar || trainCar.logicCar == null || !trainCar.IsLoco)
-            return;
-
-        try
+        while (NetworkManager.IsHost())
         {
-            // If not on turntable or no one is in control shed of turntable
-            if (turntable == null || turntable != null && !turntable.IsAnyoneInControlArea)
-            {
-                bool authNeedsChange = false;
-                GameObject newOwner = null;
-                GameObject currentOwner;
-                if (!hasLocalPlayerAuthority)
-                    currentOwner = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayerById(serverState.AuthorityPlayerId);
-                else
-                    currentOwner = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
+            yield return new WaitForSeconds(.1f);
 
-                // Should force authority change
-                if (!resetAuthority)
+            if (serverState != null && SingletonBehaviour<NetworkPlayerManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Exists && trainCar && !trainCar.frontCoupler.coupledTo)
+            {
+                try
                 {
-                    // Check if current owner is disconnected
-                    if (currentOwner)
+                    if (turntable == null || turntable != null && !turntable.IsAnyoneInControlArea)
                     {
-                        // Get new owner that is valid
-                        newOwner = GetNewOwnerIfConditionsAreMet(currentOwner);
-                        authNeedsChange = newOwner is object;
-                    }
-                    else
-                    {
-                        // Give host authority if current client is disconnected
-                        newOwner = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
-                        authNeedsChange = true;
-                    }
-                }
-                else
-                {
-                    // Force authority change
-                    authNeedsChange = true;
-                    // Use host as fallback if no one is in control
-                    newOwner = GetPlayerAuthorityReplacement(true);
-                }
+                        bool authNeedsChange = false;
+                        GameObject player = null;
+                        NetworkPlayerManager playerManager = SingletonBehaviour<NetworkPlayerManager>.Instance;
+                        if (SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrainSet(trainCar.trainset).Length == 0)
+                            continue;
 
-                // If authority needs to be changed
-                if (authNeedsChange)
-                {
-                    NetworkPlayerSync newOwnerPlayerData = newOwner.GetComponent<NetworkPlayerSync>();
-                    bool shouldSendAuthChange = resetAuthority ? true : newOwnerPlayerData.Id != serverState.AuthorityPlayerId;
-
-                    // Check if the current authority is already given to the new owner
-                    if (newOwnerPlayerData.Id == serverState.AuthorityPlayerId && !shouldSendAuthChange)
-                    {
-                        // Check if all cars in the trainset have the correct authority
-                        shouldSendAuthChange = CheckTrainsetMismatchesAuthority(newOwnerPlayerData.Id);
-                    }
-
-                    // Check if authority still needs to be sent
-                    if (shouldSendAuthChange)
-                    {
-                        // Send authority change
-                        SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, newOwnerPlayerData.Id);
-                        resetAuthority = false;
-                    }
-                }
-                else
-                {
-                    // Set the new owner to current owner
-                    if (newOwner == null)
-                        newOwner = currentOwner;
-                    NetworkPlayerSync newOwnerPlayerData = newOwner.GetComponent<NetworkPlayerSync>();
-
-                    // Send authority change if trainset mismatched
-                    if (CheckTrainsetMismatchesAuthority(newOwnerPlayerData.Id))
-                        SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, newOwnerPlayerData.Id);
-                }
-            }
-            else
-            {
-                // Send authority change if on turntable based of turntable controller
-                if (serverState.AuthorityPlayerId != turntable.playerAuthId)
-                    SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, turntable.playerAuthId);
-            }
-        }
-        catch (Exception ex)
-        {
-            Main.Log($"Exception thrown in authority check. {ex.Message}");
-        }
-    }
-
-    private bool CheckTrainsetMismatchesAuthority(ushort id)
-    {
-        foreach (TrainCar car in trainCar.trainset.cars)
-        {
-            // If train logic car not set
-            if (car.logicCar == null)
-                continue;
-
-            // Get the server state
-            WorldTrain state = SingletonBehaviour<NetworkTrainManager>.Instance.GetServerStateById(car.CarGUID);
-            if (state.AuthorityPlayerId != id)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private GameObject GetNewOwnerIfConditionsAreMet(GameObject currentOwner)
-    {
-        if (tempFrontTrainsetWithAuthority != null || tempRearTrainsetWithAuthority != null)
-            return null;
-
-        if(velocity.magnitude * 3.6f >= .2f)
-        {
-            StartCoroutine(WaitTilTrainIsStationaryThenRecheck());
-            return null;
-        }
-
-        // Is like Playermanager.Car but then for all clients
-        TrainCar currentOwnerCurrentCar = currentOwner.GetComponent<NetworkPlayerSync>().Train;
-
-        // Set fallback option
-        bool useFallback = currentOwnerCurrentCar && !currentOwnerCurrentCar.trainset.cars.Contains(trainCar);
-
-        // Check if player is on the ground
-        if (!currentOwnerCurrentCar)
-            return GetPlayerAuthorityReplacement(useFallback);
-
-        // Check if player is in a different trainset that is not within couple range
-        if (!currentOwnerCurrentCar.trainset.cars.Contains(trainCar))
-            return GetPlayerAuthorityReplacement(useFallback);
-
-        return null;
-    }
-
-    private IEnumerator WaitTilTrainIsStationaryThenRecheck()
-    {
-        yield return new WaitUntil(() => velocity.magnitude * 3.6f < 1);
-        CheckAuthorityChange();
-    }
-
-    private void GainAndReleaseAuthorityOfTrainsInRangeOfCurrent()
-    {
-        if (!trainCar.rearCoupler || !trainCar.frontCoupler || velocity.magnitude * 3.6f <= .5f)
-            return;
-
-        GameObject collidedCouplerRear = trainCar.rearCoupler.GetFirstCouplerInRange(3)?.gameObject;
-        GameObject collidedCouplerFront = trainCar.frontCoupler.GetFirstCouplerInRange(3)?.gameObject;
-
-        if (collidedCouplerRear && collidedCouplerRear.GetComponent<Coupler>() && collidedCouplerRear.GetComponent<Coupler>().train != trainCar)
-        {
-            var coupler = collidedCouplerRear.GetComponent<Coupler>();
-            var otherTrain = coupler.train;
-            var otherTrainServerState = SingletonBehaviour<NetworkTrainManager>.Instance.GetServerStateById(otherTrain.CarGUID);
-            if (otherTrainServerState != null && serverState.AuthorityPlayerId != otherTrainServerState.AuthorityPlayerId)
-            {
-                if (tempRearTrainsetWithAuthority != otherTrain.trainset)
-                {
-                    ushort gainer = otherTrainServerState.AuthorityPlayerId;
-                    if (tempRearTrainsetWithAuthority == null)
-                        gainer = serverState.AuthorityPlayerId;
-
-                    var trainSync = otherTrain.GetComponent<NetworkTrainPosSync>();
-                    if (coupler.isFrontCoupler)
-                        trainSync.tempFrontTrainsetWithAuthority = trainCar.trainset;
-                    else
-                        trainSync.tempRearTrainsetWithAuthority = trainCar.trainset;
-                    SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(otherTrain.trainset, gainer);
-                    tempRearTrainsetWithAuthority = otherTrain.trainset;
-                }
-            }
-        }
-
-        if (!collidedCouplerRear && tempRearTrainsetWithAuthority != null)
-        {
-            var frontTrain = tempRearTrainsetWithAuthority.firstCar.GetComponent<NetworkTrainPosSync>();
-            var rearTrain = tempRearTrainsetWithAuthority.lastCar.GetComponent<NetworkTrainPosSync>();
-
-            tempRearTrainsetWithAuthority = null;
-            if (frontTrain.tempFrontTrainsetWithAuthority == trainCar.trainset)
-                frontTrain.tempFrontTrainsetWithAuthority = null;
-
-            if (frontTrain.tempRearTrainsetWithAuthority == trainCar.trainset)
-                frontTrain.tempRearTrainsetWithAuthority = null;
-
-            if (rearTrain.tempFrontTrainsetWithAuthority == trainCar.trainset)
-                rearTrain.tempFrontTrainsetWithAuthority = null;
-
-            if (rearTrain.tempRearTrainsetWithAuthority == trainCar.trainset)
-                rearTrain.tempRearTrainsetWithAuthority = null;
-
-            frontTrain.CheckAuthorityChange();
-            rearTrain.CheckAuthorityChange();
-            CheckAuthorityChange();
-        }
-
-        if (collidedCouplerFront && collidedCouplerFront.GetComponent<Coupler>() && collidedCouplerFront.GetComponent<Coupler>().train != trainCar)
-        {
-            var coupler = collidedCouplerFront.GetComponent<Coupler>();
-            var otherTrain = coupler.train;
-            var otherTrainServerState = SingletonBehaviour<NetworkTrainManager>.Instance.GetServerStateById(otherTrain.CarGUID);
-            if (otherTrainServerState != null && serverState.AuthorityPlayerId != otherTrainServerState.AuthorityPlayerId)
-            {
-                if (tempFrontTrainsetWithAuthority != otherTrain.trainset)
-                {
-                    var trainSync = otherTrain.GetComponent<NetworkTrainPosSync>();
-                    if (coupler.isFrontCoupler)
-                        trainSync.tempFrontTrainsetWithAuthority = trainCar.trainset;
-                    else
-                        trainSync.tempRearTrainsetWithAuthority = trainCar.trainset;
-                    SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(otherTrain.trainset, serverState.AuthorityPlayerId);
-                    tempFrontTrainsetWithAuthority = otherTrain.trainset;
-                }
-            }
-        }
-
-        if (!collidedCouplerFront && tempFrontTrainsetWithAuthority != null)
-        {
-            var frontTrain = tempFrontTrainsetWithAuthority.firstCar.GetComponent<NetworkTrainPosSync>();
-            var rearTrain = tempFrontTrainsetWithAuthority.lastCar.GetComponent<NetworkTrainPosSync>();
-
-            tempFrontTrainsetWithAuthority = null;
-            if (frontTrain.tempFrontTrainsetWithAuthority == trainCar.trainset)
-                frontTrain.tempFrontTrainsetWithAuthority = null;
-
-            if (frontTrain.tempRearTrainsetWithAuthority == trainCar.trainset)
-                frontTrain.tempRearTrainsetWithAuthority = null;
-
-            if (rearTrain.tempFrontTrainsetWithAuthority == trainCar.trainset)
-                rearTrain.tempFrontTrainsetWithAuthority = null;
-
-            if (rearTrain.tempRearTrainsetWithAuthority == trainCar.trainset)
-                rearTrain.tempRearTrainsetWithAuthority = null;
-
-            frontTrain.CheckAuthorityChange();
-            rearTrain.CheckAuthorityChange();
-            CheckAuthorityChange();
-        }
-    }
-
-    private GameObject GetPlayerAuthorityReplacement(bool useFallback = false)
-    {
-        // Get players on current car
-        GameObject[] playersInCar = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(trainCar);
-        if (playersInCar.Length > 0)
-        {
-            // Check if player is valid
-            foreach(GameObject playerObject in playersInCar)
-            {
-                if(playerObject.GetComponent<NetworkPlayerSync>())
-                {
-                    return playerObject;
-                }
-            }
-        }
-        else
-        {
-            foreach (int locoId in trainCar.trainset.locoIndices)
-            {
-                // Get locomotive in trainset
-                TrainCar loco = trainCar.trainset.cars[locoId];
-                if (!loco || loco == trainCar) continue;
-
-                // Get players on locomotive in trainset
-                playersInCar = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayersInTrain(loco);
-                if (playersInCar.Length > 0)
-                {
-                    // Check if player is valid
-                    foreach (GameObject playerObject in playersInCar)
-                    {
-                        if (playerObject.GetComponent<NetworkPlayerSync>())
+                        if (!resetAuthority)
                         {
-                            return playerObject;
+                            GameObject ply;
+                            if (serverState.AuthorityPlayerId != 0)
+                                ply = SingletonBehaviour<NetworkPlayerManager>.Instance.GetPlayerById(serverState.AuthorityPlayerId);
+                            else
+                                ply = SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
+
+                            if (ply)
+                            {
+                                TrainCar car = ply.GetComponent<NetworkPlayerSync>().Train;
+                                if (!car && velocity.magnitude * 3.6f < 1)
+                                {
+                                    foreach (int locoId in trainCar.trainset.locoIndices)
+                                    {
+                                        TrainCar loco = trainCar.trainset.cars[locoId];
+                                        if (!loco) continue;
+                                        GameObject[] playersInLoco = playerManager.GetPlayersInTrain(loco);
+                                        if (playersInLoco.Length > 0)
+                                        {
+                                            player = playersInLoco[0];
+                                            authNeedsChange = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                else if (car && !trainCar.trainset.cars.Contains(car))
+                                {
+                                    authNeedsChange = true;
+                                    foreach (int locoId in trainCar.trainset.locoIndices)
+                                    {
+                                        TrainCar loco = trainCar.trainset.cars[locoId];
+                                        if (!loco) continue;
+                                        GameObject[] playersInLoco = playerManager.GetPlayersInTrain(trainCar.trainset.cars[locoId]);
+                                        if (playersInLoco.Length > 0)
+                                        {
+                                            player = playersInLoco[0];
+                                            break;
+                                        }
+
+                                        if (!loco.GetComponent<NetworkTrainPosSync>()) continue;
+                                        WorldTrain train = loco.GetComponent<NetworkTrainPosSync>().serverState;
+                                        if (train != null)
+                                        {
+                                            player = playerManager.GetPlayerById(train.AuthorityPlayerId);
+                                            break;
+                                        }
+                                    }
+
+                                    if (!player)
+                                        player = playerManager.GetLocalPlayer();
+                                }
+                            }
+                            else
+                            {
+                                player = playerManager.GetLocalPlayer();
+                                authNeedsChange = true;
+                            }
+                        }
+                        else
+                        {
+                            authNeedsChange = true;
+                            foreach (int locoId in trainCar.trainset.locoIndices)
+                            {
+                                TrainCar loco = trainCar.trainset.cars[locoId];
+                                if (!loco) continue;
+                                GameObject[] playersInLoco = playerManager.GetPlayersInTrain(loco);
+                                if (playersInLoco.Length > 0)
+                                {
+                                    player = playersInLoco[0];
+                                    break;
+                                }
+
+                                if (!loco.GetComponent<NetworkTrainPosSync>()) continue;
+                                WorldTrain train = loco.GetComponent<NetworkTrainPosSync>().serverState;
+                                if (train != null)
+                                {
+                                    player = playerManager.GetPlayerById(train.AuthorityPlayerId);
+                                    break;
+                                }
+                            }
+                            if (!player)
+                                player = playerManager.GetLocalPlayer();
+                        }
+
+                        if (authNeedsChange)
+                        {
+                            if (player.GetComponent<NetworkPlayerSync>() && player.GetComponent<NetworkPlayerSync>().Id != serverState.AuthorityPlayerId || resetAuthority)
+                                SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, player.GetComponent<NetworkPlayerSync>().Id);
+
+                            resetAuthority = false;
                         }
                     }
+                    else
+                    {
+                        if (serverState.AuthorityPlayerId != turntable.playerAuthId)
+                            SingletonBehaviour<NetworkTrainManager>.Instance.SendAuthorityChange(trainCar.trainset, turntable.playerAuthId);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Main.Log($"Exception thrown in authority check. {ex.Message}");
                 }
             }
-
-            // If no player is found yet and fallback is true return the host
-            if (useFallback) return SingletonBehaviour<NetworkPlayerManager>.Instance.GetLocalPlayer();
         }
-        // Return null if no players are found and fallback was false
-        return null;
     }
 
     private void OnDestroy()
     {
-        isBeingDestroyed = true;
         StopAllCoroutines();
+        if(authorityCoro != null)
+            SingletonBehaviour<CoroutineManager>.Instance.Stop(authorityCoro);
 
         trainCar.MovementStateChanged -= TrainCar_MovementStateChanged;
         trainCar.CarDamage.CarEffectiveHealthStateUpdate -= OnBodyDamageTaken;
@@ -438,101 +271,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         Main.Log($"NetworkTrainPosSync.OnDestroy()");
     }
 
-    private void FixedUpdate()
-    {
-        if (!SingletonBehaviour<NetworkTrainManager>.Exists || SingletonBehaviour<NetworkTrainManager>.Instance.IsDisconnecting)
-            return;
-
-        try
-        {
-            if (!hasLocalPlayerAuthority && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 1e-4f && newPos != Vector3.zero)
-                UpdateNonAuthorityPositioning();
-        }
-        catch (Exception ex)
-        {
-            Main.Log($"NetworkTrainPosSync threw an exception while updating position: {ex.Message} inner exception: {ex.InnerException}");
-        }
-
-        if (hasLocalPlayerAuthority)
-        {
-            velocity = trainCar.rb.velocity;
-            isStationary = trainCar.isStationary;
-
-            if(velocity.magnitude * 3.6f <= .2f && trainCar.stress.enabled)
-                trainCar.stress.EnableStress(false);
-        }
-
-        if (hasLocalPlayerAuthority && ((velocity.magnitude * 3.6f > .2f && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > Mathf.Lerp(1e-4f, 1e-2f, velocity.magnitude * 3.6f / 50)) || Quaternion.Angle(transform.rotation, newRot) > 1e-2f))
-        {
-            if (!trainCar.stress.enabled)
-                trainCar.stress.EnableStress(true);
-            SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar);
-            newPos = transform.position - WorldMover.currentMove;
-            newRot = transform.rotation;
-
-            if (!turntable && !IsCarDamageEnabled)
-            {
-                trainCar.CarDamage.IgnoreDamage(false);
-            }
-        }
-    }
-
-    private void UpdateNonAuthorityPositioning()
-    {
-        float increment = (velocity.magnitude * 3f);
-        if (increment <= 5f && turntable)
-            increment = 5;
-
-        if (increment <= 5f && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 1 && isDerailed)
-            increment = 5;
-
-        if (increment <= 5f && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 10)
-            increment = 5;
-
-        if (increment == 0)
-            increment = 1;
-
-        if (Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > 5 || isDerailed)
-        {
-            if (!isDerailed)
-            {
-                foreach (Bogie b in trainCar.Bogies)
-                {
-                    if (b.rb)
-                        b.rb.isKinematic = true;
-                }
-            }
-            trainCar.rb.MovePosition(newPos + WorldMover.currentMove);
-            trainCar.rb.MoveRotation(newRot);
-            if (!isDerailed)
-            {
-                foreach (Bogie b in trainCar.Bogies)
-                {
-                    if (b.rb)
-                    {
-                        b.ResetBogiesToStartPosition();
-                        b.rb.isKinematic = false;
-                    }
-                }
-            }
-        }
-        else
-        {
-            float step = increment * Time.deltaTime; // calculate distance to move
-            trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
-            
-            //Main.Log($"Rotating train");
-            if (!turntable)
-            {
-                trainCar.rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, newRot, step));
-            }
-            else
-            {
-                trainCar.rb.MoveRotation(newRot);
-            }
-        }
-    }
-
     private void Update()
     {
         if (!SingletonBehaviour<NetworkPlayerManager>.Exists || !SingletonBehaviour<NetworkTrainManager>.Exists || SingletonBehaviour<NetworkTrainManager>.Instance.IsDisconnecting)
@@ -542,16 +280,6 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             serverState = SingletonBehaviour<NetworkTrainManager>.Instance.GetServerStateById(trainCar.CarGUID);
             return;
-        }
-
-        if (NetworkManager.IsHost())
-        {
-            if (trainCar.trainset.firstCar == trainCar || trainCar.trainset.lastCar == trainCar)
-            {
-                // This is to simulate impact
-                GainAndReleaseAuthorityOfTrainsInRangeOfCurrent();
-            }
-            //CheckAuthorityChange();
         }
 
         //if(trainAudio == null)
@@ -572,15 +300,72 @@ internal class NetworkTrainPosSync : MonoBehaviour
         //    }
         //}
 
+
         try
         {
+            if (!hasLocalPlayerAuthority && !willLocalPlayerGetAuthority)
+            {
+                float increment = (velocity.magnitude * 3f);
+                if (increment <= 5f && turntable)
+                    increment = 5;
+
+                if (increment <= 5f && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 1 && isDerailed)
+                    increment = 5;
+
+                if (increment <= 5f && Vector3.Distance(transform.position - WorldMover.currentMove, newPos) > 10)
+                    increment = 5;
+
+                float step = increment * Time.deltaTime; // calculate distance to move
+                if(velocity.magnitude < 1)
+                {
+                    foreach(Bogie bogie in trainCar.Bogies)
+                    { 
+                        bogie.RefreshBogiePoints();
+                    }
+                }
+                if (newPos != Vector3.zero && Vector3.Distance(transform.position, newPos + WorldMover.currentMove) > Mathf.Lerp(1e-3f, .25f, velocity.magnitude * 3.6f / 80))
+                {
+                    List<Vector3> bogiespos = new List<Vector3>();
+                    foreach(Bogie bogie in trainCar.Bogies)
+                    {
+                        bogiespos.Add(bogie.transform.localPosition);
+                    }
+                    trainCar.rb.MovePosition(Vector3.MoveTowards(transform.position, newPos + WorldMover.currentMove, step));
+                    for (int i = 0; i < trainCar.Bogies.Length; i++)
+                    {
+                        trainCar.Bogies[i].transform.localPosition = bogiespos[i];
+                        //trainCar.Bogies[i].RefreshBogiePoints();
+                    }
+                }
+
+                if (newRot != Quaternion.identity && Quaternion.Angle(transform.rotation, newRot) > .25)
+                {
+                    //Main.Log($"Rotating train");
+                    if (!turntable)
+                    {
+                        trainCar.rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, newRot, step));
+                    }
+                    else
+                    {
+                        trainCar.rb.MoveRotation(newRot);
+                    }
+                }
+            }
+
+            if (hasLocalPlayerAuthority)
+            {
+                velocity = trainCar.rb.velocity;
+            }
+
             if (willLocalPlayerGetAuthority && !hasLocalPlayerAuthority)
             {
                 Main.Log($"Car {trainCar.CarGUID}: Changing authority [GAINED]");
+                SetAuthority(true);
                 if (!trainCar.IsInteriorLoaded)
                     trainCar.LoadInterior();
                 trainCar.keepInteriorLoaded = true;
-                SetAuthority(true);
+                if (trainCar.IsLoco)
+                    locomotive.UpdateAuthorityPhysics(true);
             }
             else if (!willLocalPlayerGetAuthority && hasLocalPlayerAuthority)
             {
@@ -595,7 +380,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Main.Log($"NetworkTrainPosSync threw an exception while changing authority: {ex.Message} inner exception: {ex.InnerException}");
+            Main.Log(ex.Message);
         }
 
 
@@ -612,28 +397,25 @@ internal class NetworkTrainPosSync : MonoBehaviour
         hasLocalPlayerAuthority = gain;
         Main.Log($"Set kinematic state {!gain}");
         trainCar.rb.isKinematic = !gain;
-
-        if (trainCar.carType == TrainCarType.LocoShunter)
+        Main.Log($"Set bogies");
+        foreach(Bogie bogie in trainCar.Bogies)
         {
-            shunterExhaust.emitterVelocityMode = gain ? ParticleSystemEmitterVelocityMode.Rigidbody : ParticleSystemEmitterVelocityMode.Transform;
-        }
-        else if (trainCar.carType == TrainCarType.LocoDiesel)
-        {
-            dieselExhaust.emitterVelocityMode = gain ? ParticleSystemEmitterVelocityMode.Rigidbody : ParticleSystemEmitterVelocityMode.Transform;
+            bogie.RefreshBogiePoints();
+            //if (bogie.rb != null)
+            //{
+            //    bogie.rb.isKinematic = !gain;
+            //}
         }
 
-        //if (gain)
-        //{
-        //    foreach(Bogie b in trainCar.Bogies)
-        //    {
-        //        b.
-        //        b.ForceSleep(true);
-        //        b.ResetBogiesToStartPosition();
-        //    }
-        //}
+        Main.Log($"Set velocity and drag");
+        trainCar.rb.velocity = velocity;
+        trainCar.rb.drag = drag;
+
+        Main.Log($"Start position updater");
+        StartCoroutine(UpdateLocation());
 
         Main.Log($"Toggle damage for 2 seconds");
-        StartCoroutine(ToggleDamageAfterSeconds(2));
+        damageEnablerCoro = StartCoroutine(ToggleDamageAfterSeconds(2));
         Main.Log($"Resync train");
         SingletonBehaviour<NetworkTrainManager>.Instance.ResyncCar(trainCar);
     }
@@ -641,7 +423,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private IEnumerator ToggleDamageAfterSeconds(float seconds)
     {
-        IgnoreDamage(true);
+        trainCar.CarDamage.IgnoreDamage(true);
         trainCar.stress.EnableStress(false);
         trainCar.TrainCarCollisions.enabled = false;
         if (!hasLocalPlayerAuthority)
@@ -654,21 +436,10 @@ internal class NetworkTrainPosSync : MonoBehaviour
         {
             trainCar.stress.EnableStress(true);
             trainCar.TrainCarCollisions.enabled = true;
-            IgnoreDamage(false);
+            trainCar.CarDamage.IgnoreDamage(false);
         }
-    }
 
-    private void IgnoreDamage(bool set)
-    {
-        switch (trainCar.carType)
-        {
-            case TrainCarType.LocoShunter:
-                trainCar.GetComponent<DamageControllerShunter>().IgnoreDamage(set);
-                break;
-            case TrainCarType.LocoDiesel:
-                trainCar.GetComponent<DamageControllerDiesel>().IgnoreDamage(set);
-                break;
-        }
+        damageEnablerCoro = null;
     }
 
     private IEnumerator ToggleKinematic(float seconds)
@@ -676,11 +447,11 @@ internal class NetworkTrainPosSync : MonoBehaviour
         trainCar.rb.isKinematic = true;
         trainCar.rb.Sleep();
         trainCar.stress.EnableStress(false);
-        //foreach (Bogie bogie in trainCar.Bogies)
-        //{
-        //    bogie.RerailInitialize();
-        //    bogie.ResetBogiesToStartPosition();
-        //}
+        foreach (Bogie bogie in trainCar.Bogies)
+        {
+            bogie.RerailInitialize();
+            bogie.ResetBogiesToStartPosition();
+        }
         yield return new WaitForSeconds(seconds);
         if (hasLocalPlayerAuthority)
         {
@@ -691,33 +462,16 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void TrainCar_MovementStateChanged(bool isMoving)
     {
-        if (velocity.magnitude * 3.6f >= 1f && !isMoving)
+        if (!hasLocalPlayerAuthority && isStationary == !isMoving)
             return;
 
-        if (!isMoving && hasLocalPlayerAuthority)
-        {
-            trainCar.stress.EnableStress(false);
-            if (SingletonBehaviour<NetworkTrainManager>.Exists && trainCar.IsLoco)
-            {
-                Main.Log($"Movement state changed is moving: {isMoving}");
-                SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, true);
-                newPos = trainCar.transform.position - WorldMover.currentMove;
-                newRot = transform.rotation;
-            }
-        }
+        isStationary = !isMoving;
 
-        if (!isMoving)
+        Main.Log($"Movement state changed is moving: {isMoving}");
+        if(!isMoving && SingletonBehaviour<NetworkTrainManager>.Exists)
         {
-            foreach (Bogie b in trainCar.Bogies)
-            {
-                if (b.rb)
-                {
-                    b.rb.isKinematic = true;
-                    b.ResetBogiesToStartPosition();
-                    b.rb.isKinematic = false;
-                }
-            }
-            trainCar.ForceOptimizationState(true);
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, locomotive, true);
+            prevPos = trainCar.transform.position;
         }
     }
 
@@ -736,8 +490,7 @@ internal class NetworkTrainPosSync : MonoBehaviour
         }
         else
         {
-            newPos = transform.position - WorldMover.currentMove;
-            newRot = transform.rotation;
+            prevPos = transform.position - WorldMover.currentMove;
         }
 
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork)
@@ -756,98 +509,70 @@ internal class NetworkTrainPosSync : MonoBehaviour
 
     private void OnCargoDamageTaken(float _)
     {
-        if (serverState is null)
-            return;
-
-        if (!SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork && (!hasLocalPlayerAuthority || !IsCarDamageEnabled && hasLocalPlayerAuthority) && Math.Round(trainCar.CarDamage.currentHealth, 2) != Math.Round(serverState.CarHealth, 2))
+        if (!hasLocalPlayerAuthority && !SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork && trainCar.CargoDamage.currentHealth != serverState.CargoHealth)
             trainCar.CargoDamage.LoadCargoDamageState(serverState.CargoHealth);
+
+        if (!IsCarDamageEnabled && hasLocalPlayerAuthority && trainCar.CargoDamage.currentHealth != serverState.CargoHealth)
+        {
+            Main.Log($"Cargo took damage but should be ignored");
+            trainCar.CargoDamage.LoadCargoDamageState(serverState.CargoHealth);
+        }
 
         if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || !IsCarDamageEnabled)
             return;
 
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(trainCar.CarGUID, DamageType.Cargo, trainCar.CargoDamage.currentHealth, "");
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(trainCar.CarGUID, DamageType.Cargo, trainCar.CargoDamage.currentHealth);
     }
 
     private void OnBodyDamageTaken(float _)
     {
-        if (serverState is null)
-            return;
+        if (!hasLocalPlayerAuthority && !SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork && trainCar.CarDamage.currentHealth != serverState.CarHealth)
+            trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
 
-        if (!SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork && !SingletonBehaviour<NetworkDebtManager>.Instance.IsChangeByNetwork && (!hasLocalPlayerAuthority || !IsCarDamageEnabled && hasLocalPlayerAuthority) && Math.Round(trainCar.CarDamage.currentHealth, 2) != Math.Round(serverState.CarHealth, 2))
+        if (!IsCarDamageEnabled && hasLocalPlayerAuthority && trainCar.CarDamage.currentHealth != serverState.CarHealth)
         {
-            if (trainCar.IsLoco)
-                LoadLocoDamage(serverState.CarHealthData);
-            else
-                trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
+            Main.Log($"Train took damage but should be ignored");
+            trainCar.CarDamage.LoadCarDamageState(serverState.CarHealth);
         }
 
-        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !SingletonBehaviour<NetworkDebtManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || !IsCarDamageEnabled)
+        if (SingletonBehaviour<NetworkTrainManager>.Instance.IsChangeByNetwork || !hasLocalPlayerAuthority || !IsCarDamageEnabled)
             return;
 
+        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(trainCar.CarGUID, DamageType.Car, trainCar.CarDamage.currentHealth);
+    }
 
-        string data = "";
-        if (trainCar.IsLoco)
+    private IEnumerator UpdateLocation()
+    {
+        while (hasLocalPlayerAuthority && !trainCar.frontCoupler.coupledTo)
         {
-            switch (trainCar.carType)
+            yield return new WaitForSeconds(.005f);
+            yield return new WaitUntil(() => Vector3.Distance(transform.position - WorldMover.currentMove, prevPos) > Mathf.Lerp(1e-3f, .25f, velocity.magnitude * 3.6f / 80) && !trainCar.isStationary);
+            SingletonBehaviour<NetworkTrainManager>.Instance.SendCarLocationUpdate(trainCar, locomotive, false);
+            prevPos = transform.position - WorldMover.currentMove;
+
+            if (!turntable && !IsCarDamageEnabled)
             {
-                case TrainCarType.LocoShunter:
-                    data = trainCar.GetComponent<DamageControllerShunter>().GetDamageSaveData().ToString(Newtonsoft.Json.Formatting.None);
-                    break;
-                case TrainCarType.LocoDiesel:
-                    data = trainCar.GetComponent<DamageControllerDiesel>().GetDamageSaveData().ToString(Newtonsoft.Json.Formatting.None);
-                    break;
+                trainCar.CarDamage.IgnoreDamage(false);
             }
         }
-
-        SingletonBehaviour<NetworkTrainManager>.Instance.SendCarDamaged(trainCar.CarGUID, DamageType.Car, trainCar.CarDamage.currentHealth, data);
     }
 
-    internal void LoadLocoDamage(string carHealthData)
-    {
-        switch(trainCar.carType)
-        {
-            case TrainCarType.LocoShunter:
-                trainCar.GetComponent<DamageControllerShunter>().LoadDamagesState(JObject.Parse(carHealthData));
-                break;
-            case TrainCarType.LocoDiesel:
-                trainCar.GetComponent<DamageControllerDiesel>().LoadDamagesState(JObject.Parse(carHealthData));
-                break;
-
-            default:
-                trainCar.GetComponent<DamageController>().LoadDamagesState(JObject.Parse(carHealthData));
-                break;
-        }
-    }
-
-    internal void UpdateLocation(TrainLocation location)
-    {
-        StartCoroutine(CoroUpdateLocation(location));
-    }
-
-    internal IEnumerator CoroUpdateLocation(TrainLocation location)
+    internal IEnumerator UpdateLocation(TrainLocation location)
     {
         if (hasLocalPlayerAuthority)
             yield break;
 
         velocity = location.Velocity;
-        isStationary = velocity.magnitude > 0;
+        drag = location.Drag;
+
+        if (trainCar.derailed && !isDerailed)
+        {
+            yield return SingletonBehaviour<NetworkTrainManager>.Instance.RerailDesynced(trainCar, serverState, true);
+        }
+
+        isStationary = location.IsStationary;
         newPos = location.Position;
         newRot = location.Rotation;
-        if (trainCar.IsLoco)
-        {
-            switch (trainCar.carType)
-            {
-                case TrainCarType.LocoShunter:
-                    shunterLocoSimulation.engineTemp.SetValue(location.Temperature);
-                    shunterLocoSimulation.engineRPM.SetValue(location.RPM);
-                    break;
-                case TrainCarType.LocoDiesel:
-                    dieselLocoSimulation.engineTemp.SetValue(location.Temperature);
-                    dieselLocoSimulation.engineRPM.SetValue(location.RPM);
-                    break;
-            }
-        }
-        
     }
 
     //private void SyncVelocityAndSpeedUpIfDesyncedOnFrontCar(TrainLocation location)

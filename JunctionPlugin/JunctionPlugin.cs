@@ -10,9 +10,9 @@ namespace JunctionPlugin
 {
     public class JunctionPlugin : Plugin
     {
-        public override bool ThreadSafe => true;
+        public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.6");
+        public override Version Version => new Version("1.0.5");
 
         private readonly List<Switch> switchStates;
 

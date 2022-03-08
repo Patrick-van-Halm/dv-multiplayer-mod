@@ -19,7 +19,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
     private List<Job> jobs;
     public bool IsChangedByNetwork { get; set; }
     public bool IsSynced { get; internal set; }
-    public List<JobChainController> newlyGeneratedJobChains = new List<JobChainController>();
+    public JobChainController newlyGeneratedJobChain;
     public StationController newlyGeneratedJobChainStation;
 
     protected override void Awake()
@@ -43,14 +43,7 @@ internal class NetworkJobsManager : SingletonBehaviour<NetworkJobsManager>
             foreach (StationController station in StationController.allStations)
             {
                 if (station.GetComponent<NetworkJobsSync>())
-                {
-                    foreach (JobChainController chainController in station.GetComponent<NetworkJobsSync>().currentChains)
-                    {
-                        chainController.JobChainCompleted -= OnJobChainCompleted;
-                        chainController.JobOfChainExpired -= OnJobInChainExpired;
-                    }
                     DestroyImmediate(station.GetComponent<NetworkJobsSync>());
-                }
             }
         }
         else

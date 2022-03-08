@@ -13,7 +13,7 @@ namespace DVMultiplayer.Patches.Debt
         {
             if(NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced && SingletonBehaviour<NetworkDebtManager>.Exists && !SingletonBehaviour<NetworkDebtManager>.Instance.IsChangeByNetwork)
             {
-                SingletonBehaviour<NetworkDebtManager>.Instance.OnLocoDeptPaid(locoDebtToPay.ID, false);
+                SingletonBehaviour<NetworkDebtManager>.Instance.OnJobDeptPaid(locoDebtToPay.ID, false);
             }
         }
     }
@@ -25,7 +25,7 @@ namespace DVMultiplayer.Patches.Debt
         {
             if (NetworkManager.IsClient() && SingletonBehaviour<NetworkTrainManager>.Exists && SingletonBehaviour<NetworkTrainManager>.Instance.IsSynced && SingletonBehaviour<NetworkDebtManager>.Exists && !SingletonBehaviour<NetworkDebtManager>.Instance.IsChangeByNetwork)
             {
-                SingletonBehaviour<NetworkDebtManager>.Instance.OnLocoDeptPaid(locoDebtToPay.ID, true);
+                SingletonBehaviour<NetworkDebtManager>.Instance.OnJobDeptPaid(locoDebtToPay.ID, true);
             }
         }
     }

@@ -11,8 +11,8 @@ namespace DebtPlugin
 {
     public class DebtPlugin : Plugin
     {
-        public override bool ThreadSafe => true;
-        public override Version Version => new Version("1.0.2");
+        public override bool ThreadSafe => false;
+        public override Version Version => new Version("1.0.1");
 
         public DebtPlugin(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {

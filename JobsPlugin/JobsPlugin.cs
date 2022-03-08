@@ -10,9 +10,9 @@ namespace JobsPlugin
 {
     public class JobsPlugin : Plugin
     {
-        public override bool ThreadSafe => true;
+        public override bool ThreadSafe => false;
 
-        public override Version Version => new Version("1.0.10");
+        public override Version Version => new Version("1.0.9");
 
         private readonly List<Chain> chains;
         public readonly List<Job> jobs;
